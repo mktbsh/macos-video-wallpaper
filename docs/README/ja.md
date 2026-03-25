@@ -10,10 +10,6 @@
 
 ---
 
-<video src="../../docs/demo.mp4" autoplay loop muted playsinline></video>
-
----
-
 ## 概要
 
 - MP4・MOV・M4V ファイルをループ再生してデスクトップ壁紙として表示
