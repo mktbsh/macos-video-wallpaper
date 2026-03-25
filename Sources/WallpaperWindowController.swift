@@ -91,8 +91,14 @@ final class WallpaperWindowController {
     }
 
     func resumePlayback() {
-        guard playerLooper != nil, window.occlusionState.contains(.visible) else { return }
-        player.play()
+        guard playerLooper != nil else { return }
+        window.orderFront(nil)
+        if window.occlusionState.contains(.visible) { player.play() }
+    }
+
+    func pausePlayback() {
+        player.pause()
+        window.orderOut(nil)
     }
 
     /// Call from AppDelegate on the MainActor to release resources.
