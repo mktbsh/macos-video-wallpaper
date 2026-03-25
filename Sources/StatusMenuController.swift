@@ -7,6 +7,10 @@ final class StatusMenuController {
 
     var onVideoURLChanged: ((URL) -> Void)?
 
+    var currentVideoName: String? {
+        didSet { buildMenu() }
+    }
+
     private let statusItem: NSStatusItem
     private let menu: NSMenu
     private var loginItemEnabled: Bool = false
@@ -30,6 +34,13 @@ final class StatusMenuController {
 
     private func buildMenu() {
         menu.removeAllItems()
+
+        let infoItem = NSMenuItem()
+        infoItem.title = currentVideoName.map { "壁紙: \($0)" } ?? "壁紙: 未設定"
+        infoItem.isEnabled = false
+        menu.addItem(infoItem)
+
+        menu.addItem(.separator())
 
         let selectItem = NSMenuItem(
             title: "動画を選択…",
@@ -75,6 +86,7 @@ final class StatusMenuController {
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
         UserDefaults.standard.set(url.path, forKey: "videoFilePath")
+        currentVideoName = url.lastPathComponent
         onVideoURLChanged?(url)
     }
 

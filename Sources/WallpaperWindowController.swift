@@ -8,6 +8,7 @@ final class WallpaperWindowController {
     private let player: AVQueuePlayer
     private let playerLayer: AVPlayerLayer
     private var playerLooper: AVPlayerLooper?
+    private var occlusionObserver: NSObjectProtocol?
 
     init(screen: NSScreen, videoURL url: URL?) {
         window = NSWindow(
@@ -54,6 +55,22 @@ final class WallpaperWindowController {
         }
 
         window.orderFront(nil)
+
+        // Pause when covered by a fullscreen app; resume when visible again
+        occlusionObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didChangeOcclusionStateNotification,
+            object: window,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                if self.window.occlusionState.contains(.visible) {
+                    if self.playerLooper != nil { self.player.play() }
+                } else {
+                    self.player.pause()
+                }
+            }
+        }
     }
 
     func load(videoURL url: URL) {
@@ -63,13 +80,16 @@ final class WallpaperWindowController {
     }
 
     func resumePlayback() {
-        if playerLooper != nil {
-            player.play()
-        }
+        guard playerLooper != nil, window.occlusionState.contains(.visible) else { return }
+        player.play()
     }
 
     /// Call from AppDelegate on the MainActor to release resources.
     func invalidate() {
+        if let obs = occlusionObserver {
+            NotificationCenter.default.removeObserver(obs)
+            occlusionObserver = nil
+        }
         playerLooper = nil
         player.pause()
         window.close()
