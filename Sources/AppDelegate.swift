@@ -54,9 +54,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.onVideoURLChanged = { [weak self] url in
             self?.applyVideo(url: url)
         }
-        menu.currentVideoName = VideoFileValidator
-            .resolveBookmarkedURL()
-            .map { $0.lastPathComponent }
         menu.onScreenTargetChanged = { [weak self] in self?.setupWallpaperWindows() }
         menu.onDimLevelChanged = { [weak self] opacity in
             self?.windowControllers.forEach { $0.applyDimLevel(opacity) }
@@ -66,6 +63,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         menu.onVideoGravityChanged = { [weak self] gravity in
             self?.windowControllers.forEach { $0.applyVideoGravity(gravity) }
+        }
+        menu.onVideoCleared = { [weak self] in
+            self?.windowControllers.forEach { $0.clearVideo() }
         }
         statusMenuController = menu
 
@@ -79,13 +79,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         windowControllers.removeAll()
 
         let savedURL = VideoFileValidator.resolveBookmarkedURL()
+        statusMenuController?.currentVideoName = savedURL?.lastPathComponent
         for screen in ScreenTarget.saved.filter(NSScreen.screens) {
-            windowControllers.append(WallpaperWindowController(screen: screen, videoURL: savedURL))
+            let controller = WallpaperWindowController(screen: screen, videoURL: savedURL)
+            controller.onVideoDropped = { [weak self] url in
+                // applyVideo() で全コントローラに新しい動画を適用する（マルチモニタ対応）。
+                // ドロップされたコントローラ自身は DropDestinationView 内で load() 済みだが、
+                // applyVideo() でもう一度 load() される（二重呼び出し）。
+                // load() は同一 URL に対して安全だが厳密には冪等ではないため、
+                // ドロップ対象画面のみ一時的に再生ループが再生成される。
+                // applyVideo() 内の applyBatteryPolicy() が省電力ポリシーも再適用する。
+                self?.statusMenuController?.currentVideoName = url.lastPathComponent
+                self?.applyVideo(url: url)
+            }
+            windowControllers.append(controller)
         }
     }
 
     private func applyVideo(url: URL) {
         windowControllers.forEach { $0.load(videoURL: url) }
+        applyBatteryPolicy()  // 省電力一時停止中は orderFront しない
     }
 
     @objc private func screensDidChange() {

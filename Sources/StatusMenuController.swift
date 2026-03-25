@@ -10,6 +10,7 @@ final class StatusMenuController {
     var onDimLevelChanged: ((CGFloat) -> Void)?
     var onPowerSavingModeChanged: (() -> Void)?
     var onVideoGravityChanged: ((VideoGravity) -> Void)?
+    var onVideoCleared: (() -> Void)?
 
     var currentVideoName: String? {
         didSet { buildMenu() }
@@ -53,6 +54,16 @@ final class StatusMenuController {
         )
         selectItem.target = self
         menu.addItem(selectItem)
+
+        if currentVideoName != nil {
+            let clearItem = NSMenuItem(
+                title: "壁紙を解除",
+                action: #selector(clearVideoAction),
+                keyEquivalent: ""
+            )
+            clearItem.target = self
+            menu.addItem(clearItem)
+        }
 
         let screenMenu = NSMenu()
         let currentTarget = ScreenTarget.saved
@@ -167,6 +178,15 @@ final class StatusMenuController {
         VideoFileValidator.saveBookmark(for: url)
         currentVideoName = url.lastPathComponent
         onVideoURLChanged?(url)
+    }
+
+    @objc private func clearVideoAction() {
+        // clearBookmark() は UserDefaults のエントリを削除するだけ。
+        // セキュリティスコープアクセストークンは生きたままなので、
+        // 次に onVideoCleared?() で clearVideo() が呼ばれるまで安全にアクセスできる。
+        VideoFileValidator.clearBookmark()
+        onVideoCleared?()
+        currentVideoName = nil  // didSet で buildMenu() をトリガー
     }
 
     @objc private func selectScreenTarget(_ sender: NSMenuItem) {

@@ -9,7 +9,11 @@ final class WallpaperWindowController {
     private let playerLayer: AVPlayerLayer
     private let dimLayer: CALayer
     private var playerLooper: AVPlayerLooper?
+    private var currentVideoURL: URL?
+    private var isScopedAccessActive = false
     private var occlusionObserver: NSObjectProtocol?
+
+    var onVideoDropped: ((URL) -> Void)?
 
     init(screen: NSScreen, videoURL url: URL?) {
         window = NSWindow(
@@ -57,13 +61,13 @@ final class WallpaperWindowController {
         dropView.onVideoDropped = { [weak self] url in
             VideoFileValidator.saveBookmark(for: url)
             self?.load(videoURL: url)
+            self?.onVideoDropped?(url)
         }
 
         if let url = url {
             load(videoURL: url)
+            window.orderFront(nil)
         }
-
-        window.orderFront(nil)
 
         // Pause when covered by a fullscreen app; resume when visible again
         occlusionObserver = NotificationCenter.default.addObserver(
@@ -91,9 +95,28 @@ final class WallpaperWindowController {
     }
 
     func load(videoURL url: URL) {
-        playerLooper = nil  // releases previous looper
+        playerLooper = nil
+        if isScopedAccessActive {
+            currentVideoURL?.stopAccessingSecurityScopedResource()
+        }
+        isScopedAccessActive = url.startAccessingSecurityScopedResource()
+        currentVideoURL = url
         playerLooper = AVPlayerLooper(player: player, templateItem: AVPlayerItem(url: url))
         player.play()
+        // orderFront は AppDelegate の applyBatteryPolicy() が制御する
+    }
+
+    /// ビデオ再生を停止し、ウィンドウを非表示にする。
+    /// セキュリティスコープアクセスを解放する。
+    func clearVideo() {
+        playerLooper = nil
+        player.pause()
+        if isScopedAccessActive {
+            currentVideoURL?.stopAccessingSecurityScopedResource()
+            isScopedAccessActive = false
+        }
+        currentVideoURL = nil
+        window.orderOut(nil)
     }
 
     func resumePlayback() {
@@ -115,6 +138,11 @@ final class WallpaperWindowController {
         }
         playerLooper = nil
         player.pause()
+        if isScopedAccessActive {
+            currentVideoURL?.stopAccessingSecurityScopedResource()
+            isScopedAccessActive = false
+        }
+        currentVideoURL = nil
         window.close()
     }
 }

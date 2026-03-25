@@ -18,6 +18,14 @@ enum VideoFileValidator {
         UserDefaults.standard.removeObject(forKey: "videoFilePath")
     }
 
+    /// Removes the stored security-scoped bookmark from UserDefaults.
+    /// The security-scoped access token is independent of the UserDefaults entry;
+    /// callers must call stopAccessingSecurityScopedResource() at some point,
+    /// but that can happen before or after calling clearBookmark().
+    static func clearBookmark() {
+        UserDefaults.standard.removeObject(forKey: "videoBookmark")
+    }
+
     /// Resolves the stored bookmark to a URL, starting security-scoped access.
     /// Falls back to the legacy path key for one-time migration.
     /// Returns nil if no bookmark is stored or the file no longer exists.
