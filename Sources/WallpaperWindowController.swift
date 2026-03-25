@@ -46,7 +46,7 @@ final class WallpaperWindowController {
         playerLayer.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
         dropView.layer?.addSublayer(playerLayer)
         dropView.onVideoDropped = { [weak self] url in
-            UserDefaults.standard.set(url.path, forKey: "videoFilePath")
+            VideoFileValidator.saveBookmark(for: url)
             self?.load(videoURL: url)
         }
 

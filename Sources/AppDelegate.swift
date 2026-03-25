@@ -38,7 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.applyVideo(url: url)
         }
         menu.currentVideoName = VideoFileValidator
-            .resolveVideoURL(fromPath: UserDefaults.standard.string(forKey: "videoFilePath"))
+            .resolveBookmarkedURL()
             .map { $0.lastPathComponent }
         statusMenuController = menu
 
@@ -51,9 +51,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         windowControllers.forEach { $0.invalidate() }
         windowControllers.removeAll()
 
-        let savedURL = VideoFileValidator.resolveVideoURL(
-            fromPath: UserDefaults.standard.string(forKey: "videoFilePath")
-        )
+        let savedURL = VideoFileValidator.resolveBookmarkedURL()
         for screen in NSScreen.screens {
             windowControllers.append(WallpaperWindowController(screen: screen, videoURL: savedURL))
         }

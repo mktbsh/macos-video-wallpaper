@@ -85,7 +85,7 @@ final class StatusMenuController {
         NSApp.activate()
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
-        UserDefaults.standard.set(url.path, forKey: "videoFilePath")
+        VideoFileValidator.saveBookmark(for: url)
         currentVideoName = url.lastPathComponent
         onVideoURLChanged?(url)
     }
