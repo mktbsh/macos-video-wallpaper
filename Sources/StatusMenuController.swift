@@ -9,6 +9,7 @@ final class StatusMenuController {
     var onScreenTargetChanged: (() -> Void)?
     var onDimLevelChanged: ((CGFloat) -> Void)?
     var onPowerSavingModeChanged: (() -> Void)?
+    var onVideoGravityChanged: ((VideoGravity) -> Void)?
 
     var currentVideoName: String? {
         didSet { buildMenu() }
@@ -104,6 +105,23 @@ final class StatusMenuController {
         powerItem.submenu = powerMenu
         menu.addItem(powerItem)
 
+        let gravityMenu = NSMenu()
+        let currentGravity = VideoGravity.saved
+        for gravity in VideoGravity.allCases {
+            let item = NSMenuItem(
+                title: gravity.label,
+                action: #selector(selectVideoGravity(_:)),
+                keyEquivalent: ""
+            )
+            item.target = self
+            item.representedObject = gravity.rawValue
+            item.state = gravity == currentGravity ? .on : .off
+            gravityMenu.addItem(item)
+        }
+        let gravityItem = NSMenuItem(title: "表示方法", action: nil, keyEquivalent: "")
+        gravityItem.submenu = gravityMenu
+        menu.addItem(gravityItem)
+
         menu.addItem(.separator())
 
         let loginItem = NSMenuItem(
@@ -172,6 +190,14 @@ final class StatusMenuController {
               let mode = PowerSavingMode(rawValue: rawValue) else { return }
         mode.save()
         onPowerSavingModeChanged?()
+        buildMenu()
+    }
+
+    @objc private func selectVideoGravity(_ sender: NSMenuItem) {
+        guard let rawValue = sender.representedObject as? String,
+              let gravity = VideoGravity(rawValue: rawValue) else { return }
+        gravity.save()
+        onVideoGravityChanged?(gravity)
         buildMenu()
     }
 

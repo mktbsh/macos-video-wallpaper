@@ -59,6 +59,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.onPowerSavingModeChanged = { [weak self] in
             self?.applyBatteryPolicy()
         }
+        menu.onVideoGravityChanged = { [weak self] gravity in
+            self?.windowControllers.forEach { $0.applyVideoGravity(gravity) }
+        }
         statusMenuController = menu
 
         setupWallpaperWindows()

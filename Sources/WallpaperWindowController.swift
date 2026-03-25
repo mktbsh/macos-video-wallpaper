@@ -44,7 +44,7 @@ final class WallpaperWindowController {
         window.contentView = dropView
 
         playerLayer = AVPlayerLayer(player: player)
-        playerLayer.videoGravity = .resizeAspectFill
+        playerLayer.videoGravity = VideoGravity.saved.avGravity
         playerLayer.frame = dropView.bounds
         playerLayer.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
         dropView.layer?.addSublayer(playerLayer)
@@ -84,6 +84,10 @@ final class WallpaperWindowController {
 
     func applyDimLevel(_ opacity: CGFloat) {
         dimLayer.backgroundColor = NSColor.black.withAlphaComponent(opacity).cgColor
+    }
+
+    func applyVideoGravity(_ gravity: VideoGravity) {
+        playerLayer.videoGravity = gravity.avGravity
     }
 
     func load(videoURL url: URL) {
