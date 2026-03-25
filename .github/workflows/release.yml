@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build archive
+        run: |
+          xcodebuild archive \
+            -scheme VideoWallpaper \
+            -configuration Release \
+            -archivePath "$RUNNER_TEMP/VideoWallpaper.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Package app
+        run: |
+          APP="$RUNNER_TEMP/VideoWallpaper.xcarchive/Products/Applications/VideoWallpaper.app"
+          ditto -c -k --keepParent "$APP" "VideoWallpaper-${{ github.ref_name }}.zip"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: VideoWallpaper-${{ github.ref_name }}.zip
+          generate_release_notes: true

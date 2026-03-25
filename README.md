@@ -25,6 +25,18 @@ A macOS app that plays a video file as your desktop wallpaper — looping seamle
 
 ## For Users
 
+### Download & Install
+
+1. Go to the [Releases](https://github.com/mktbsh/macos-video-wallpaper/releases) page and download the latest `VideoWallpaper-vX.X.X.zip`.
+2. Unzip and move `VideoWallpaper.app` to `/Applications`.
+3. Remove the quarantine attribute (required because the app is not signed with an Apple Developer ID):
+   ```bash
+   xattr -cr /Applications/VideoWallpaper.app
+   ```
+4. Launch the app from `/Applications`.
+
+> **Why step 3?** macOS Gatekeeper blocks apps downloaded from the internet that lack an Apple Developer ID signature. The `xattr -cr` command removes the quarantine flag so Gatekeeper allows the app to run. This is safe for open-source apps where you can inspect the source code yourself.
+
 ### How to use
 
 1. Launch the app. A `▶⬜` icon appears in the menu bar.
