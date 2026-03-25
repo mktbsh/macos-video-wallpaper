@@ -7,9 +7,9 @@ enum VideoGravity: String, CaseIterable {
 
     var label: String {
         switch self {
-        case .fill:    return "塗りつぶし"
-        case .fit:     return "全体表示"
-        case .stretch: return "引き伸ばし"
+        case .fill:    return "cover"
+        case .fit:     return "contain"
+        case .stretch: return "fill"
         }
     }
 

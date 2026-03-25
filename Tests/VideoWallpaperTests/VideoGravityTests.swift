@@ -30,16 +30,16 @@ import AVFoundation
 
     // MARK: - label
 
-    @Test func fill_label_is_correct() {
-        #expect(VideoGravity.fill.label == "塗りつぶし")
+    @Test func fill_label_is_cover() {
+        #expect(VideoGravity.fill.label == "cover")
     }
 
-    @Test func fit_label_is_correct() {
-        #expect(VideoGravity.fit.label == "全体表示")
+    @Test func fit_label_is_contain() {
+        #expect(VideoGravity.fit.label == "contain")
     }
 
-    @Test func stretch_label_is_correct() {
-        #expect(VideoGravity.stretch.label == "引き伸ばし")
+    @Test func stretch_label_is_fill() {
+        #expect(VideoGravity.stretch.label == "fill")
     }
 
     // MARK: - avGravity
