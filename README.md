@@ -69,6 +69,29 @@ xcodebuild -scheme VideoWallpaper -configuration Release build
 xcodebuild test -scheme VideoWallpaper -destination 'platform=macOS'
 ```
 
+### Video Optimization
+
+For the best performance and quality, use H.265 (HEVC) encoded videos at 1080p/30fps in SDR.
+A conversion script is provided:
+
+```bash
+# Install ffmpeg (one-time)
+brew install ffmpeg
+
+# Convert any video to the optimal format
+./scripts/optimize-video.sh ~/Downloads/your-video.mov
+
+# Specify output path explicitly
+./scripts/optimize-video.sh ~/Downloads/your-video.mov ~/Desktop/wallpaper.mp4
+```
+
+The script handles:
+- Downscales to 1920×1080 (never upscales; letterboxes portrait/non-16:9 videos)
+- Caps frame rate at 30fps
+- Tone-maps HDR → SDR (BT.709) to prevent washed-out colors on SDR displays
+- Strips audio (muted by default in the app anyway)
+- Adds `faststart` flag for instant playback start
+
 ### Notes
 
 - Bundle ID is set to `com.local.VideoWallpaper`. Change it in `project.yml` if needed.

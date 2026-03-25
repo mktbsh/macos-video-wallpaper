@@ -2,7 +2,7 @@ import Testing
 import Foundation
 @testable import VideoWallpaper
 
-@Suite struct VideoFileValidatorTests {
+@Suite(.serialized) struct VideoFileValidatorTests {
 
     // MARK: - isSupported(extension:)
 

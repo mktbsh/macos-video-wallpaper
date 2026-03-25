@@ -1,4 +1,5 @@
 import Cocoa
+import IOKit.ps
 
 @main
 @MainActor
@@ -18,6 +19,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var windowControllers: [WallpaperWindowController] = []
     private var statusMenuController: StatusMenuController?
+    private var isOnBattery: Bool {
+        let snapshot = IOPSCopyPowerSourcesInfo().takeRetainedValue()
+        let type = IOPSGetProvidingPowerSourceType(snapshot)?.takeRetainedValue() as String?
+        return type == kIOPMBatteryPowerKey
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NotificationCenter.default.addObserver(
@@ -32,6 +38,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             name: NSWorkspace.didWakeNotification,
             object: nil
         )
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self,
+            selector: #selector(powerSourceDidChange),
+            name: NSNotification.Name(rawValue: kIOPSNotifyPowerSource),
+            object: nil
+        )
 
         let menu = StatusMenuController()
         menu.onVideoURLChanged = { [weak self] url in
@@ -43,6 +55,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.onScreenTargetChanged = { [weak self] in self?.setupWallpaperWindows() }
         menu.onDimLevelChanged = { [weak self] opacity in
             self?.windowControllers.forEach { $0.applyDimLevel(opacity) }
+        }
+        menu.onPowerSavingModeChanged = { [weak self] in
+            self?.applyBatteryPolicy()
         }
         statusMenuController = menu
 
@@ -70,6 +85,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func systemDidWake() {
-        windowControllers.forEach { $0.resumePlayback() }
+        applyBatteryPolicy()
+    }
+
+    @objc private func powerSourceDidChange() {
+        applyBatteryPolicy()
+    }
+
+    private func applyBatteryPolicy() {
+        if PowerSavingMode.saved.shouldPause(isOnBattery: isOnBattery) {
+            windowControllers.forEach { $0.pausePlayback() }
+        } else {
+            windowControllers.forEach { $0.resumePlayback() }
+        }
     }
 }

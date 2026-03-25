@@ -8,6 +8,7 @@ final class StatusMenuController {
     var onVideoURLChanged: ((URL) -> Void)?
     var onScreenTargetChanged: (() -> Void)?
     var onDimLevelChanged: ((CGFloat) -> Void)?
+    var onPowerSavingModeChanged: (() -> Void)?
 
     var currentVideoName: String? {
         didSet { buildMenu() }
@@ -86,6 +87,23 @@ final class StatusMenuController {
         dimItem.submenu = dimMenu
         menu.addItem(dimItem)
 
+        let powerMenu = NSMenu()
+        let currentMode = PowerSavingMode.saved
+        for mode in PowerSavingMode.allCases {
+            let item = NSMenuItem(
+                title: mode.label,
+                action: #selector(selectPowerSavingMode(_:)),
+                keyEquivalent: ""
+            )
+            item.target = self
+            item.representedObject = mode.rawValue
+            item.state = mode == currentMode ? .on : .off
+            powerMenu.addItem(item)
+        }
+        let powerItem = NSMenuItem(title: "低電力モード", action: nil, keyEquivalent: "")
+        powerItem.submenu = powerMenu
+        menu.addItem(powerItem)
+
         menu.addItem(.separator())
 
         let loginItem = NSMenuItem(
@@ -146,6 +164,14 @@ final class StatusMenuController {
               let level = DimLevel(rawValue: rawValue) else { return }
         level.save()
         onDimLevelChanged?(level.opacity)
+        buildMenu()
+    }
+
+    @objc private func selectPowerSavingMode(_ sender: NSMenuItem) {
+        guard let rawValue = sender.representedObject as? String,
+              let mode = PowerSavingMode(rawValue: rawValue) else { return }
+        mode.save()
+        onPowerSavingModeChanged?()
         buildMenu()
     }
 
