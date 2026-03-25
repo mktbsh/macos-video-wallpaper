@@ -37,6 +37,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.onVideoURLChanged = { [weak self] url in
             self?.applyVideo(url: url)
         }
+        menu.currentVideoName = VideoFileValidator
+            .resolveVideoURL(fromPath: UserDefaults.standard.string(forKey: "videoFilePath"))
+            .map { $0.lastPathComponent }
         statusMenuController = menu
 
         setupWallpaperWindows()
