@@ -65,10 +65,6 @@ final class WallpaperWindowController {
 
         if let url = url {
             load(videoURL: url)
-        }
-
-        // After: URL がある場合のみウィンドウを表示する
-        if url != nil {
             window.orderFront(nil)
         }
 
@@ -99,6 +95,7 @@ final class WallpaperWindowController {
 
     func load(videoURL url: URL) {
         playerLooper = nil
+        currentVideoURL?.stopAccessingSecurityScopedResource()
         currentVideoURL = url
         playerLooper = AVPlayerLooper(player: player, templateItem: AVPlayerItem(url: url))
         player.play()
@@ -134,6 +131,8 @@ final class WallpaperWindowController {
         }
         playerLooper = nil
         player.pause()
+        currentVideoURL?.stopAccessingSecurityScopedResource()
+        currentVideoURL = nil
         window.close()
     }
 }
