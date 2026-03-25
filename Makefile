@@ -20,8 +20,7 @@ install: build
 	    pkill -x VideoWallpaper; \
 	    sleep 1; \
 	fi
-	rm -rf $(INSTALL_DIR)/$(APP_NAME)
-	cp -R $(BUILT_APP) $(INSTALL_DIR)/$(APP_NAME)
+	cp -Rf $(BUILT_APP) $(INSTALL_DIR)/$(APP_NAME)
 	@echo "Installed to $(INSTALL_DIR)/$(APP_NAME)"
 
 run: install
