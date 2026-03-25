@@ -23,6 +23,10 @@ A macOS app that plays a video file as your desktop wallpaper — looping seamle
 
 ---
 
+https://github.com/user-attachments/assets/d0ef9f03-bf2f-45d6-b94b-89fbc5c1f073
+
+---
+
 ## For Users
 
 ### Download & Install
