@@ -1,0 +1,446 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		3DFDEA6BE7D42CFBE8283BAE /* VideoFileValidatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB6DDD2F2C0B77517B37A5AA /* VideoFileValidatorTests.swift */; };
+		48B598228C94B5392D333FA9 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D7F478F13B74E2AC9C62F8A5 /* AVFoundation.framework */; };
+		845BC49E2C1E7F7B6A4BBA4B /* WallpaperWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0FB0E3606A6BFDA1F9C17B3 /* WallpaperWindowController.swift */; };
+		8BA96F07BF0A15F80872085D /* VideoFileValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C11D09B17061EE66ED81CBC6 /* VideoFileValidator.swift */; };
+		91DDBD55080BB2726E2F96EE /* StatusMenuController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4EC1249156CE1ADAA638E74 /* StatusMenuController.swift */; };
+		B45057CE694749E56E2442C0 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DEF45366BAD6487E21EEE4A1 /* Cocoa.framework */; };
+		C153620C536E4D19EEBEF9D6 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ECF176FDB5E802560F3E884 /* AppDelegate.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		8CE2AA32F508A738B80C22E6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BA1FB06738324F8F3A856466 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BEBB6BC5787298C3EE94039E;
+			remoteInfo = VideoWallpaper;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		0ECF176FDB5E802560F3E884 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		5CA9572D6BA4139CA447AF3F /* VideoWallpaperTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VideoWallpaperTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9D02C454C100A99678B86DCC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		9D78977C7889D2A5D6B3D48C /* VideoWallpaper.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = VideoWallpaper.entitlements; sourceTree = "<group>"; };
+		A4EC1249156CE1ADAA638E74 /* StatusMenuController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusMenuController.swift; sourceTree = "<group>"; };
+		C11D09B17061EE66ED81CBC6 /* VideoFileValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoFileValidator.swift; sourceTree = "<group>"; };
+		CB6DDD2F2C0B77517B37A5AA /* VideoFileValidatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoFileValidatorTests.swift; sourceTree = "<group>"; };
+		D7F478F13B74E2AC9C62F8A5 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
+		DEF45366BAD6487E21EEE4A1 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
+		E0FB0E3606A6BFDA1F9C17B3 /* WallpaperWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallpaperWindowController.swift; sourceTree = "<group>"; };
+		F8F4164F4705E34B48F6E7C4 /* VideoWallpaper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VideoWallpaper.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		280586DCBE48A9E561B3DCBE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B45057CE694749E56E2442C0 /* Cocoa.framework in Frameworks */,
+				48B598228C94B5392D333FA9 /* AVFoundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		48C4CD4CAFB1BFD470FF3C96 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				D7F478F13B74E2AC9C62F8A5 /* AVFoundation.framework */,
+				DEF45366BAD6487E21EEE4A1 /* Cocoa.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		52F28E30048A243F8D0AF657 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F8F4164F4705E34B48F6E7C4 /* VideoWallpaper.app */,
+				5CA9572D6BA4139CA447AF3F /* VideoWallpaperTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		6F9876A984083F0EF477484C /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				976CD0DEE1559FD6D75AC1EE /* VideoWallpaperTests */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		795DA9E71937BC5903CFBEDD /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				0ECF176FDB5E802560F3E884 /* AppDelegate.swift */,
+				9D02C454C100A99678B86DCC /* Info.plist */,
+				A4EC1249156CE1ADAA638E74 /* StatusMenuController.swift */,
+				C11D09B17061EE66ED81CBC6 /* VideoFileValidator.swift */,
+				9D78977C7889D2A5D6B3D48C /* VideoWallpaper.entitlements */,
+				E0FB0E3606A6BFDA1F9C17B3 /* WallpaperWindowController.swift */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		976CD0DEE1559FD6D75AC1EE /* VideoWallpaperTests */ = {
+			isa = PBXGroup;
+			children = (
+				CB6DDD2F2C0B77517B37A5AA /* VideoFileValidatorTests.swift */,
+			);
+			path = VideoWallpaperTests;
+			sourceTree = "<group>";
+		};
+		AB2B5E6E375FDB376319A13C = {
+			isa = PBXGroup;
+			children = (
+				795DA9E71937BC5903CFBEDD /* Sources */,
+				6F9876A984083F0EF477484C /* Tests */,
+				48C4CD4CAFB1BFD470FF3C96 /* Frameworks */,
+				52F28E30048A243F8D0AF657 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		353786AC3E332CACC60A5058 /* VideoWallpaperTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C25DF2E468B168E53ED16356 /* Build configuration list for PBXNativeTarget "VideoWallpaperTests" */;
+			buildPhases = (
+				06CA0531290F024913F3917B /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				136C969355F3D76AAD641CBD /* PBXTargetDependency */,
+			);
+			name = VideoWallpaperTests;
+			packageProductDependencies = (
+			);
+			productName = VideoWallpaperTests;
+			productReference = 5CA9572D6BA4139CA447AF3F /* VideoWallpaperTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		BEBB6BC5787298C3EE94039E /* VideoWallpaper */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 26C8A08DFD812B2A644DD50F /* Build configuration list for PBXNativeTarget "VideoWallpaper" */;
+			buildPhases = (
+				E6B02586BBF19AB148F4AC89 /* Sources */,
+				280586DCBE48A9E561B3DCBE /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = VideoWallpaper;
+			packageProductDependencies = (
+			);
+			productName = VideoWallpaper;
+			productReference = F8F4164F4705E34B48F6E7C4 /* VideoWallpaper.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		BA1FB06738324F8F3A856466 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 2630;
+				TargetAttributes = {
+					353786AC3E332CACC60A5058 = {
+						ProvisioningStyle = Manual;
+					};
+					BEBB6BC5787298C3EE94039E = {
+						ProvisioningStyle = Manual;
+					};
+				};
+			};
+			buildConfigurationList = BC96DB8E30424A783FD540C8 /* Build configuration list for PBXProject "VideoWallpaper" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = AB2B5E6E375FDB376319A13C;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 52F28E30048A243F8D0AF657 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				BEBB6BC5787298C3EE94039E /* VideoWallpaper */,
+				353786AC3E332CACC60A5058 /* VideoWallpaperTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		06CA0531290F024913F3917B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3DFDEA6BE7D42CFBE8283BAE /* VideoFileValidatorTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E6B02586BBF19AB148F4AC89 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C153620C536E4D19EEBEF9D6 /* AppDelegate.swift in Sources */,
+				91DDBD55080BB2726E2F96EE /* StatusMenuController.swift in Sources */,
+				8BA96F07BF0A15F80872085D /* VideoFileValidator.swift in Sources */,
+				845BC49E2C1E7F7B6A4BBA4B /* WallpaperWindowController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		136C969355F3D76AAD641CBD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BEBB6BC5787298C3EE94039E /* VideoWallpaper */;
+			targetProxy = 8CE2AA32F508A738B80C22E6 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		02295DFAFB69E3C7EC2C1E68 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.local.VideoWallpaperTests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/VideoWallpaper.app/Contents/MacOS/VideoWallpaper";
+			};
+			name = Debug;
+		};
+		1D5AF31A9EFBAF9E0021DBE3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.local.VideoWallpaperTests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/VideoWallpaper.app/Contents/MacOS/VideoWallpaper";
+			};
+			name = Release;
+		};
+		2DA0749FE6BBFB5299FFED4A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/VideoWallpaper.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = Sources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.local.VideoWallpaper;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		7D7911E1AA9439E042BCC552 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_HARDENED_RUNTIME = NO;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		940F4F25BAD3847BBD88D75D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_HARDENED_RUNTIME = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		F944710377E7F04793FD751C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/VideoWallpaper.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = Sources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.local.VideoWallpaper;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		26C8A08DFD812B2A644DD50F /* Build configuration list for PBXNativeTarget "VideoWallpaper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2DA0749FE6BBFB5299FFED4A /* Debug */,
+				F944710377E7F04793FD751C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		BC96DB8E30424A783FD540C8 /* Build configuration list for PBXProject "VideoWallpaper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				940F4F25BAD3847BBD88D75D /* Debug */,
+				7D7911E1AA9439E042BCC552 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C25DF2E468B168E53ED16356 /* Build configuration list for PBXNativeTarget "VideoWallpaperTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				02295DFAFB69E3C7EC2C1E68 /* Debug */,
+				1D5AF31A9EFBAF9E0021DBE3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = BA1FB06738324F8F3A856466 /* Project object */;
+}

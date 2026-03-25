@@ -1,0 +1,7 @@
+docs/superpowers/
+build/
+*.xcuserstate
+*.xcuserdatad
+DerivedData/
+default.profraw
+*.profraw

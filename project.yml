@@ -1,0 +1,46 @@
+name: VideoWallpaper
+options:
+  bundleIdPrefix: com.local
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "26.3"
+  createIntermediateGroups: true
+settings:
+  SWIFT_VERSION: "6.0"
+  MACOSX_DEPLOYMENT_TARGET: "14.0"
+  CODE_SIGN_IDENTITY: "-"
+  CODE_SIGN_STYLE: Manual
+  ENABLE_HARDENED_RUNTIME: NO
+targets:
+  VideoWallpaper:
+    type: application
+    platform: macOS
+    sources:
+      - Sources
+    info:
+      path: Sources/Info.plist
+      properties:
+        LSUIElement: true
+        NSHighResolutionCapable: true
+        NSPrincipalClass: NSApplication
+        NSMainNibFile: ""
+    entitlements:
+      path: Sources/VideoWallpaper.entitlements
+    settings:
+      INFOPLIST_FILE: Sources/Info.plist
+      CODE_SIGN_ENTITLEMENTS: Sources/VideoWallpaper.entitlements
+      PRODUCT_BUNDLE_IDENTIFIER: com.local.VideoWallpaper
+    dependencies:
+      - sdk: Cocoa.framework
+      - sdk: AVFoundation.framework
+  VideoWallpaperTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - Tests/VideoWallpaperTests
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.local.VideoWallpaperTests
+      MACOSX_DEPLOYMENT_TARGET: "14.0"
+      GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: VideoWallpaper
