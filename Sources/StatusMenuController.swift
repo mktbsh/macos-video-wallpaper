@@ -6,6 +6,7 @@ import UniformTypeIdentifiers
 final class StatusMenuController {
 
     var onVideoURLChanged: ((URL) -> Void)?
+    var onScreenTargetChanged: (() -> Void)?
 
     var currentVideoName: String? {
         didSet { buildMenu() }
@@ -50,6 +51,23 @@ final class StatusMenuController {
         selectItem.target = self
         menu.addItem(selectItem)
 
+        let screenMenu = NSMenu()
+        let currentTarget = ScreenTarget.saved
+        for target in ScreenTarget.allCases {
+            let item = NSMenuItem(
+                title: target.label,
+                action: #selector(selectScreenTarget(_:)),
+                keyEquivalent: ""
+            )
+            item.target = self
+            item.representedObject = target.rawValue
+            item.state = target == currentTarget ? .on : .off
+            screenMenu.addItem(item)
+        }
+        let screenItem = NSMenuItem(title: "対象画面", action: nil, keyEquivalent: "")
+        screenItem.submenu = screenMenu
+        menu.addItem(screenItem)
+
         menu.addItem(.separator())
 
         let loginItem = NSMenuItem(
@@ -88,6 +106,14 @@ final class StatusMenuController {
         VideoFileValidator.saveBookmark(for: url)
         currentVideoName = url.lastPathComponent
         onVideoURLChanged?(url)
+    }
+
+    @objc private func selectScreenTarget(_ sender: NSMenuItem) {
+        guard let rawValue = sender.representedObject as? String,
+              let target = ScreenTarget(rawValue: rawValue) else { return }
+        target.save()
+        onScreenTargetChanged?()
+        buildMenu()
     }
 
     @objc private func toggleLoginItem() {
