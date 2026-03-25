@@ -40,6 +40,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.currentVideoName = VideoFileValidator
             .resolveBookmarkedURL()
             .map { $0.lastPathComponent }
+        menu.onScreenTargetChanged = { [weak self] in self?.setupWallpaperWindows() }
         statusMenuController = menu
 
         setupWallpaperWindows()
@@ -52,7 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         windowControllers.removeAll()
 
         let savedURL = VideoFileValidator.resolveBookmarkedURL()
-        for screen in NSScreen.screens {
+        for screen in ScreenTarget.saved.filter(NSScreen.screens) {
             windowControllers.append(WallpaperWindowController(screen: screen, videoURL: savedURL))
         }
     }
