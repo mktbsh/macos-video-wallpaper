@@ -7,6 +7,7 @@ final class StatusMenuController {
 
     var onVideoURLChanged: ((URL) -> Void)?
     var onScreenTargetChanged: (() -> Void)?
+    var onDimLevelChanged: ((CGFloat) -> Void)?
 
     var currentVideoName: String? {
         didSet { buildMenu() }
@@ -68,6 +69,23 @@ final class StatusMenuController {
         screenItem.submenu = screenMenu
         menu.addItem(screenItem)
 
+        let dimMenu = NSMenu()
+        let currentDim = DimLevel.saved
+        for level in DimLevel.allCases {
+            let item = NSMenuItem(
+                title: level.label,
+                action: #selector(selectDimLevel(_:)),
+                keyEquivalent: ""
+            )
+            item.target = self
+            item.representedObject = level.rawValue
+            item.state = level == currentDim ? .on : .off
+            dimMenu.addItem(item)
+        }
+        let dimItem = NSMenuItem(title: "明るさ調整", action: nil, keyEquivalent: "")
+        dimItem.submenu = dimMenu
+        menu.addItem(dimItem)
+
         menu.addItem(.separator())
 
         let loginItem = NSMenuItem(
@@ -113,6 +131,14 @@ final class StatusMenuController {
               let target = ScreenTarget(rawValue: rawValue) else { return }
         target.save()
         onScreenTargetChanged?()
+        buildMenu()
+    }
+
+    @objc private func selectDimLevel(_ sender: NSMenuItem) {
+        guard let rawValue = sender.representedObject as? String,
+              let level = DimLevel(rawValue: rawValue) else { return }
+        level.save()
+        onDimLevelChanged?(level.opacity)
         buildMenu()
     }
 

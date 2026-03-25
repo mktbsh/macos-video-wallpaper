@@ -2,7 +2,7 @@ import Testing
 import Foundation
 @testable import VideoWallpaper
 
-@Suite struct ScreenTargetTests {
+@Suite(.serialized) struct ScreenTargetTests {
 
     // MARK: - rawValue
 
