@@ -65,4 +65,22 @@ import Foundation
         // Bookmark key should now be set
         #expect(UserDefaults.standard.data(forKey: "videoBookmark") != nil)
     }
+
+    // MARK: - clearBookmark()
+
+    @Test func clearBookmark_removes_stored_bookmark() {
+        UserDefaults.standard.set(Data([0x01]), forKey: "videoBookmark")
+        defer { UserDefaults.standard.removeObject(forKey: "videoBookmark") }
+
+        VideoFileValidator.clearBookmark()
+
+        #expect(UserDefaults.standard.data(forKey: "videoBookmark") == nil)
+    }
+
+    @Test func clearBookmark_is_noop_when_no_bookmark() {
+        UserDefaults.standard.removeObject(forKey: "videoBookmark")
+        // Should not crash
+        VideoFileValidator.clearBookmark()
+        #expect(UserDefaults.standard.data(forKey: "videoBookmark") == nil)
+    }
 }
