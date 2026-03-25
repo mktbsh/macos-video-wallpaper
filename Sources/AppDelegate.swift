@@ -83,12 +83,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let controller = WallpaperWindowController(screen: screen, videoURL: savedURL)
             controller.onVideoDropped = { [weak self] url in
                 // applyVideo() で全コントローラに新しい動画を適用する（マルチモニタ対応）。
-                // ドロップされたコントローラ自身は DropDestinationView 内で load() 済みだが
-                // 再度 load() しても問題ない（冪等）。
+                // ドロップされたコントローラ自身は DropDestinationView 内で load() 済みだが、
+                // applyVideo() でもう一度 load() される（二重呼び出し）。
+                // load() は同一 URL に対して安全だが厳密には冪等ではないため、
+                // ドロップ対象画面のみ一時的に再生ループが再生成される。
                 // applyVideo() 内の applyBatteryPolicy() が省電力ポリシーも再適用する。
                 self?.statusMenuController?.currentVideoName = url.lastPathComponent
                 self?.applyVideo(url: url)
             }
+            // TODO: Task 4 完了後に menu.onVideoCleared を登録する
+            // menu.onVideoCleared = { [weak self] in self?.windowControllers.forEach { $0.clearVideo() } }
             windowControllers.append(controller)
         }
     }
