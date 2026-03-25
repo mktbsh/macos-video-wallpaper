@@ -10,10 +10,6 @@ A macOS app that plays a video file as your desktop wallpaper — looping seamle
 
 ---
 
-<video src="docs/demo.mp4" autoplay loop muted playsinline></video>
-
----
-
 ## Overview
 
 - Plays MP4, MOV, or M4V files as a looping desktop wallpaper
@@ -24,6 +20,10 @@ A macOS app that plays a video file as your desktop wallpaper — looping seamle
 - Optional login item to start automatically at login
 
 **Requirements:** macOS 14.0 or later
+
+---
+
+https://github.com/user-attachments/assets/d0ef9f03-bf2f-45d6-b94b-89fbc5c1f073
 
 ---
 

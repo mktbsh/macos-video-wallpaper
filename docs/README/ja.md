@@ -10,10 +10,6 @@
 
 ---
 
-<video src="../../docs/demo.mp4" autoplay loop muted playsinline></video>
-
----
-
 ## 概要
 
 - MP4・MOV・M4V ファイルをループ再生してデスクトップ壁紙として表示
@@ -24,6 +20,10 @@
 - ログイン時の自動起動に対応
 
 **動作環境:** macOS 14.0 以降
+
+---
+
+https://github.com/user-attachments/assets/d0ef9f03-bf2f-45d6-b94b-89fbc5c1f073
 
 ---
 
