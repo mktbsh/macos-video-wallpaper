@@ -67,6 +67,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.onVideoGravityChanged = { [weak self] gravity in
             self?.windowControllers.forEach { $0.applyVideoGravity(gravity) }
         }
+        menu.onVideoCleared = { [weak self] in
+            self?.windowControllers.forEach { $0.clearVideo() }
+        }
         statusMenuController = menu
 
         setupWallpaperWindows()
@@ -91,8 +94,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.statusMenuController?.currentVideoName = url.lastPathComponent
                 self?.applyVideo(url: url)
             }
-            // TODO: Task 4 完了後に menu.onVideoCleared を登録する
-            // menu.onVideoCleared = { [weak self] in self?.windowControllers.forEach { $0.clearVideo() } }
             windowControllers.append(controller)
         }
     }
