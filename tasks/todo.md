@@ -72,47 +72,6 @@
 
 ---
 
-## Feature: 動画のフィット方法切り替え
-
-外部モニターのアスペクト比の違いや縦動画に対応するため、動画の表示方法を選べるようにする。
-
-### 要件
-
-- 選択肢: AspectFill（デフォルト）/ AspectFit / Stretch
-- 設定は UserDefaults に保存し、再起動後も維持する
-- 変更はリアルタイムで全ウィンドウに反映する
-
-### 技術メモ
-
-- `AVPlayerLayer.videoGravity` を切り替える
-  - `.resizeAspectFill` — 画面を埋める・クロップあり（現状）
-  - `.resizeAspect` — 全体表示・黒帯あり（縦動画や異アスペクト比モニターで有効）
-  - `.resize` — アスペクト比無視で引き伸ばし
-- `UserDefaults` のキー: `"videoGravity"`（値: `"fill"` / `"fit"` / `"stretch"`）
-- `WallpaperWindowController` に `applyVideoGravity(_:)` メソッドを追加
-- `DimLevel` / `ScreenTarget` と同じパターンで `VideoGravity` enum を新規作成
-
-### タスクリスト
-
-- [ ] `VideoGravity` enum を `Sources/VideoGravity.swift` に新規作成する
-  ```swift
-  enum VideoGravity: String, CaseIterable {
-      case fill    = "fill"
-      case fit     = "fit"
-      case stretch = "stretch"
-
-      var label: String { ... }  // 塗りつぶし / 全体表示 / 引き伸ばし
-      var avGravity: AVLayerVideoGravity { ... }
-      static var saved: VideoGravity { ... }
-      func save() { ... }
-  }
-  ```
-- [ ] `WallpaperWindowController` に `applyVideoGravity(_:)` を追加し、init でも適用する
-- [ ] `StatusMenuController` に「表示方法」サブメニューを追加する
-- [ ] `AppDelegate` に `onVideoGravityChanged` コールバックを追加して全ウィンドウに伝播する
-
----
-
 ## Backlog（検討中）
 
 - 動画のボリューム調整（ミュート解除オプション）
