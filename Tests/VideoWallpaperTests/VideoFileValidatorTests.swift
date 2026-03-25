@@ -30,22 +30,39 @@ import Foundation
         #expect(!VideoFileValidator.isSupported(extension: ""))
     }
 
-    // MARK: - resolveVideoURL(fromPath:)
+    // MARK: - resolveBookmarkedURL()
 
-    @Test func returns_nil_when_path_is_nil() {
-        #expect(VideoFileValidator.resolveVideoURL(fromPath: nil) == nil)
+    @Test func returns_nil_when_no_bookmark_stored() {
+        UserDefaults.standard.removeObject(forKey: "videoBookmark")
+        UserDefaults.standard.removeObject(forKey: "videoFilePath")
+        #expect(VideoFileValidator.resolveBookmarkedURL() == nil)
     }
 
-    @Test func returns_nil_when_file_does_not_exist() {
-        #expect(VideoFileValidator.resolveVideoURL(fromPath: "/nonexistent/path/video.mp4") == nil)
+    @Test func returns_nil_when_legacy_path_does_not_exist() {
+        UserDefaults.standard.removeObject(forKey: "videoBookmark")
+        UserDefaults.standard.set("/nonexistent/path/video.mp4", forKey: "videoFilePath")
+        defer { UserDefaults.standard.removeObject(forKey: "videoFilePath") }
+        #expect(VideoFileValidator.resolveBookmarkedURL() == nil)
     }
 
-    @Test func returns_url_when_file_exists() throws {
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("test_\(UUID().uuidString).mp4")
+    @Test func migrates_legacy_path_to_bookmark_when_file_exists() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("test_\(UUID().uuidString).mp4")
         FileManager.default.createFile(atPath: url.path, contents: Data())
         defer { try? FileManager.default.removeItem(at: url) }
 
-        let result = VideoFileValidator.resolveVideoURL(fromPath: url.path)
-        #expect(result == url)
+        UserDefaults.standard.removeObject(forKey: "videoBookmark")
+        UserDefaults.standard.set(url.path, forKey: "videoFilePath")
+        defer {
+            UserDefaults.standard.removeObject(forKey: "videoBookmark")
+            UserDefaults.standard.removeObject(forKey: "videoFilePath")
+        }
+
+        let result = VideoFileValidator.resolveBookmarkedURL()
+        #expect(result != nil)
+        // Legacy key should be removed after migration
+        #expect(UserDefaults.standard.string(forKey: "videoFilePath") == nil)
+        // Bookmark key should now be set
+        #expect(UserDefaults.standard.data(forKey: "videoBookmark") != nil)
     }
 }
