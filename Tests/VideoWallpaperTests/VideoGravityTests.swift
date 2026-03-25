@@ -31,15 +31,15 @@ import AVFoundation
     // MARK: - label
 
     @Test func fill_label_is_cover() {
-        #expect(VideoGravity.fill.label == "cover")
+        #expect(VideoGravity.fill.label == "Cover")
     }
 
     @Test func fit_label_is_contain() {
-        #expect(VideoGravity.fit.label == "contain")
+        #expect(VideoGravity.fit.label == "Contain")
     }
 
     @Test func stretch_label_is_fill() {
-        #expect(VideoGravity.stretch.label == "fill")
+        #expect(VideoGravity.stretch.label == "Fill")
     }
 
     // MARK: - avGravity
