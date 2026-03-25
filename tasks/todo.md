@@ -8,48 +8,6 @@
 
 ---
 
-## Feature: 動画サムネイルをシステム壁紙に設定
-
-動画選択時に、その動画の代表フレームをシステム壁紙（静止画）として設定する。
-アプリ未起動中・ロック画面でも動画の雰囲気に合った壁紙が表示される。
-
-### 要件
-
-- 動画選択・変更時に自動で実行する（ユーザー操作不要）
-- 使用フレーム: **動画尺の 10% 位置**（フェードイン・黒フレームを自然に回避）
-- 全ディスプレイに同じサムネイルを設定する
-- サムネイル画像は `~/Library/Caches/VideoWallpaper/thumbnail.jpg` に保存する
-
-### 技術メモ
-
-- フレーム抽出: `AVAssetImageGenerator`
-  ```swift
-  let asset = AVAsset(url: videoURL)
-  let generator = AVAssetImageGenerator(asset: asset)
-  generator.appliesPreferredTrackTransform = true  // 回転補正
-
-  // 尺の 10% 位置を指定
-  let duration = try await asset.load(.duration)
-  let offset = CMTimeMultiplyByFloat64(duration, multiplier: 0.1)
-  let (cgImage, _) = try await generator.image(at: offset)
-  ```
-- 画像保存: `CGImageDestination`（JPEG、quality 0.85 程度）
-- システム壁紙設定: `NSWorkspace.shared.setDesktopImageURL(_:for:options:)`
-  - `NSScreen.screens` をループして全画面に適用
-- キャッシュディレクトリ作成: `FileManager.default.createDirectory(at:...)`
-
-### タスクリスト
-
-- [ ] `ThumbnailService` を `Sources/ThumbnailService.swift` に新規作成する
-- [ ] `AVAssetImageGenerator` で動画尺の 10% フレームを抽出するロジックを実装する
-- [ ] 抽出した `CGImage` を JPEG として `~/Library/Caches/VideoWallpaper/thumbnail.jpg` に保存するロジックを実装する
-- [ ] `NSWorkspace.shared.setDesktopImageURL` で `NSScreen.screens` 全画面に適用するロジックを実装する
-- [ ] `AppDelegate.applyVideo(url:)` から `ThumbnailService.applyThumbnail(for:)` を `Task { }` で非同期呼び出しする
-- [ ] `applicationDidFinishLaunching` で保存済み動画 URL がある場合も同様に適用する（再起動時の整合性）
-- [ ] `ThumbnailServiceTests` を追加する（モック動画 URL での挙動確認）
-
----
-
 ## Feature: ループ範囲の指定
 
 動画の一部区間だけをループ再生する（イントロ・アウトロのカット）。
