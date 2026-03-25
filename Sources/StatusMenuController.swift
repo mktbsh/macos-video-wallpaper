@@ -99,6 +99,13 @@ final class StatusMenuController {
 
         menu.addItem(.separator())
 
+        let versionItem = NSMenuItem()
+        versionItem.title = "Version \(BuildInfo.version)"
+        versionItem.isEnabled = false
+        menu.addItem(versionItem)
+
+        menu.addItem(.separator())
+
         let quitItem = NSMenuItem(
             title: "終了",
             action: #selector(quitApp),

@@ -1,5 +1,6 @@
 docs/superpowers/
 build/
+Sources/BuildInfo.swift
 *.xcuserstate
 *.xcuserdatad
 DerivedData/
