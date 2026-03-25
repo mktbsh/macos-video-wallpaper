@@ -33,6 +33,8 @@ final class WallpaperWindowController {
         window.hasShadow = false
         window.backgroundColor = .black
         window.ignoresMouseEvents = false  // required for drag-and-drop
+        // Prevent AppKit from releasing the window on close (ARC manages lifetime)
+        window.isReleasedWhenClosed = false
 
         player = AVQueuePlayer()
         player.isMuted = true
