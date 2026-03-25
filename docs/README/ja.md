@@ -25,6 +25,18 @@
 
 ## 利用者向け
 
+### ダウンロード & インストール
+
+1. [Releases](https://github.com/mktbsh/macos-video-wallpaper/releases) ページから最新の `VideoWallpaper-vX.X.X.zip` をダウンロードします。
+2. zip を展開し、`VideoWallpaper.app` を `/Applications` に移動します。
+3. 隔離属性を削除します（Apple Developer ID で署名されていないため必要）：
+   ```bash
+   xattr -cr /Applications/VideoWallpaper.app
+   ```
+4. `/Applications` からアプリを起動します。
+
+> **手順 3 が必要な理由:** Apple Developer ID 署名のないアプリはmacOS の Gatekeeper によってブロックされます。`xattr -cr` コマンドで隔離フラグを削除することで起動できるようになります。ソースコードを自分で確認できるオープンソースアプリでは安全な操作です。
+
 ### 使い方
 
 1. アプリを起動すると、メニューバーに `▶⬜` アイコンが表示されます。
@@ -68,6 +80,29 @@ xcodebuild -scheme VideoWallpaper -configuration Release build
 ```bash
 xcodebuild test -scheme VideoWallpaper -destination 'platform=macOS'
 ```
+
+### 動画の最適化
+
+最高のパフォーマンスと画質のために、H.265（HEVC）エンコード・1080p/30fps・SDR の動画を推奨します。
+変換スクリプトを用意しています：
+
+```bash
+# ffmpeg のインストール（初回のみ）
+brew install ffmpeg
+
+# 動画を最適な形式に変換
+./scripts/optimize-video.sh ~/Downloads/your-video.mov
+
+# 出力先を明示的に指定する場合
+./scripts/optimize-video.sh ~/Downloads/your-video.mov ~/Desktop/wallpaper.mp4
+```
+
+スクリプトの処理内容：
+- 1920×1080 にダウンスケール（アップスケールなし。縦向き・非 16:9 動画はレターボックス）
+- フレームレートを 30fps に制限
+- HDR → SDR（BT.709）のトーンマッピング（SDR ディスプレイで色が飛ぶのを防止）
+- 音声トラックを除去（アプリはデフォルトでミュート）
+- `faststart` フラグを付与して即時再生に対応
 
 ### 備考
 
