@@ -80,12 +80,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let savedURL = VideoFileValidator.resolveBookmarkedURL()
         for screen in ScreenTarget.saved.filter(NSScreen.screens) {
-            windowControllers.append(WallpaperWindowController(screen: screen, videoURL: savedURL))
+            let controller = WallpaperWindowController(screen: screen, videoURL: savedURL)
+            controller.onVideoDropped = { [weak self] url in
+                // applyVideo() で全コントローラに新しい動画を適用する（マルチモニタ対応）。
+                // ドロップされたコントローラ自身は DropDestinationView 内で load() 済みだが
+                // 再度 load() しても問題ない（冪等）。
+                // applyVideo() 内の applyBatteryPolicy() が省電力ポリシーも再適用する。
+                self?.statusMenuController?.currentVideoName = url.lastPathComponent
+                self?.applyVideo(url: url)
+            }
+            windowControllers.append(controller)
         }
     }
 
     private func applyVideo(url: URL) {
         windowControllers.forEach { $0.load(videoURL: url) }
+        applyBatteryPolicy()  // 省電力一時停止中は orderFront しない
     }
 
     @objc private func screensDidChange() {
