@@ -11,6 +11,7 @@ build:
 	xcodebuild -scheme $(SCHEME) \
 	           -configuration Release \
 	           -derivedDataPath $(DERIVED_DATA) \
+	           -quiet \
 	           clean build
 
 install: build
