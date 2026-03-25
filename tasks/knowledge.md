@@ -66,3 +66,29 @@ script: |
 **対策:** `CGDisplayIsBuiltin(id) != 0` / `== 0` で比較する。
 
 ---
+
+## 設定値 enum パターン
+
+`ScreenTarget` / `DimLevel` / `PowerSavingMode` / `VideoGravity` はすべて同じ構造。新しい設定を追加するときはこのパターンに従う。
+
+```swift
+enum Xxx: String, CaseIterable {
+    case foo = "foo"
+
+    var label: String { ... }          // メニュー表示テキスト
+    static var saved: Xxx { ... }      // UserDefaults から復元
+    func save() { ... }                // UserDefaults に保存
+}
+```
+
+---
+
+## macOS 固有の注意点
+
+- `NSWindow` は必ず `isReleasedWhenClosed = false` を設定する（デフォルト true は ARC と二重解放を起こす）
+- `CGDisplayIsBuiltin()` の戻り値は `boolean_t` (Int32)。`!= 0` / `== 0` で比較する
+- バッテリー状態: `IOKit.ps` の `IOPSCopyPowerSourcesInfo` + `kIOPMBatteryPowerKey`
+- 電源変化通知: `NSNotification.Name(rawValue: kIOPSNotifyPowerSource)`
+- 壁紙非表示: `window.orderOut(nil)` / 再表示: `window.orderFront(nil)`
+
+---
