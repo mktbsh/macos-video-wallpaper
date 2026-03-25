@@ -41,6 +41,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .resolveBookmarkedURL()
             .map { $0.lastPathComponent }
         menu.onScreenTargetChanged = { [weak self] in self?.setupWallpaperWindows() }
+        menu.onDimLevelChanged = { [weak self] opacity in
+            self?.windowControllers.forEach { $0.applyDimLevel(opacity) }
+        }
         statusMenuController = menu
 
         setupWallpaperWindows()

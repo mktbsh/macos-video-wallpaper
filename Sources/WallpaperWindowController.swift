@@ -7,6 +7,7 @@ final class WallpaperWindowController {
     private let window: NSWindow
     private let player: AVQueuePlayer
     private let playerLayer: AVPlayerLayer
+    private let dimLayer: CALayer
     private var playerLooper: AVPlayerLooper?
     private var occlusionObserver: NSObjectProtocol?
 
@@ -45,6 +46,12 @@ final class WallpaperWindowController {
         playerLayer.frame = dropView.bounds
         playerLayer.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
         dropView.layer?.addSublayer(playerLayer)
+        dimLayer = CALayer()
+        dimLayer.frame = dropView.bounds
+        dimLayer.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
+        dimLayer.backgroundColor = NSColor.black.withAlphaComponent(0).cgColor
+        dropView.layer?.addSublayer(dimLayer)
+        applyDimLevel(DimLevel.saved.opacity)
         dropView.onVideoDropped = { [weak self] url in
             VideoFileValidator.saveBookmark(for: url)
             self?.load(videoURL: url)
@@ -71,6 +78,10 @@ final class WallpaperWindowController {
                 }
             }
         }
+    }
+
+    func applyDimLevel(_ opacity: CGFloat) {
+        dimLayer.backgroundColor = NSColor.black.withAlphaComponent(opacity).cgColor
     }
 
     func load(videoURL url: URL) {
