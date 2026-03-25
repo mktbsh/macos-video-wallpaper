@@ -10,6 +10,7 @@ final class WallpaperWindowController {
     private let dimLayer: CALayer
     private var playerLooper: AVPlayerLooper?
     private var currentVideoURL: URL?
+    private var isScopedAccessActive = false
     private var occlusionObserver: NSObjectProtocol?
 
     var onVideoDropped: ((URL) -> Void)?
@@ -95,7 +96,10 @@ final class WallpaperWindowController {
 
     func load(videoURL url: URL) {
         playerLooper = nil
-        currentVideoURL?.stopAccessingSecurityScopedResource()
+        if isScopedAccessActive {
+            currentVideoURL?.stopAccessingSecurityScopedResource()
+        }
+        isScopedAccessActive = url.startAccessingSecurityScopedResource()
         currentVideoURL = url
         playerLooper = AVPlayerLooper(player: player, templateItem: AVPlayerItem(url: url))
         player.play()
@@ -107,7 +111,10 @@ final class WallpaperWindowController {
     func clearVideo() {
         playerLooper = nil
         player.pause()
-        currentVideoURL?.stopAccessingSecurityScopedResource()
+        if isScopedAccessActive {
+            currentVideoURL?.stopAccessingSecurityScopedResource()
+            isScopedAccessActive = false
+        }
         currentVideoURL = nil
         window.orderOut(nil)
     }
@@ -131,7 +138,10 @@ final class WallpaperWindowController {
         }
         playerLooper = nil
         player.pause()
-        currentVideoURL?.stopAccessingSecurityScopedResource()
+        if isScopedAccessActive {
+            currentVideoURL?.stopAccessingSecurityScopedResource()
+            isScopedAccessActive = false
+        }
         currentVideoURL = nil
         window.close()
     }

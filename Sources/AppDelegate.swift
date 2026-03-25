@@ -54,9 +54,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.onVideoURLChanged = { [weak self] url in
             self?.applyVideo(url: url)
         }
-        menu.currentVideoName = VideoFileValidator
-            .resolveBookmarkedURL()
-            .map { $0.lastPathComponent }
         menu.onScreenTargetChanged = { [weak self] in self?.setupWallpaperWindows() }
         menu.onDimLevelChanged = { [weak self] opacity in
             self?.windowControllers.forEach { $0.applyDimLevel(opacity) }
@@ -82,6 +79,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         windowControllers.removeAll()
 
         let savedURL = VideoFileValidator.resolveBookmarkedURL()
+        statusMenuController?.currentVideoName = savedURL?.lastPathComponent
         for screen in ScreenTarget.saved.filter(NSScreen.screens) {
             let controller = WallpaperWindowController(screen: screen, videoURL: savedURL)
             controller.onVideoDropped = { [weak self] url in
