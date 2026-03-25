@@ -25,6 +25,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return type == kIOPMBatteryPowerKey
     }
 
+    func applicationWillTerminate(_ notification: Notification) {
+        windowControllers.forEach { $0.invalidate() }
+        windowControllers.removeAll()
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         NotificationCenter.default.addObserver(
             self,
