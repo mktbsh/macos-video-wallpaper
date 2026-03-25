@@ -18,6 +18,9 @@ jobs:
       - name: Install xcodegen
         run: brew install xcodegen
 
+      - name: Create BuildInfo stub
+        run: printf 'enum BuildInfo { static let version = "%s" }\n' "${{ github.ref_name }}" > Sources/BuildInfo.swift
+
       - name: Generate Xcode project
         run: xcodegen generate
 
