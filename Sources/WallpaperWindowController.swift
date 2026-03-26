@@ -1,5 +1,5 @@
-import Cocoa
 import AVFoundation
+import Cocoa
 
 @MainActor
 final class WallpaperWindowController {

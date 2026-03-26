@@ -65,9 +65,14 @@ To start the app automatically at login, enable **"ログイン時に起動"** f
 ```bash
 git clone https://github.com/mktbsh/macos-video-wallpaper.git
 cd macos-video-wallpaper
+swift package plugin --list >/dev/null
+swift package --disable-sandbox lefthook install
 xcodegen generate
 open VideoWallpaper.xcodeproj
 ```
+
+This repository manages Lefthook via Swift Package Manager. `swift package plugin --list` bootstraps the SwiftLint artifact, and the install command syncs the hooks defined in `lefthook.yml` into `.git/hooks`.
+No separate `brew install swiftlint` step is required for local commits.
 
 ### Build
 

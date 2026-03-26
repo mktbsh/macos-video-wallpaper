@@ -14,11 +14,17 @@ jobs:
       - name: Install xcodegen
         run: brew install xcodegen
 
+      - name: Install SwiftLint
+        run: brew install swiftlint
+
       - name: Create BuildInfo stub
         run: printf 'enum BuildInfo { static let version = "dev" }\n' > Sources/BuildInfo.swift
 
       - name: Generate Xcode project
         run: xcodegen generate
+
+      - name: Lint
+        run: swiftlint lint --strict --reporter github-actions-logging
 
       - name: Build
         run: |

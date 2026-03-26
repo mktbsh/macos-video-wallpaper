@@ -24,6 +24,30 @@
 
 ---
 
+## XcodeGen リポジトリで SwiftPM command plugin を使うなら専用 Package.swift を切る
+
+**症状:** `swift package --disable-sandbox lefthook ...` が `Could not find Package.swift` で失敗する。
+**原因:** XcodeGen ベースのアプリは Swift Package の manifest を持たないため、SwiftPM command plugin を解決できない。
+**対策:** ルートに開発ツール専用の `Package.swift` を追加し、ダミー target は `Sources/` の外に置く。`Sources/` 配下に置くと XcodeGen のアプリ target に巻き込まれる。
+
+---
+
+## SwiftLint を SwiftPM plugin で動かすなら .build を lint 対象から外す
+
+**症状:** `swift package plugin swiftlint ...` が `.build/checkouts` 配下の依存パッケージまで lint して失敗する。
+**原因:** SwiftPM plugin 実行時に依存 checkout が `.build` に展開され、SwiftLint の走査対象に含まれる。
+**対策:** `.swiftlint.yml` の `excluded` に `.build` と `.swiftpm` を追加する。hook は `swift package plugin --allow-writing-to-package-directory swiftlint --strict` で呼ぶ。
+
+---
+
+## Lefthook を SwiftPM plugin で起動した hook から nested SwiftPM は呼ばない
+
+**症状:** `swift package --disable-sandbox lefthook run pre-commit` の中でさらに `swift package plugin swiftlint ...` を呼ぶと固まる。
+**原因:** 外側の `swift-package` が `.build.lock` を保持したまま、内側の `swift-package` が同じ lock を取りにいってデッドロックする。
+**対策:** hook からは nested `swift package` を呼ばず、事前に取得した SwiftLint artifact を直接実行する。artifact の bootstrap は `swift package plugin --list >/dev/null` で行う。
+
+---
+
 ## preBuildScript の outputFiles 宣言はしない
 
 **症状:** ビルド日時を生成するスクリプトが初回しか走らず、`BuildInfo.swift` が更新されない。

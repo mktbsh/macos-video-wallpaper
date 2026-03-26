@@ -1,9 +1,9 @@
 import Foundation
 
 enum DimLevel: String, CaseIterable {
-    case none   = "none"
-    case slight = "slight"
-    case dark   = "dark"
+    case none
+    case slight
+    case dark
 
     var label: String {
         switch self {
