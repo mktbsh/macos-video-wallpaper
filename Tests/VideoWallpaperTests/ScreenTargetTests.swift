@@ -31,7 +31,7 @@ import Testing
     // MARK: - label
 
     @Test func all_label_is_correct() {
-        #expect(ScreenTarget.all.label == "すべての画面")
+        #expect(ScreenTarget.all.label == localizedString("screen_target.all"))
     }
 
     // MARK: - saved / save()
@@ -45,5 +45,9 @@ import Testing
         defer { UserDefaults.standard.removeObject(forKey: "screenTarget") }
         ScreenTarget.builtIn.save()
         #expect(ScreenTarget.saved == .builtIn)
+    }
+
+    private func localizedString(_ key: String) -> String {
+        Bundle(for: AppDelegate.self).localizedString(forKey: key, value: nil, table: nil)
     }
 }

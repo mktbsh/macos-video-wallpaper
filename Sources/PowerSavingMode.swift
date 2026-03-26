@@ -7,9 +7,9 @@ enum PowerSavingMode: String, CaseIterable {
 
     var label: String {
         switch self {
-        case .never:   return "しない"
-        case .always:  return "常に"
-        case .battery: return "バッテリー使用時のみ"
+        case .never:   return String(localized: "power_saving_mode.never")
+        case .always:  return String(localized: "power_saving_mode.always")
+        case .battery: return String(localized: "power_saving_mode.battery")
         }
     }
 
