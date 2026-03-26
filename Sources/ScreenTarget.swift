@@ -1,5 +1,5 @@
-import CoreGraphics
 import AppKit
+import CoreGraphics
 
 enum ScreenTarget: String, CaseIterable {
     case all      = "all"

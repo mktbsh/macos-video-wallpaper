@@ -20,6 +20,9 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
+      - name: Lint
+        run: swiftlint lint --reporter github-actions-logging
+
       - name: Build
         run: |
           xcodebuild build \

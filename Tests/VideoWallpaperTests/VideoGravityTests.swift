@@ -1,5 +1,5 @@
-import Testing
 import AVFoundation
+import Testing
 @testable import VideoWallpaper
 
 @Suite(.serialized) struct VideoGravityTests {

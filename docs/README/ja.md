@@ -59,6 +59,7 @@ https://github.com/user-attachments/assets/d0ef9f03-bf2f-45d6-b94b-89fbc5c1f073
 - macOS 14.0 以降
 - Xcode 26.3（ベータ版）— Swift 6
 - [xcodegen](https://github.com/yonaskolb/XcodeGen): `brew install xcodegen`
+- [SwiftLint](https://github.com/realm/SwiftLint): `brew install swiftlint`
 
 ### 環境構築
 

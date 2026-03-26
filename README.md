@@ -59,6 +59,7 @@ To start the app automatically at login, enable **"ログイン時に起動"** f
 - macOS 14.0+
 - Xcode 26.3 (beta) — Swift 6
 - [xcodegen](https://github.com/yonaskolb/XcodeGen): `brew install xcodegen`
+- [SwiftLint](https://github.com/realm/SwiftLint): `brew install swiftlint`
 
 ### Setup
 
