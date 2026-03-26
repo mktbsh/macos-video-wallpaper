@@ -7,9 +7,9 @@ enum DimLevel: String, CaseIterable {
 
     var label: String {
         switch self {
-        case .none:   return "なし"
-        case .slight: return "少し暗く"
-        case .dark:   return "暗く"
+        case .none:   return String(localized: "dim_level.none")
+        case .slight: return String(localized: "dim_level.slight")
+        case .dark:   return String(localized: "dim_level.dark")
         }
     }
 

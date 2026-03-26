@@ -169,8 +169,8 @@ private final class DropDestinationView: NSView {
 
         guard VideoFileValidator.isSupported(extension: url.pathExtension) else {
             let alert = NSAlert()
-            alert.messageText = "サポートされていないファイル形式です"
-            alert.informativeText = "MP4、MOV、M4V 形式の動画ファイルを選択してください。"
+            alert.messageText = String(localized: "alert.unsupported_file.title")
+            alert.informativeText = String(localized: "alert.unsupported_file.message")
             alert.alertStyle = .warning
             alert.runModal()
             return false

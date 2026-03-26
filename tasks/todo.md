@@ -17,6 +17,15 @@
 
 ---
 
+## Feature: UI の多言語対応 (#11)
+
+- [x] `project.yml` / `Info.plist` にローカライズ設定（`en`, `ja`）を追加する
+- [x] `Sources/Localizable.xcstrings` を追加し、メニュー・アラート・enum ラベルを移行する
+- [x] `StatusMenuController` / `WallpaperWindowController` の UI 文字列を `String(localized:)` ベースへ置き換える
+- [x] 既存の文字列依存テストを locale-aware に修正し、ローカライズ smoke test を追加する
+
+---
+
 ## Feature: ループ範囲の指定
 
 動画の一部区間だけをループ再生する（イントロ・アウトロのカット）。

@@ -31,15 +31,15 @@ import Testing
     // MARK: - label
 
     @Test func fill_label_is_cover() {
-        #expect(VideoGravity.fill.label == "Cover")
+        #expect(VideoGravity.fill.label == localizedString("video_gravity.cover"))
     }
 
     @Test func fit_label_is_contain() {
-        #expect(VideoGravity.fit.label == "Contain")
+        #expect(VideoGravity.fit.label == localizedString("video_gravity.contain"))
     }
 
     @Test func stretch_label_is_fill() {
-        #expect(VideoGravity.stretch.label == "Fill")
+        #expect(VideoGravity.stretch.label == localizedString("video_gravity.fill"))
     }
 
     // MARK: - avGravity
@@ -67,5 +67,9 @@ import Testing
         defer { UserDefaults.standard.removeObject(forKey: "videoGravity") }
         VideoGravity.fit.save()
         #expect(VideoGravity.saved == .fit)
+    }
+
+    private func localizedString(_ key: String) -> String {
+        Bundle(for: AppDelegate.self).localizedString(forKey: key, value: nil, table: nil)
     }
 }

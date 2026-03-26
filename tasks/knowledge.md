@@ -107,6 +107,14 @@ enum Xxx: String, CaseIterable {
 
 ---
 
+## ローカライズのテストは locale 専用 bundle を明示的に引く
+
+**症状:** `Bundle.localizations` や現在ロケールの fallback に頼るテストだと、`ja` リソース不足やキー未解決を見逃しやすい。
+**原因:** hosted unit test では `Bundle(for: AppDelegate.self)` が実際の app bundle になるが、`bundle.localizations` の値と `xx.lproj` 実体、fallback 挙動は一致しないことがある。
+**対策:** ローカライズ検証は `Bundle(for: AppDelegate.self)` を起点に `en.lproj` / `ja.lproj` の sub-bundle を明示的に解決し、anchor string を exact match で確認する。UI の label テストは、その locale で bundle が返す文字列と比較する。
+
+---
+
 ## macOS 固有の注意点
 
 - `NSWindow` は必ず `isReleasedWhenClosed = false` を設定する（デフォルト true は ARC と二重解放を起こす）

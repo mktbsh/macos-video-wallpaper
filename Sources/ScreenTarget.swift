@@ -8,9 +8,9 @@ enum ScreenTarget: String, CaseIterable {
 
     var label: String {
         switch self {
-        case .all:      return "すべての画面"
-        case .builtIn:  return "内蔵ディスプレイのみ"
-        case .external: return "外部モニターのみ"
+        case .all:      return String(localized: "screen_target.all")
+        case .builtIn:  return String(localized: "screen_target.builtin")
+        case .external: return String(localized: "screen_target.external")
         }
     }
 
