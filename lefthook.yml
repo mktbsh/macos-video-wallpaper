@@ -2,4 +2,4 @@ pre-commit:
   parallel: true
   commands:
     swiftlint:
-      run: swiftlint lint
+      run: swiftlint lint --strict
