@@ -21,7 +21,7 @@ jobs:
         run: xcodegen generate
 
       - name: Lint
-        run: swiftlint lint --reporter github-actions-logging
+        run: swiftlint lint --strict --reporter github-actions-logging
 
       - name: Build
         run: |
