@@ -1,5 +1,7 @@
 excluded:
   - Sources/BuildInfo.swift  # 自動生成ファイル
+  - .build
+  - .swiftpm
 
 opt_in_rules:
   - array_init

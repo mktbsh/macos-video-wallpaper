@@ -1,9 +1,9 @@
 import Foundation
 
 enum PowerSavingMode: String, CaseIterable {
-    case never   = "never"
-    case always  = "always"
-    case battery = "battery"
+    case never
+    case always
+    case battery
 
     var label: String {
         switch self {

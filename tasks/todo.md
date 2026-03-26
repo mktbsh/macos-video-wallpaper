@@ -12,6 +12,8 @@
 
 - [x] Lefthook の SwiftPM 用 `Package.swift` を追加する
 - [x] README 英日へ `swift package --disable-sandbox lefthook install` を追記する
+- [x] SwiftLint も SwiftPM plugin 経由で pre-commit から実行できるようにする
+- [x] nested SwiftPM を避け、hook から SwiftLint artifact を直接実行する
 
 ---
 

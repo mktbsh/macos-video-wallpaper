@@ -1,9 +1,9 @@
 import AVFoundation
 
 enum VideoGravity: String, CaseIterable {
-    case fill    = "fill"
-    case fit     = "fit"
-    case stretch = "stretch"
+    case fill
+    case fit
+    case stretch
 
     var label: String {
         switch self {

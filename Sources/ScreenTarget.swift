@@ -15,7 +15,9 @@ enum ScreenTarget: String, CaseIterable {
     }
 
     static var saved: ScreenTarget {
-        ScreenTarget(rawValue: UserDefaults.standard.string(forKey: "screenTarget") ?? "") ?? .all
+        let key = "screenTarget"
+        let savedValue = UserDefaults.standard.string(forKey: key) ?? ""
+        return ScreenTarget(rawValue: savedValue) ?? .all
     }
 
     func save() {
@@ -24,7 +26,9 @@ enum ScreenTarget: String, CaseIterable {
 
     func filter(_ screens: [NSScreen]) -> [NSScreen] {
         screens.filter { screen in
-            guard let id = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID else {
+            guard let id = screen.deviceDescription[
+                NSDeviceDescriptionKey("NSScreenNumber")
+            ] as? CGDirectDisplayID else {
                 return true
             }
             switch self {
