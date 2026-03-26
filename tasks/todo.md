@@ -8,6 +8,13 @@
 
 ---
 
+## Maintenance: PR #20 branch fix
+
+- [x] Lefthook の SwiftPM 用 `Package.swift` を追加する
+- [x] README 英日へ `swift package --disable-sandbox lefthook install` を追記する
+
+---
+
 ## Feature: ループ範囲の指定
 
 動画の一部区間だけをループ再生する（イントロ・アウトロのカット）。

@@ -24,6 +24,14 @@
 
 ---
 
+## XcodeGen リポジトリで SwiftPM command plugin を使うなら専用 Package.swift を切る
+
+**症状:** `swift package --disable-sandbox lefthook ...` が `Could not find Package.swift` で失敗する。
+**原因:** XcodeGen ベースのアプリは Swift Package の manifest を持たないため、SwiftPM command plugin を解決できない。
+**対策:** ルートに開発ツール専用の `Package.swift` を追加し、ダミー target は `Sources/` の外に置く。`Sources/` 配下に置くと XcodeGen のアプリ target に巻き込まれる。
+
+---
+
 ## preBuildScript の outputFiles 宣言はしない
 
 **症状:** ビルド日時を生成するスクリプトが初回しか走らず、`BuildInfo.swift` が更新されない。

@@ -1,4 +1,7 @@
 docs/superpowers/
+.build/
+.swiftpm/
+Package.resolved
 build/
 Sources/BuildInfo.swift
 *.xcuserstate

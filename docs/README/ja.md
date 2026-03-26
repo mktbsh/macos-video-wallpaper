@@ -66,9 +66,12 @@ https://github.com/user-attachments/assets/d0ef9f03-bf2f-45d6-b94b-89fbc5c1f073
 ```bash
 git clone https://github.com/mktbsh/macos-video-wallpaper.git
 cd macos-video-wallpaper
+swift package --disable-sandbox lefthook install
 xcodegen generate
 open VideoWallpaper.xcodeproj
 ```
+
+このリポジトリでは Lefthook を Swift Package Manager 経由で管理しています。上記のインストールコマンドで `lefthook.yml` の内容が `.git/hooks` に反映され、ローカルの `pre-commit` SwiftLint チェックが有効になります。
 
 ### ビルド
 
