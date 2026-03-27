@@ -36,7 +36,7 @@
 - [x] `PlaylistItem` / `PlaylistStore` を追加し、表示名と再生範囲を playlist entry に持たせる
 - [x] `PlaylistEditorWindowController` で開始 / 終了秒と「動画全体を使う」を編集できるようにする
 - [x] `StatusMenuController` に `Add Videos…` / `Edit Playlist…` / `Next` / `Previous` / `Clear` を追加する
-- [ ] プレイリストを永続化して再起動後も復元する
+- [x] プレイリストを永続化して再起動後も復元する
 - [ ] 再生完了をトリガーに次の動画へ自動ローテーションする
 
 ---
@@ -54,6 +54,5 @@
 
 - 動画のボリューム調整（ミュート解除オプション）
 - 複数画面に異なる動画を設定する
-- プレイリストの永続化と復元
 - 再生完了ベースの自動ローテーション
 - 時間帯連動（朝・昼・夜で動画を自動切り替え）

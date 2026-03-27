@@ -33,53 +33,68 @@ import Testing
     // MARK: - resolveBookmarkedURL()
 
     @Test func returns_nil_when_no_bookmark_stored() {
-        UserDefaults.standard.removeObject(forKey: "videoBookmark")
-        UserDefaults.standard.removeObject(forKey: "videoFilePath")
-        #expect(VideoFileValidator.resolveBookmarkedURL() == nil)
+        let context = makeIsolatedDefaults()
+        defer { context.defaults.removePersistentDomain(forName: context.suiteName) }
+
+        #expect(VideoFileValidator.resolveBookmarkedURL(defaults: context.defaults) == nil)
     }
 
     @Test func returns_nil_when_legacy_path_does_not_exist() {
-        UserDefaults.standard.removeObject(forKey: "videoBookmark")
-        UserDefaults.standard.set("/nonexistent/path/video.mp4", forKey: "videoFilePath")
-        defer { UserDefaults.standard.removeObject(forKey: "videoFilePath") }
-        #expect(VideoFileValidator.resolveBookmarkedURL() == nil)
+        let context = makeIsolatedDefaults()
+        defer { context.defaults.removePersistentDomain(forName: context.suiteName) }
+
+        context.defaults.set("/nonexistent/path/video.mp4", forKey: legacyPathKey)
+        #expect(VideoFileValidator.resolveBookmarkedURL(defaults: context.defaults) == nil)
     }
 
     @Test func migrates_legacy_path_to_bookmark_when_file_exists() throws {
+        let context = makeIsolatedDefaults()
+        defer { context.defaults.removePersistentDomain(forName: context.suiteName) }
+
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("test_\(UUID().uuidString).mp4")
         FileManager.default.createFile(atPath: url.path, contents: Data())
         defer { try? FileManager.default.removeItem(at: url) }
 
-        UserDefaults.standard.removeObject(forKey: "videoBookmark")
-        UserDefaults.standard.set(url.path, forKey: "videoFilePath")
-        defer {
-            UserDefaults.standard.removeObject(forKey: "videoBookmark")
-            UserDefaults.standard.removeObject(forKey: "videoFilePath")
-        }
+        context.defaults.set(url.path, forKey: legacyPathKey)
 
-        let result = VideoFileValidator.resolveBookmarkedURL()
+        let result = VideoFileValidator.resolveBookmarkedURL(defaults: context.defaults)
         #expect(result != nil)
         // Legacy key should be removed after migration
-        #expect(UserDefaults.standard.string(forKey: "videoFilePath") == nil)
+        #expect(context.defaults.string(forKey: legacyPathKey) == nil)
         // Bookmark key should now be set
-        #expect(UserDefaults.standard.data(forKey: "videoBookmark") != nil)
+        #expect(context.defaults.data(forKey: bookmarkKey) != nil)
     }
 
     // MARK: - clearBookmark()
 
     @Test func removes_stored_bookmark_when_clearBookmark_called() {
-        UserDefaults.standard.set(Data([0x01]), forKey: "videoBookmark")
+        let context = makeIsolatedDefaults()
+        defer { context.defaults.removePersistentDomain(forName: context.suiteName) }
 
-        VideoFileValidator.clearBookmark()
+        context.defaults.set(Data([0x01]), forKey: bookmarkKey)
 
-        #expect(UserDefaults.standard.data(forKey: "videoBookmark") == nil)
+        VideoFileValidator.clearBookmark(defaults: context.defaults)
+
+        #expect(context.defaults.data(forKey: bookmarkKey) == nil)
     }
 
     @Test func clearBookmark_does_not_crash_when_no_bookmark_stored() {
-        UserDefaults.standard.removeObject(forKey: "videoBookmark")
+        let context = makeIsolatedDefaults()
+        defer { context.defaults.removePersistentDomain(forName: context.suiteName) }
+
         // Should not crash
-        VideoFileValidator.clearBookmark()
-        #expect(UserDefaults.standard.data(forKey: "videoBookmark") == nil)
+        VideoFileValidator.clearBookmark(defaults: context.defaults)
+        #expect(context.defaults.data(forKey: bookmarkKey) == nil)
+    }
+
+    private let bookmarkKey = "videoBookmark"
+    private let legacyPathKey = "videoFilePath"
+
+    private func makeIsolatedDefaults() -> (defaults: UserDefaults, suiteName: String) {
+        let suiteName = "VideoFileValidatorTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        return (defaults, suiteName)
     }
 }
