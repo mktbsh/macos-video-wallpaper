@@ -59,7 +59,7 @@
 ### Current State
 
 - `PlaylistItem` は `displayName`, `useFullVideo`, `startTime`, `endTime` を持つ
-- `PlaylistStore` はメモリ上の playlist state と `RotationEngine` を持つ
+- `PlaylistStore` はメモリ上の playlist state と `RotationEngine` を持ち、手動の `Next` / `Previous` / `Set Current` に使われる
 - `WallpaperWindowController` は `load(videoURL:timeRange:)` で `AVPlayerLooper` を組み立てる
 - `AppDelegate` が playlist state と UI 再適用の中心にいる
 
@@ -114,13 +114,22 @@ Branch 1 では、保存対象を読み出すための薄い bridge を追加す
 - `var currentItem: PlaylistItem?`
 - `var summary: PlaylistSummary?`
 
-Branch 2 では、`RotationEngine` の token 制御を上位へ渡すための薄い API を追加する。
+Branch 2 では、manual 操作用 API と playback-completion 用 API を分ける。
+
+manual 操作:
+
+- `mutating func next() -> Bool`
+- `mutating func previous() -> Bool`
+- `mutating func setCurrent(id: PlaylistItem.ID) -> Bool`
+
+manual 操作は user intent とみなし、token を要求しない。
+
+playback-completion 用:
 
 - `mutating func beginPlayback() -> RotationEngine<PlaylistItem>.PlaybackToken`
-- `mutating func next(using token: RotationEngine<PlaylistItem>.PlaybackToken) -> Bool`
-- `mutating func previous(using token: RotationEngine<PlaylistItem>.PlaybackToken) -> Bool`
+- `mutating func advanceAfterPlaybackCompletion(using token: RotationEngine<PlaylistItem>.PlaybackToken) -> Bool`
 
-`PlaylistStore` 自体は token の所有者にならず、current playback token は `AppDelegate` 側が持つ。
+`PlaylistStore` 自体は token の所有者にならず、current playback token は `AppDelegate` 側が持つ。manual の `Next` / `Previous` / `Set Current` が current item を変えた場合も、`AppDelegate` は直後に `applyCurrentPlaylistItem()` を呼び、新 token を発行して in-flight completion を無効化する。
 
 ## Persistence Flow
 
@@ -199,6 +208,8 @@ Branch 2 では、現在の `AVPlayerLooper` ベースの無限ループを curr
 
 完了通知は必ず token 付きで返す。古い item 由来の通知や、複数画面で遅れて届いた通知は token mismatch で無視する。
 
+completion callback の受理と playlist advance はすべて `MainActor` 上で直列に処理する。最初の valid completion を受けた handler が `advanceAfterPlaybackCompletion(using:)` を呼び、その場で次の playback token を発行する。これにより、その後に届く duplicate completion は stale token として無視される。追加のロックや排他制御は入れない。
+
 ### WallpaperWindowController
 
 追加責務:
@@ -217,9 +228,12 @@ Branch 2 では、現在の `AVPlayerLooper` ベースの無限ループを curr
 - `AVPlayerLooper` は使わず、毎回 1 つの `AVPlayerItem` を単発再生する
 - `useFullVideo == false` の場合は item を `playbackTimeRange.start` に seek したうえで `forwardPlaybackEndTime = playbackTimeRange.end` を設定する
 - `useFullVideo == true` の場合は item 全体をそのまま再生する
+- playback context の identity は `URL + timeRange` ではなく `URL + timeRange + token` とみなす
+- そのため、同じ `URL + timeRange` でも token が変われば no-op ではなく先頭から再生し直す
 - `AVPlayerItemDidPlayToEndTime` を監視する
 - 現在の playback context に一致する event だけを受理する
 - 受理したら `PlaybackCompletion` を callback で上位へ返す
+- 既存の battery-saving と occlusion pause/resume 挙動は維持する
 
 `PlaybackCompletion` は少なくとも以下を含む。
 
@@ -241,7 +255,7 @@ Branch 2 では、現在の `AVPlayerLooper` ベースの無限ループを curr
 2. `applyCurrentPlaylistItem()` で token を発行
 3. 各 `WallpaperWindowController` へ `item.url`, `item.playbackTimeRange`, `token` を渡す
 4. どれか 1 画面から current token の完了通知を受ける
-5. `playlistStore.next(using: token)` で current を進める
+5. `playlistStore.advanceAfterPlaybackCompletion(using: token)` で current を進める
 6. 再度 `applyCurrentPlaylistItem()` を呼ぶ
 7. 保存対象の変更があれば persistence へ書き戻す
 
