@@ -104,6 +104,7 @@ struct PlaylistPersistence {
 - `playlistState` が壊れていれば 1 回だけ legacy bookmark に fallback
 - empty `playlistState` は正規状態として扱い、legacy へ fallback しない
 - clear 時は `playlistState` と `videoBookmark` を両方消す
+- migration 後と通常保存フローでは `videoBookmark` を二度と更新しない
 
 - [ ] **Step 3: `PlaylistStore` に persistence から使う bridge を足す**
 
@@ -131,7 +132,7 @@ Branch 1 では manual 操作の挙動は変えない。
 - `clearPlaylist`
 - editor 由来の `delete/move/setCurrent/updateDisplayName/updateUseFullVideo/updateStartTime/updateEndTime`
 
-保存は `PlaylistStore` 変更直後に呼び、UI 再描画より前でも後でもよいが、呼び出し位置は全経路で統一する。
+保存は `PlaylistStore` 変更直後に呼び、UI 再描画より前でも後でもよいが、呼び出し位置は全経路で統一する。Branch 1 のこの step で、既存の `VideoFileValidator.saveBookmark` を current item 変更フローから外し、playlist 保存だけを source of truth にする。
 
 - [ ] **Step 5: `project.yml` を更新して新規 file を project に含める**
 
@@ -212,6 +213,7 @@ Expected: `codex/playlist-auto-rotation` が `codex/playlist-persistence` の HE
 - `advanceAfterPlaybackCompletion(using:)` は current token でだけ進む
 - stale token は current を変えない
 - single item でも `advanceAfterPlaybackCompletion(using:)` は `true` を返し current item を維持する
+- completion ベースの advance でも末尾から先頭へ wrap する
 
 - [ ] **Step 3: 対象テストだけを実行して RED を確認**
 
@@ -254,9 +256,9 @@ Expected: PASS
 - Modify: `Sources/WallpaperWindowController.swift`
 - Modify: `project.yml`
 
-- [ ] **Step 1: completion callback の失敗するテストを追加するか、最小限の受け皿を先に作る**
+- [ ] **Step 1: `PlaybackCompletion` と controller の受け皿を先に追加し、ビルドを RED にする**
 
-`WallpaperWindowController` は UI/AVFoundation 依存が強いので、テストは必要最小限に留める。少なくとも `PlaybackCompletion` の値型と controller の public API を先に定義して、ビルドエラーが出る形にする。
+`WallpaperWindowController` は UI/AVFoundation 依存が強いので、ここではテストより先に型と API を固定する。`PlaybackCompletion` の値型、`onPlaybackFinished`、token 付き playback context を先に追加し、未更新の call site がコンパイルエラーになる状態を RED とみなす。
 
 ```swift
 struct PlaybackCompletion: Equatable {
@@ -264,6 +266,14 @@ struct PlaybackCompletion: Equatable {
     let token: RotationEngine<PlaylistItem>.PlaybackToken
 }
 ```
+
+Run:
+
+```bash
+xcodebuild build -project VideoWallpaper.xcodeproj -scheme VideoWallpaper -destination 'platform=macOS'
+```
+
+Expected: `AppDelegate` など未更新 call site のコンパイルエラー
 
 - [ ] **Step 2: `AVPlayerLooper` を外し、単発再生モデルへ変更**
 
@@ -311,6 +321,8 @@ xcodegen generate
 - `playlistStore.beginPlayback()` で新 token を発行
 - current item の `itemID`, `url`, `timeRange`, `token` を全画面へ渡す
 
+`setupWallpaperWindows()` で新しい controller を作ったときも、playlist が空でなければ `applyCurrentPlaylistItem()` を通して current item を流す。起動時復元と画面再構成の両方で、token なしの直接 `load(...)` を残さない。
+
 - [ ] **Step 2: manual 操作の後に新 token を発行する path を揃える**
 
 対象:
@@ -328,7 +340,7 @@ manual の current 変更後は必ず `applyCurrentPlaylistItem()` を通す。
 
 1. `completion.token == currentPlaybackToken` を確認
 2. 一致したら `playlistStore.advanceAfterPlaybackCompletion(using: token)` を呼ぶ
-3. `true` の場合はその場で `applyCurrentPlaylistItem()` を呼んで新 token を発行
+3. `true` の場合はその場で persistence に save し、その後 `applyCurrentPlaylistItem()` を呼んで新 token を発行
 4. 後続の duplicate completion は stale token として落ちる
 
 - [ ] **Step 4: completion flow を検証するテストを追加**
@@ -338,6 +350,7 @@ manual の current 変更後は必ず `applyCurrentPlaylistItem()` を通す。
 - current token でだけ advance する
 - stale completion は無視する
 - single item でも advance path が動き、再生が再スタートする前提の state になる
+- completion 経由でも末尾から先頭へ wrap する
 
 可能なら `AppDelegate` ではなく `RotationEngine` / `PlaylistStore` に閉じたテストで担保し、UI 依存は薄く保つ。
 
