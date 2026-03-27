@@ -26,25 +26,27 @@
 
 ---
 
-## Feature: ループ範囲の指定
+## Feature: プレイリストベースの再生範囲
 
-動画の一部区間だけをループ再生する（イントロ・アウトロのカット）。
-
-### 技術メモ
-
-- `AVPlayerLooper(player:templateItem:timeRange:)` でループ範囲を指定できる
-  ```swift
-  let range = CMTimeRange(start: startTime, end: endTime)
-  playerLooper = AVPlayerLooper(player: player, templateItem: item, timeRange: range)
-  ```
-- 設定 UI はシンプルに「開始 / 終了を秒単位で入力」で十分
-- 設定は動画 URL に紐づけて保存する（UserDefaults のキーにファイル名を含める等）
+複数動画をプレイリストで管理し、各動画ごとに「全尺」または「開始 / 終了秒の範囲」を再生区間として扱う。
 
 ### タスクリスト
 
-- [ ] `WallpaperWindowController.load(videoURL:)` に `timeRange: CMTimeRange?` 引数を追加する
-- [ ] `StatusMenuController` に「ループ範囲を設定…」メニュー項目と入力シートを追加する
-- [ ] 設定値を `"loopRange_<filename>"` 形式のキーで UserDefaults に保存・復元する
+- [x] `WallpaperWindowController.load(videoURL:timeRange:)` で範囲再生を扱えるようにする
+- [x] `PlaylistItem` / `PlaylistStore` を追加し、表示名と再生範囲を playlist entry に持たせる
+- [x] `PlaylistEditorWindowController` で開始 / 終了秒と「動画全体を使う」を編集できるようにする
+- [x] `StatusMenuController` に `Add Videos…` / `Edit Playlist…` / `Next` / `Previous` / `Clear` を追加する
+- [ ] プレイリストを永続化して再起動後も復元する
+- [ ] 再生完了をトリガーに次の動画へ自動ローテーションする
+
+---
+
+## Maintenance: パフォーマンス改善
+
+- [x] bookmark 解決を pure にし、security-scoped access の開始 / 終了を再生側に集約する
+- [x] drag & drop 時の重複 `load()` を解消し、同一 URL + timeRange の再生を no-op にする
+- [x] 画面構成変更時の壁紙ウィンドウ更新を差分適用にする
+- [x] `StatusMenuController` の menu rebuild をやめ、固定 `NSMenuItem` の差分更新にする
 
 ---
 
@@ -52,5 +54,6 @@
 
 - 動画のボリューム調整（ミュート解除オプション）
 - 複数画面に異なる動画を設定する
-- スライドショーモード（複数動画のローテーション）
+- プレイリストの永続化と復元
+- 再生完了ベースの自動ローテーション
 - 時間帯連動（朝・昼・夜で動画を自動切り替え）
