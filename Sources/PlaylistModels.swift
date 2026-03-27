@@ -51,11 +51,9 @@ struct PlaylistSummary: Equatable {
 struct PlaylistStore {
 
     private var engine: RotationEngine<PlaylistItem>
-    private var playbackToken: RotationEngine<PlaylistItem>.PlaybackToken
 
     init(items: [PlaylistItem] = [], currentItemID: PlaylistItem.ID? = nil) {
         engine = RotationEngine(entries: items, currentEntryID: currentItemID)
-        playbackToken = engine.beginPlayback()
     }
 
     var items: [PlaylistItem] {
@@ -98,17 +96,25 @@ struct PlaylistStore {
     }
 
     mutating func next() -> Bool {
-        engine.next(using: playbackToken)
+        engine.next()
     }
 
     mutating func previous() -> Bool {
-        engine.previous(using: playbackToken)
+        engine.previous()
+    }
+
+    mutating func beginPlayback() -> RotationEngine<PlaylistItem>.PlaybackToken {
+        engine.beginPlayback()
+    }
+
+    mutating func advanceAfterPlaybackCompletion(
+        using token: RotationEngine<PlaylistItem>.PlaybackToken
+    ) -> Bool {
+        engine.advanceAfterPlaybackCompletion(using: token)
     }
 
     mutating func setCurrent(id: PlaylistItem.ID) -> Bool {
-        guard items.contains(where: { $0.id == id }) else { return false }
-        engine.replace(entries: items, currentEntryID: id)
-        return true
+        engine.setCurrent(id: id)
     }
 
     mutating func delete(id: PlaylistItem.ID) -> Bool {

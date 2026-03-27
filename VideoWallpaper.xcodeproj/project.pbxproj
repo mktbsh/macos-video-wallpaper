@@ -7,8 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		10DED1FC5A3DC7DE1A065B7C /* PlaybackSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BA1143665560974CEE877FB /* PlaybackSessionTests.swift */; };
 		227A093B41F5031755381BF6 /* PlaylistModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F91543E3DFC2C460339F675B /* PlaylistModels.swift */; };
 		24DE1AE620FBA10AD275A2A6 /* PlaylistPersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09CFD949B8A13D34A1B517F8 /* PlaylistPersistenceTests.swift */; };
+		2E8154B18F2C2159E4EF9655 /* PlaybackSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FC495C32A137A595431B943 /* PlaybackSession.swift */; };
 		368A93AD30F7F66A3FB09291 /* PowerSavingMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68D2CE7EFE1524AE6AFC3D5B /* PowerSavingMode.swift */; };
 		3969CFDE8ED5BFCB98C61BF8 /* ScreenTargetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3253D610AF679F9A23178FA5 /* ScreenTargetTests.swift */; };
 		3DFDEA6BE7D42CFBE8283BAE /* VideoFileValidatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB6DDD2F2C0B77517B37A5AA /* VideoFileValidatorTests.swift */; };
@@ -25,6 +27,7 @@
 		91DBCDBBEB694CD8D66AC01B /* LocalizationCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C39B783DE4224FF2210C17 /* LocalizationCatalogTests.swift */; };
 		91DDBD55080BB2726E2F96EE /* StatusMenuController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4EC1249156CE1ADAA638E74 /* StatusMenuController.swift */; };
 		925751E1C7583A96B7E9874B /* VideoGravity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F826E40AC579D838B5D1A16 /* VideoGravity.swift */; };
+		93FC6707786330FEA0FE5A11 /* PlaybackCompletion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D95DDED0ADC8FC9F9C486D1 /* PlaybackCompletion.swift */; };
 		B45057CE694749E56E2442C0 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DEF45366BAD6487E21EEE4A1 /* Cocoa.framework */; };
 		C153620C536E4D19EEBEF9D6 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ECF176FDB5E802560F3E884 /* AppDelegate.swift */; };
 		CBCF24AA2083C5548551ECD2 /* RotationEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA14D0E5C4FC75A307E870A3 /* RotationEngine.swift */; };
@@ -49,14 +52,17 @@
 		0ECF176FDB5E802560F3E884 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		1EBB16669D4FCA28114512A4 /* DimLevel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DimLevel.swift; sourceTree = "<group>"; };
 		2A043DF102510CAF0558FE27 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		2BA1143665560974CEE877FB /* PlaybackSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackSessionTests.swift; sourceTree = "<group>"; };
 		31040E52243775CD942522F6 /* PlaylistEditorWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistEditorWindowController.swift; sourceTree = "<group>"; };
 		3253D610AF679F9A23178FA5 /* ScreenTargetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenTargetTests.swift; sourceTree = "<group>"; };
 		5CA9572D6BA4139CA447AF3F /* VideoWallpaperTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VideoWallpaperTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5F826E40AC579D838B5D1A16 /* VideoGravity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoGravity.swift; sourceTree = "<group>"; };
 		68D2CE7EFE1524AE6AFC3D5B /* PowerSavingMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerSavingMode.swift; sourceTree = "<group>"; };
 		733A86058A8A9C9A5061D3CD /* PlaylistStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistStoreTests.swift; sourceTree = "<group>"; };
+		7D95DDED0ADC8FC9F9C486D1 /* PlaybackCompletion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackCompletion.swift; sourceTree = "<group>"; };
 		809212198451A87D94290609 /* PlaylistPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistPersistence.swift; sourceTree = "<group>"; };
 		8998A34405A4B5FF24B27948 /* RotationEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RotationEngineTests.swift; sourceTree = "<group>"; };
+		8FC495C32A137A595431B943 /* PlaybackSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackSession.swift; sourceTree = "<group>"; };
 		9D02C454C100A99678B86DCC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		9D78977C7889D2A5D6B3D48C /* VideoWallpaper.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = VideoWallpaper.entitlements; sourceTree = "<group>"; };
 		A4EC1249156CE1ADAA638E74 /* StatusMenuController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusMenuController.swift; sourceTree = "<group>"; };
@@ -121,6 +127,8 @@
 				1EBB16669D4FCA28114512A4 /* DimLevel.swift */,
 				9D02C454C100A99678B86DCC /* Info.plist */,
 				2A043DF102510CAF0558FE27 /* Localizable.xcstrings */,
+				7D95DDED0ADC8FC9F9C486D1 /* PlaybackCompletion.swift */,
+				8FC495C32A137A595431B943 /* PlaybackSession.swift */,
 				31040E52243775CD942522F6 /* PlaylistEditorWindowController.swift */,
 				F91543E3DFC2C460339F675B /* PlaylistModels.swift */,
 				809212198451A87D94290609 /* PlaylistPersistence.swift */,
@@ -140,6 +148,7 @@
 			isa = PBXGroup;
 			children = (
 				C9C39B783DE4224FF2210C17 /* LocalizationCatalogTests.swift */,
+				2BA1143665560974CEE877FB /* PlaybackSessionTests.swift */,
 				09CFD949B8A13D34A1B517F8 /* PlaylistPersistenceTests.swift */,
 				733A86058A8A9C9A5061D3CD /* PlaylistStoreTests.swift */,
 				8998A34405A4B5FF24B27948 /* RotationEngineTests.swift */,
@@ -278,6 +287,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				91DBCDBBEB694CD8D66AC01B /* LocalizationCatalogTests.swift in Sources */,
+				10DED1FC5A3DC7DE1A065B7C /* PlaybackSessionTests.swift in Sources */,
 				24DE1AE620FBA10AD275A2A6 /* PlaylistPersistenceTests.swift in Sources */,
 				E98B5F118852E36FAE0BF6C6 /* PlaylistStoreTests.swift in Sources */,
 				4B48F9AA2B7E0EE3EC577DA0 /* RotationEngineTests.swift in Sources */,
@@ -295,6 +305,8 @@
 				C153620C536E4D19EEBEF9D6 /* AppDelegate.swift in Sources */,
 				445C3F7E76DBE33BC7504817 /* BuildInfo.swift in Sources */,
 				7EF4767E23D6ABB0E72E2596 /* DimLevel.swift in Sources */,
+				93FC6707786330FEA0FE5A11 /* PlaybackCompletion.swift in Sources */,
+				2E8154B18F2C2159E4EF9655 /* PlaybackSession.swift in Sources */,
 				53AEF1C48923A1D7632B54C9 /* PlaylistEditorWindowController.swift in Sources */,
 				227A093B41F5031755381BF6 /* PlaylistModels.swift in Sources */,
 				7E5C690F13942D772F623E55 /* PlaylistPersistence.swift in Sources */,
