@@ -10,6 +10,7 @@ final class WallpaperWindowController {
     private let dimLayer: CALayer
     private var playerLooper: AVPlayerLooper?
     private var currentVideoURL: URL?
+    private var currentTimeRange: CMTimeRange?
     private var isScopedAccessActive = false
     private var occlusionObserver: NSObjectProtocol?
 
@@ -59,8 +60,6 @@ final class WallpaperWindowController {
         dropView.layer?.addSublayer(dimLayer)
         applyDimLevel(DimLevel.saved.opacity)
         dropView.onVideoDropped = { [weak self] url in
-            VideoFileValidator.saveBookmark(for: url)
-            self?.load(videoURL: url)
             self?.onVideoDropped?(url)
         }
 
@@ -95,13 +94,28 @@ final class WallpaperWindowController {
     }
 
     func load(videoURL url: URL) {
+        load(videoURL: url, timeRange: nil)
+    }
+
+    func load(videoURL url: URL, timeRange: CMTimeRange?) {
+        guard !isSamePlaybackTarget(url: url, timeRange: timeRange) else {
+            if window.occlusionState.contains(.visible) { player.play() }
+            return
+        }
+
         playerLooper = nil
         if isScopedAccessActive {
             currentVideoURL?.stopAccessingSecurityScopedResource()
         }
         isScopedAccessActive = url.startAccessingSecurityScopedResource()
         currentVideoURL = url
-        playerLooper = AVPlayerLooper(player: player, templateItem: AVPlayerItem(url: url))
+        currentTimeRange = timeRange
+        let item = AVPlayerItem(url: url)
+        if let timeRange {
+            playerLooper = AVPlayerLooper(player: player, templateItem: item, timeRange: timeRange)
+        } else {
+            playerLooper = AVPlayerLooper(player: player, templateItem: item)
+        }
         player.play()
         // orderFront は AppDelegate の applyBatteryPolicy() が制御する
     }
@@ -116,6 +130,7 @@ final class WallpaperWindowController {
             isScopedAccessActive = false
         }
         currentVideoURL = nil
+        currentTimeRange = nil
         window.orderOut(nil)
     }
 
@@ -143,7 +158,25 @@ final class WallpaperWindowController {
             isScopedAccessActive = false
         }
         currentVideoURL = nil
+        currentTimeRange = nil
         window.close()
+    }
+
+    private func isSamePlaybackTarget(url: URL, timeRange: CMTimeRange?) -> Bool {
+        guard currentVideoURL == url, let playerLooper else { return false }
+        _ = playerLooper
+        return timeRangesEqual(currentTimeRange, timeRange)
+    }
+
+    private func timeRangesEqual(_ lhs: CMTimeRange?, _ rhs: CMTimeRange?) -> Bool {
+        switch (lhs, rhs) {
+        case (nil, nil):
+            return true
+        case let (.some(lhs), .some(rhs)):
+            return CMTimeRangeEqual(lhs, rhs)
+        default:
+            return false
+        }
     }
 }
 

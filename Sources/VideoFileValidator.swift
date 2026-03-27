@@ -26,7 +26,7 @@ enum VideoFileValidator {
         UserDefaults.standard.removeObject(forKey: "videoBookmark")
     }
 
-    /// Resolves the stored bookmark to a URL, starting security-scoped access.
+    /// Resolves the stored bookmark to a URL.
     /// Falls back to the legacy path key for one-time migration.
     /// Returns nil if no bookmark is stored or the file no longer exists.
     static func resolveBookmarkedURL() -> URL? {
@@ -58,7 +58,6 @@ enum VideoFileValidator {
             saveBookmark(for: url)
         }
 
-        _ = url.startAccessingSecurityScopedResource()
         return url
     }
 }

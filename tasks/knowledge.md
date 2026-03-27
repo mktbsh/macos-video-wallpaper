@@ -115,6 +115,38 @@ enum Xxx: String, CaseIterable {
 
 ---
 
+## bookmark resolver で security-scoped access を開始しない
+
+**症状:** 起動時や画面再構成で bookmark を解決するたびに `startAccessingSecurityScopedResource()` が積み上がり、長時間稼働で解放漏れを起こす。
+**原因:** bookmark 解決関数が URL 解決と access 開始の両方を担っていた。
+**対策:** resolver は URL を返すだけにし、`startAccessing...` / `stopAccessing...` は再生セッション所有者で一元管理する。
+
+---
+
+## プレイリスト更新は AppDelegate / PlaylistStore 経由に一本化する
+
+**症状:** drag & drop やメニューが UI 側で直接 `load()` すると、playlist state と現在再生 state が分岐しやすい。
+**原因:** 再生・メニュー・エディタがそれぞれ部分的に状態を持つと、source of truth が複数になる。
+**対策:** 変更は `PlaylistStore` を更新してから `AppDelegate` 経由で再生と UI を再適用する。
+
+---
+
+## 同じ再生 target への `load()` は no-op にする
+
+**症状:** 画面再構成や occlusion 復帰で同じ URL を再読み込みすると、`AVPlayerItem` / `AVPlayerLooper` が無駄に再生成される。
+**原因:** `load(videoURL:timeRange:)` が `URL + timeRange` の同一性を見ていなかった。
+**対策:** 再生 target が同一なら既存 looper を再利用し、必要なら `play()` だけ呼ぶ。
+
+---
+
+## `NSMenu` は固定 item を保持して差分更新する
+
+**症状:** summary 更新ごとに `buildMenu()` で全項目を作り直すと UI churn が増え、項目参照を使うテストも不安定になる。
+**原因:** 軽いタイトル変更までメニュー全 rebuild に乗せていた。
+**対策:** `NSMenuItem` を一度生成して保持し、`title` / `state` / `isEnabled` / `isHidden` だけ更新する。
+
+---
+
 ## macOS 固有の注意点
 
 - `NSWindow` は必ず `isReleasedWhenClosed = false` を設定する（デフォルト true は ARC と二重解放を起こす）

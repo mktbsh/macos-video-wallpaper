@@ -1,28 +1,118 @@
 import Cocoa
 import ServiceManagement
-import UniformTypeIdentifiers
+
+private struct SelectionMenuEntry {
+    let title: String
+    let rawValue: String
+    let action: Selector
+}
 
 @MainActor
 final class StatusMenuController {
 
-    var onVideoURLChanged: ((URL) -> Void)?
+    var onAddVideos: (() -> Void)?
+    var onEditPlaylist: (() -> Void)?
+    var onNext: (() -> Void)?
+    var onPrevious: (() -> Void)?
+    var onClear: (() -> Void)?
     var onScreenTargetChanged: (() -> Void)?
     var onDimLevelChanged: ((CGFloat) -> Void)?
     var onPowerSavingModeChanged: (() -> Void)?
     var onVideoGravityChanged: ((VideoGravity) -> Void)?
-    var onVideoCleared: (() -> Void)?
 
-    var currentVideoName: String? {
-        didSet { buildMenu() }
+    var playlistSummary: PlaylistSummary? {
+        didSet { refreshPlaylistSection() }
     }
 
     private let statusItem: NSStatusItem
     private let menu: NSMenu
+    private let summaryItem: NSMenuItem
+    private let currentItem: NSMenuItem
+    private let playlistSeparator: NSMenuItem
+    private let addItem: NSMenuItem
+    private let editItem: NSMenuItem
+    private let previousItem: NSMenuItem
+    private let nextItem: NSMenuItem
+    private let clearItem: NSMenuItem
+    private let screenMenu: NSMenu
+    private let screenItem: NSMenuItem
+    private let dimMenu: NSMenu
+    private let dimItem: NSMenuItem
+    private let powerMenu: NSMenu
+    private let powerItem: NSMenuItem
+    private let gravityMenu: NSMenu
+    private let gravityItem: NSMenuItem
+    private let loginItem: NSMenuItem
+    private let versionItem: NSMenuItem
+    private let quitItem: NSMenuItem
     private var loginItemEnabled: Bool = false
 
     init() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         menu = NSMenu()
+        summaryItem = NSMenuItem()
+        currentItem = NSMenuItem()
+        playlistSeparator = .separator()
+        addItem = NSMenuItem(
+            title: String(localized: "menu.playlist.add_videos"),
+            action: #selector(addVideosAction),
+            keyEquivalent: ""
+        )
+        editItem = NSMenuItem(
+            title: String(localized: "menu.playlist.edit"),
+            action: #selector(editPlaylistAction),
+            keyEquivalent: ""
+        )
+        previousItem = NSMenuItem(
+            title: String(localized: "menu.playlist.previous"),
+            action: #selector(previousPlaylistAction),
+            keyEquivalent: ""
+        )
+        nextItem = NSMenuItem(
+            title: String(localized: "menu.playlist.next"),
+            action: #selector(nextPlaylistAction),
+            keyEquivalent: ""
+        )
+        clearItem = NSMenuItem(
+            title: String(localized: "menu.playlist.clear"),
+            action: #selector(clearPlaylistAction),
+            keyEquivalent: ""
+        )
+        screenMenu = NSMenu()
+        screenItem = NSMenuItem(
+            title: String(localized: "menu.screen_target"),
+            action: nil,
+            keyEquivalent: ""
+        )
+        dimMenu = NSMenu()
+        dimItem = NSMenuItem(
+            title: String(localized: "menu.dim_level"),
+            action: nil,
+            keyEquivalent: ""
+        )
+        powerMenu = NSMenu()
+        powerItem = NSMenuItem(
+            title: String(localized: "menu.power_saving"),
+            action: nil,
+            keyEquivalent: ""
+        )
+        gravityMenu = NSMenu()
+        gravityItem = NSMenuItem(
+            title: String(localized: "menu.video_gravity"),
+            action: nil,
+            keyEquivalent: ""
+        )
+        loginItem = NSMenuItem(
+            title: String(localized: "menu.launch_at_login"),
+            action: #selector(toggleLoginItem),
+            keyEquivalent: ""
+        )
+        versionItem = NSMenuItem()
+        quitItem = NSMenuItem(
+            title: String(localized: "menu.quit"),
+            action: #selector(quitApp),
+            keyEquivalent: "q"
+        )
 
         if let button = statusItem.button {
             button.image = NSImage(
@@ -33,182 +123,160 @@ final class StatusMenuController {
 
         loginItemEnabled = SMAppService.mainApp.status == .enabled
 
-        buildMenu()
+        configureMenuItems()
+        buildStaticMenus()
+        refreshPlaylistSection()
+        refreshSelectionStates()
+        refreshLoginState()
         statusItem.menu = menu
     }
 
-    private func buildMenu() {
-        menu.removeAllItems()
+    private func configureMenuItems() {
+        summaryItem.isEnabled = false
+        currentItem.isEnabled = false
+        currentItem.isHidden = true
 
-        let infoItem = NSMenuItem()
-        infoItem.title = currentVideoName.map {
-            String(format: String(localized: "menu.wallpaper.current"), locale: .current, $0)
-        } ?? String(localized: "menu.wallpaper.unset")
-        infoItem.isEnabled = false
-        menu.addItem(infoItem)
-
-        menu.addItem(.separator())
-
-        let selectItem = NSMenuItem(
-            title: String(localized: "menu.video.select"),
-            action: #selector(selectVideo),
-            keyEquivalent: ""
-        )
-        selectItem.target = self
-        menu.addItem(selectItem)
-
-        if currentVideoName != nil {
-            let clearItem = NSMenuItem(
-                title: String(localized: "menu.wallpaper.clear"),
-                action: #selector(clearVideoAction),
-                keyEquivalent: ""
-            )
-            clearItem.target = self
-            menu.addItem(clearItem)
+        [addItem, editItem, previousItem, nextItem, clearItem, loginItem, quitItem].forEach {
+            $0.target = self
         }
-
-        let screenMenu = NSMenu()
-        let currentTarget = ScreenTarget.saved
-        for target in ScreenTarget.allCases {
-            let item = NSMenuItem(
-                title: target.label,
-                action: #selector(selectScreenTarget(_:)),
-                keyEquivalent: ""
-            )
-            item.target = self
-            item.representedObject = target.rawValue
-            item.state = target == currentTarget ? .on : .off
-            screenMenu.addItem(item)
-        }
-        let screenItem = NSMenuItem(
-            title: String(localized: "menu.screen_target"),
-            action: nil,
-            keyEquivalent: ""
-        )
-        screenItem.submenu = screenMenu
-        menu.addItem(screenItem)
-
-        let dimMenu = NSMenu()
-        let currentDim = DimLevel.saved
-        for level in DimLevel.allCases {
-            let item = NSMenuItem(
-                title: level.label,
-                action: #selector(selectDimLevel(_:)),
-                keyEquivalent: ""
-            )
-            item.target = self
-            item.representedObject = level.rawValue
-            item.state = level == currentDim ? .on : .off
-            dimMenu.addItem(item)
-        }
-        let dimItem = NSMenuItem(
-            title: String(localized: "menu.dim_level"),
-            action: nil,
-            keyEquivalent: ""
-        )
-        dimItem.submenu = dimMenu
-        menu.addItem(dimItem)
-
-        let powerMenu = NSMenu()
-        let currentMode = PowerSavingMode.saved
-        for mode in PowerSavingMode.allCases {
-            let item = NSMenuItem(
-                title: mode.label,
-                action: #selector(selectPowerSavingMode(_:)),
-                keyEquivalent: ""
-            )
-            item.target = self
-            item.representedObject = mode.rawValue
-            item.state = mode == currentMode ? .on : .off
-            powerMenu.addItem(item)
-        }
-        let powerItem = NSMenuItem(
-            title: String(localized: "menu.power_saving"),
-            action: nil,
-            keyEquivalent: ""
-        )
-        powerItem.submenu = powerMenu
-        menu.addItem(powerItem)
-
-        let gravityMenu = NSMenu()
-        let currentGravity = VideoGravity.saved
-        for gravity in VideoGravity.allCases {
-            let item = NSMenuItem(
-                title: gravity.label,
-                action: #selector(selectVideoGravity(_:)),
-                keyEquivalent: ""
-            )
-            item.target = self
-            item.representedObject = gravity.rawValue
-            item.state = gravity == currentGravity ? .on : .off
-            gravityMenu.addItem(item)
-        }
-        let gravityItem = NSMenuItem(
-            title: String(localized: "menu.video_gravity"),
-            action: nil,
-            keyEquivalent: ""
-        )
-        gravityItem.submenu = gravityMenu
-        menu.addItem(gravityItem)
-
-        menu.addItem(.separator())
-
-        let loginItem = NSMenuItem(
-            title: String(localized: "menu.launch_at_login"),
-            action: #selector(toggleLoginItem),
-            keyEquivalent: ""
-        )
-        loginItem.target = self
-        loginItem.state = loginItemEnabled ? .on : .off
-        menu.addItem(loginItem)
-
-        menu.addItem(.separator())
-
-        let versionItem = NSMenuItem()
+        versionItem.isEnabled = false
         versionItem.title = String(
             format: String(localized: "menu.version"),
             locale: .current,
             BuildInfo.version
         )
-        versionItem.isEnabled = false
-        menu.addItem(versionItem)
 
+        screenItem.submenu = screenMenu
+        dimItem.submenu = dimMenu
+        powerItem.submenu = powerMenu
+        gravityItem.submenu = gravityMenu
+    }
+
+    private func buildStaticMenus() {
+        menu.removeAllItems()
+        menu.addItem(summaryItem)
+        menu.addItem(currentItem)
         menu.addItem(.separator())
-
-        let quitItem = NSMenuItem(
-            title: String(localized: "menu.quit"),
-            action: #selector(quitApp),
-            keyEquivalent: "q"
-        )
-        quitItem.target = self
+        menu.addItem(addItem)
+        menu.addItem(editItem)
+        menu.addItem(previousItem)
+        menu.addItem(nextItem)
+        menu.addItem(clearItem)
+        menu.addItem(playlistSeparator)
+        menu.addItem(screenItem)
+        menu.addItem(dimItem)
+        menu.addItem(powerItem)
+        menu.addItem(gravityItem)
+        menu.addItem(.separator())
+        menu.addItem(loginItem)
+        menu.addItem(.separator())
+        menu.addItem(versionItem)
+        menu.addItem(.separator())
         menu.addItem(quitItem)
+
+        populateSelectionMenu(
+            screenMenu,
+            with: ScreenTarget.allCases.map {
+                SelectionMenuEntry(
+                    title: $0.label,
+                    rawValue: $0.rawValue,
+                    action: #selector(selectScreenTarget(_:))
+                )
+            }
+        )
+        populateSelectionMenu(
+            dimMenu,
+            with: DimLevel.allCases.map {
+                SelectionMenuEntry(
+                    title: $0.label,
+                    rawValue: $0.rawValue,
+                    action: #selector(selectDimLevel(_:))
+                )
+            }
+        )
+        populateSelectionMenu(
+            powerMenu,
+            with: PowerSavingMode.allCases.map {
+                SelectionMenuEntry(
+                    title: $0.label,
+                    rawValue: $0.rawValue,
+                    action: #selector(selectPowerSavingMode(_:))
+                )
+            }
+        )
+        populateSelectionMenu(
+            gravityMenu,
+            with: VideoGravity.allCases.map {
+                SelectionMenuEntry(
+                    title: $0.label,
+                    rawValue: $0.rawValue,
+                    action: #selector(selectVideoGravity(_:))
+                )
+            }
+        )
     }
 
-    @objc private func selectVideo() {
-        let panel = NSOpenPanel()
-        panel.title = String(localized: "panel.select_video.title")
-        // UTType(filenameExtension:) is used for m4v because .mpeg4Movie does not cover it
-        let m4vType = UTType(filenameExtension: "m4v") ?? .mpeg4Movie
-        panel.allowedContentTypes = [.mpeg4Movie, .quickTimeMovie, m4vType]
-        panel.canChooseFiles = true
-        panel.canChooseDirectories = false
-        panel.allowsMultipleSelection = false
-
-        NSApp.activate()
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-
-        VideoFileValidator.saveBookmark(for: url)
-        currentVideoName = url.lastPathComponent
-        onVideoURLChanged?(url)
+    private func populateSelectionMenu(
+        _ menu: NSMenu,
+        with entries: [SelectionMenuEntry]
+    ) {
+        menu.removeAllItems()
+        for entry in entries {
+            let item = NSMenuItem(title: entry.title, action: entry.action, keyEquivalent: "")
+            item.target = self
+            item.representedObject = entry.rawValue
+            menu.addItem(item)
+        }
     }
 
-    @objc private func clearVideoAction() {
-        // clearBookmark() は UserDefaults のエントリを削除するだけ。
-        // セキュリティスコープアクセストークンは生きたままなので、
-        // 次に onVideoCleared?() で clearVideo() が呼ばれるまで安全にアクセスできる。
-        VideoFileValidator.clearBookmark()
-        onVideoCleared?()
-        currentVideoName = nil  // didSet で buildMenu() をトリガー
+    private var hasPlaylist: Bool {
+        guard let playlistSummary else { return false }
+        return playlistSummary.itemCount > 0
+    }
+
+    private func refreshPlaylistSection() {
+        guard let playlistSummary else {
+            summaryItem.title = String(localized: "menu.playlist.summary.empty")
+            currentItem.isHidden = true
+            playlistSeparator.isHidden = true
+            refreshPlaylistActions()
+            return
+        }
+
+        summaryItem.title = playlistSummaryTitle(for: playlistSummary)
+
+        if let currentDisplayName = playlistSummary.currentDisplayName {
+            currentItem.title = String(
+                format: String(localized: "menu.playlist.current"),
+                locale: .current,
+                currentDisplayName
+            )
+            currentItem.isHidden = false
+        } else {
+            currentItem.isHidden = true
+        }
+
+        playlistSeparator.isHidden = !hasPlaylist
+        refreshPlaylistActions()
+    }
+
+    private func refreshPlaylistActions() {
+        editItem.isEnabled = hasPlaylist
+        previousItem.isEnabled = hasPlaylist
+        nextItem.isEnabled = hasPlaylist
+        clearItem.isEnabled = hasPlaylist
+    }
+
+    private func playlistSummaryTitle(for summary: PlaylistSummary) -> String {
+        if summary.itemCount == 1 {
+            return String(localized: "menu.playlist.summary.single")
+        }
+
+        return String(
+            format: String(localized: "menu.playlist.summary.multiple"),
+            locale: .current,
+            summary.itemCount
+        )
     }
 
     @objc private func selectScreenTarget(_ sender: NSMenuItem) {
@@ -216,7 +284,7 @@ final class StatusMenuController {
               let target = ScreenTarget(rawValue: rawValue) else { return }
         target.save()
         onScreenTargetChanged?()
-        buildMenu()
+        updateSelectionStates(in: screenMenu, selectedRawValue: target.rawValue)
     }
 
     @objc private func selectDimLevel(_ sender: NSMenuItem) {
@@ -224,7 +292,7 @@ final class StatusMenuController {
               let level = DimLevel(rawValue: rawValue) else { return }
         level.save()
         onDimLevelChanged?(level.opacity)
-        buildMenu()
+        updateSelectionStates(in: dimMenu, selectedRawValue: level.rawValue)
     }
 
     @objc private func selectPowerSavingMode(_ sender: NSMenuItem) {
@@ -232,7 +300,7 @@ final class StatusMenuController {
               let mode = PowerSavingMode(rawValue: rawValue) else { return }
         mode.save()
         onPowerSavingModeChanged?()
-        buildMenu()
+        updateSelectionStates(in: powerMenu, selectedRawValue: mode.rawValue)
     }
 
     @objc private func selectVideoGravity(_ sender: NSMenuItem) {
@@ -240,7 +308,7 @@ final class StatusMenuController {
               let gravity = VideoGravity(rawValue: rawValue) else { return }
         gravity.save()
         onVideoGravityChanged?(gravity)
-        buildMenu()
+        updateSelectionStates(in: gravityMenu, selectedRawValue: gravity.rawValue)
     }
 
     @objc private func toggleLoginItem() {
@@ -258,10 +326,77 @@ final class StatusMenuController {
             alert.informativeText = error.localizedDescription
             alert.runModal()
         }
-        buildMenu()
+        refreshLoginState()
+    }
+}
+
+private extension StatusMenuController {
+    @objc func addVideosAction() {
+        onAddVideos?()
     }
 
-    @objc private func quitApp() {
+    @objc func editPlaylistAction() {
+        onEditPlaylist?()
+    }
+
+    @objc func previousPlaylistAction() {
+        onPrevious?()
+    }
+
+    @objc func nextPlaylistAction() {
+        onNext?()
+    }
+
+    @objc func clearPlaylistAction() {
+        onClear?()
+    }
+
+    @objc func quitApp() {
         NSApp.terminate(nil)
+    }
+
+    func refreshSelectionStates() {
+        updateSelectionStates(in: screenMenu, selectedRawValue: ScreenTarget.saved.rawValue)
+        updateSelectionStates(in: dimMenu, selectedRawValue: DimLevel.saved.rawValue)
+        updateSelectionStates(in: powerMenu, selectedRawValue: PowerSavingMode.saved.rawValue)
+        updateSelectionStates(in: gravityMenu, selectedRawValue: VideoGravity.saved.rawValue)
+    }
+
+    func updateSelectionStates(in menu: NSMenu, selectedRawValue: String) {
+        for item in menu.items {
+            item.state = (item.representedObject as? String) == selectedRawValue ? .on : .off
+        }
+    }
+
+    func refreshLoginState() {
+        loginItem.state = loginItemEnabled ? .on : .off
+    }
+}
+
+extension StatusMenuController {
+    var fixedMenuItemIdentifiersForTesting: [ObjectIdentifier] {
+        [
+            ObjectIdentifier(summaryItem),
+            ObjectIdentifier(addItem),
+            ObjectIdentifier(editItem),
+            ObjectIdentifier(previousItem),
+            ObjectIdentifier(nextItem),
+            ObjectIdentifier(clearItem),
+            ObjectIdentifier(screenItem),
+            ObjectIdentifier(dimItem),
+            ObjectIdentifier(powerItem),
+            ObjectIdentifier(gravityItem),
+            ObjectIdentifier(loginItem),
+            ObjectIdentifier(versionItem),
+            ObjectIdentifier(quitItem)
+        ]
+    }
+
+    var summaryTitleForTesting: String? {
+        summaryItem.title
+    }
+
+    var currentTitleForTesting: String? {
+        currentItem.isHidden ? nil : currentItem.title
     }
 }
