@@ -27,15 +27,27 @@ struct RotationEngine<Entry: Identifiable> {
         return PlaybackToken(generation: playbackGeneration)
     }
 
-    mutating func next(using token: PlaybackToken) -> Bool {
-        guard isCurrentPlayback(token), let nextIndex = index(offsetBy: 1) else { return false }
+    mutating func next() -> Bool {
+        guard let nextIndex = index(offsetBy: 1) else { return false }
         currentEntryID = entries[nextIndex].id
         return true
     }
 
-    mutating func previous(using token: PlaybackToken) -> Bool {
-        guard isCurrentPlayback(token), let previousIndex = index(offsetBy: -1) else { return false }
+    mutating func previous() -> Bool {
+        guard let previousIndex = index(offsetBy: -1) else { return false }
         currentEntryID = entries[previousIndex].id
+        return true
+    }
+
+    mutating func setCurrent(id: Entry.ID) -> Bool {
+        guard entries.contains(where: { $0.id == id }) else { return false }
+        currentEntryID = id
+        return true
+    }
+
+    mutating func advanceAfterPlaybackCompletion(using token: PlaybackToken) -> Bool {
+        guard isCurrentPlayback(token), let nextIndex = index(offsetBy: 1) else { return false }
+        currentEntryID = entries[nextIndex].id
         return true
     }
 

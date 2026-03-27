@@ -28,6 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var playlistEditorWindowController: PlaylistEditorWindowController?
     private let playlistPersistence = PlaylistPersistence()
     private var playlistStore = PlaylistStore()
+    private var playbackSession = PlaybackSession()
     private var isOnBattery: Bool {
         let snapshot = IOPSCopyPowerSourcesInfo().takeRetainedValue()
         let type = IOPSGetProvidingPowerSourceType(snapshot)?.takeRetainedValue() as String?
@@ -115,11 +116,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             controller.onVideoDropped = { [weak self] url in
                 self?.replacePlaylist(with: [url], setAsCurrent: true)
             }
+            controller.onPlaybackFinished = { [weak self] completion in
+                self?.handlePlaybackFinished(completion)
+            }
             controller.applyDimLevel(DimLevel.saved.opacity)
             controller.applyVideoGravity(VideoGravity.saved)
-            if let currentItem = playlistStore.currentItem {
-                controller.load(videoURL: currentItem.url, timeRange: currentItem.playbackTimeRange)
-            }
             screenControllers.append(ScreenController(id: id, controller: controller))
         }
 
@@ -129,7 +130,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let rhsIndex = orderedIDs.firstIndex(of: rhs.id) ?? .max
             return lhsIndex < rhsIndex
         }
-        applyBatteryPolicy()
+        applyCurrentPlaylistItem()
     }
 
     @objc private func screensDidChange() {
@@ -206,15 +207,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func applyCurrentPlaylistItem() {
-        if let item = playlistStore.currentItem {
+        if let playback = playbackSession.beginPlayback(using: &playlistStore) {
             screenControllers.forEach {
-                $0.controller.load(videoURL: item.url, timeRange: item.playbackTimeRange)
+                $0.controller.load(
+                    videoURL: playback.item.url,
+                    timeRange: playback.item.playbackTimeRange,
+                    itemID: playback.item.id,
+                    token: playback.token
+                )
             }
         } else {
             screenControllers.forEach { $0.controller.clearVideo() }
         }
         reloadPlaylistUI()
         applyBatteryPolicy()  // 省電力一時停止中は orderFront しない
+    }
+
+    private func handlePlaybackFinished(_ completion: PlaybackCompletion) {
+        guard playbackSession.consume(completion, using: &playlistStore) else { return }
+        persistPlaylistState()
+        applyCurrentPlaylistItem()
     }
 
     private func reloadPlaylistUI() {

@@ -100,6 +100,14 @@ script: |
 
 ---
 
+## Swift Testing の `#require` に mutating call を直接渡さない
+
+**症状:** `#require(session.beginPlayback(using: &store))` のように mutating method を直接渡すと、macro 展開後に `'$0' is immutable` でコンパイルエラーになる。
+**原因:** `#require` が式をそのまま評価するのではなく、内部の一時束縛へ展開するため、`inout` を含む mutating call と相性が悪い。
+**対策:** mutating call の結果は先にローカル変数へ代入し、その変数を `#require(...)` / `#expect(...)` に渡す。
+
+---
+
 ## CGDisplayIsBuiltin の戻り値は Bool ではなく boolean_t (Int32)
 
 **症状:** `CGDisplayIsBuiltin(id)` を `Bool` として直接使うとコンパイルエラー。
@@ -160,6 +168,22 @@ enum Xxx: String, CaseIterable {
 **症状:** summary 更新ごとに `buildMenu()` で全項目を作り直すと UI churn が増え、項目参照を使うテストも不安定になる。
 **原因:** 軽いタイトル変更までメニュー全 rebuild に乗せていた。
 **対策:** `NSMenuItem` を一度生成して保持し、`title` / `state` / `isEnabled` / `isHidden` だけ更新する。
+
+---
+
+## 再生完了ベースのローテーション token は AppDelegate が持つ
+
+**症状:** 複数画面のどれか 1 つから遅れて届いた完了通知で、すでに次の動画へ進んだ後の playlist state がもう一度 advance される。
+**原因:** controller ごとの完了通知に session identity がなく、manual 操作後や画面再構成後も古い完了を区別できない。
+**対策:** `playlistStore.beginPlayback()` で発行した token を `AppDelegate` が保持し、全 controller に同じ token を配る。完了通知は current token のときだけ消費し、次 item 適用時に必ず新 token を発行する。
+
+---
+
+## 同じ URL と timeRange でも token が変われば再ロードする
+
+**症状:** single-item playlist や同一 entry の再適用で、`URL + timeRange` だけを見た same-target no-op が効くと再生が再スタートせず、自動ローテーションが止まる。
+**原因:** 再生 target の同一性に playback session の境界が含まれていない。
+**対策:** `WallpaperWindowController.load(...)` の同一判定に playback token を含める。見た目の動画が同じでも token が新しければ新しい `AVPlayerItem` を作り、単発再生をやり直す。
 
 ---
 

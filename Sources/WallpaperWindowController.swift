@@ -4,17 +4,25 @@ import Cocoa
 @MainActor
 final class WallpaperWindowController {
 
+    private struct PlaybackContext {
+        let itemID: PlaylistItem.ID?
+        let url: URL
+        let timeRange: CMTimeRange?
+        let token: RotationEngine<PlaylistItem>.PlaybackToken?
+    }
+
     private let window: NSWindow
-    private let player: AVQueuePlayer
+    private let player: AVPlayer
     private let playerLayer: AVPlayerLayer
     private let dimLayer: CALayer
-    private var playerLooper: AVPlayerLooper?
+    private var currentPlaybackContext: PlaybackContext?
+    private var playbackCompletionObserver: NSObjectProtocol?
     private var currentVideoURL: URL?
-    private var currentTimeRange: CMTimeRange?
     private var isScopedAccessActive = false
     private var occlusionObserver: NSObjectProtocol?
 
     var onVideoDropped: ((URL) -> Void)?
+    var onPlaybackFinished: ((PlaybackCompletion) -> Void)?
 
     init(screen: NSScreen, videoURL url: URL?) {
         window = NSWindow(
@@ -41,7 +49,7 @@ final class WallpaperWindowController {
         // Prevent AppKit from releasing the window on close (ARC manages lifetime)
         window.isReleasedWhenClosed = false
 
-        player = AVQueuePlayer()
+        player = AVPlayer()
         player.isMuted = true
 
         let dropView = DropDestinationView(frame: window.frame)
@@ -77,7 +85,7 @@ final class WallpaperWindowController {
             MainActor.assumeIsolated {
                 guard let self else { return }
                 if self.window.occlusionState.contains(.visible) {
-                    if self.playerLooper != nil { self.player.play() }
+                    if self.currentPlaybackContext != nil { self.player.play() }
                 } else {
                     self.player.pause()
                 }
@@ -94,48 +102,77 @@ final class WallpaperWindowController {
     }
 
     func load(videoURL url: URL) {
-        load(videoURL: url, timeRange: nil)
+        load(videoURL: url, timeRange: nil, itemID: nil, token: nil)
     }
 
     func load(videoURL url: URL, timeRange: CMTimeRange?) {
-        guard !isSamePlaybackTarget(url: url, timeRange: timeRange) else {
+        load(videoURL: url, timeRange: timeRange, itemID: nil, token: nil)
+    }
+
+    func load(
+        videoURL url: URL,
+        timeRange: CMTimeRange?,
+        itemID: PlaylistItem.ID? = nil,
+        token: RotationEngine<PlaylistItem>.PlaybackToken? = nil
+    ) {
+        guard !isSamePlaybackTarget(url: url, timeRange: timeRange, itemID: itemID, token: token) else {
             if window.occlusionState.contains(.visible) { player.play() }
             return
         }
 
-        playerLooper = nil
-        if isScopedAccessActive {
-            currentVideoURL?.stopAccessingSecurityScopedResource()
-        }
-        isScopedAccessActive = url.startAccessingSecurityScopedResource()
+        player.pause()
+        stopObservingPlaybackCompletion()
+        stopScopedAccessIfNeeded()
+        let playbackContext = PlaybackContext(
+            itemID: itemID,
+            url: url,
+            timeRange: timeRange,
+            token: token
+        )
+        currentPlaybackContext = playbackContext
         currentVideoURL = url
-        currentTimeRange = timeRange
+        isScopedAccessActive = url.startAccessingSecurityScopedResource()
+
         let item = AVPlayerItem(url: url)
         if let timeRange {
-            playerLooper = AVPlayerLooper(player: player, templateItem: item, timeRange: timeRange)
-        } else {
-            playerLooper = AVPlayerLooper(player: player, templateItem: item)
+            item.forwardPlaybackEndTime = timeRange.end
         }
-        player.play()
+        player.replaceCurrentItem(with: item)
+        observePlaybackCompletion(for: item, context: playbackContext)
+
+        if let timeRange {
+            player.seek(
+                to: timeRange.start,
+                toleranceBefore: .zero,
+                toleranceAfter: .zero
+            ) { [weak self] finished in
+                Task { @MainActor [weak self] in
+                    guard finished, let self, self.isCurrentPlaybackContext(playbackContext) else {
+                        return
+                    }
+                    self.player.play()
+                }
+            }
+        } else {
+            player.play()
+        }
         // orderFront は AppDelegate の applyBatteryPolicy() が制御する
     }
 
     /// ビデオ再生を停止し、ウィンドウを非表示にする。
     /// セキュリティスコープアクセスを解放する。
     func clearVideo() {
-        playerLooper = nil
         player.pause()
-        if isScopedAccessActive {
-            currentVideoURL?.stopAccessingSecurityScopedResource()
-            isScopedAccessActive = false
-        }
+        player.replaceCurrentItem(with: nil)
+        stopObservingPlaybackCompletion()
+        stopScopedAccessIfNeeded()
         currentVideoURL = nil
-        currentTimeRange = nil
+        currentPlaybackContext = nil
         window.orderOut(nil)
     }
 
     func resumePlayback() {
-        guard playerLooper != nil else { return }
+        guard currentPlaybackContext != nil else { return }
         window.orderFront(nil)
         if window.occlusionState.contains(.visible) { player.play() }
     }
@@ -151,21 +188,64 @@ final class WallpaperWindowController {
             NotificationCenter.default.removeObserver(obs)
             occlusionObserver = nil
         }
-        playerLooper = nil
         player.pause()
+        player.replaceCurrentItem(with: nil)
+        stopObservingPlaybackCompletion()
+        stopScopedAccessIfNeeded()
+        currentVideoURL = nil
+        currentPlaybackContext = nil
+        window.close()
+    }
+
+    private func stopScopedAccessIfNeeded() {
         if isScopedAccessActive {
             currentVideoURL?.stopAccessingSecurityScopedResource()
             isScopedAccessActive = false
         }
-        currentVideoURL = nil
-        currentTimeRange = nil
-        window.close()
     }
 
-    private func isSamePlaybackTarget(url: URL, timeRange: CMTimeRange?) -> Bool {
-        guard currentVideoURL == url, let playerLooper else { return false }
-        _ = playerLooper
-        return timeRangesEqual(currentTimeRange, timeRange)
+    private func stopObservingPlaybackCompletion() {
+        if let playbackCompletionObserver {
+            NotificationCenter.default.removeObserver(playbackCompletionObserver)
+            self.playbackCompletionObserver = nil
+        }
+    }
+
+    private func observePlaybackCompletion(for item: AVPlayerItem, context: PlaybackContext?) {
+        guard let context else { return }
+
+        playbackCompletionObserver = NotificationCenter.default.addObserver(
+            forName: AVPlayerItem.didPlayToEndTimeNotification,
+            object: item,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, self.isCurrentPlaybackContext(context) else { return }
+                guard let itemID = context.itemID, let token = context.token else { return }
+                self.onPlaybackFinished?(PlaybackCompletion(itemID: itemID, token: token))
+            }
+        }
+    }
+
+    private func isSamePlaybackTarget(
+        url: URL,
+        timeRange: CMTimeRange?,
+        itemID: PlaylistItem.ID? = nil,
+        token: RotationEngine<PlaylistItem>.PlaybackToken? = nil
+    ) -> Bool {
+        guard let currentPlaybackContext else { return false }
+        guard currentPlaybackContext.url == url,
+              currentPlaybackContext.itemID == itemID,
+              currentPlaybackContext.token == token else { return false }
+        return timeRangesEqual(currentPlaybackContext.timeRange, timeRange)
+    }
+
+    private func isCurrentPlaybackContext(_ context: PlaybackContext) -> Bool {
+        guard let currentPlaybackContext else { return false }
+        return currentPlaybackContext.url == context.url
+            && currentPlaybackContext.itemID == context.itemID
+            && currentPlaybackContext.token == context.token
+            && timeRangesEqual(currentPlaybackContext.timeRange, context.timeRange)
     }
 
     private func timeRangesEqual(_ lhs: CMTimeRange?, _ rhs: CMTimeRange?) -> Bool {
