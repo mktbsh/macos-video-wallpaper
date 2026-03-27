@@ -84,6 +84,22 @@ script: |
 
 ---
 
+## playlist persistence 系テストは suite-scoped defaults と明示 cleanup を使う
+
+**症状:** migration / fallback 系のテストが `UserDefaults.standard` を使うと、前後のテストや再実行の残留状態に影響される。
+**原因:** 同じグローバル defaults を共有すると、bookmark 由来の state がテスト境界をまたいで残る。
+**対策:** `UserDefaults(suiteName:)` を毎テストで切り、`removePersistentDomain(forName:)` で開始時と終了時の両方を掃除する。migration 系は 2 回目の `load()` でも legacy に戻らないことを確認すると one-time fallback を表現しやすい。
+
+---
+
+## bookmark から復元した file URL は path から組み直す
+
+**症状:** Security-scoped bookmark を解決すると、同じファイルでも `file:///private/var/...` と `file:///var/...` の差で URL 比較が落ちることがある。
+**原因:** bookmark 解決結果の内部表現をそのまま持ち回ると、`URL` の見た目と `==` 判定が元の入力とずれる。
+**対策:** 永続化境界で `url.path` を取り出して新しい `URL(fileURLWithPath:)` を作り直す。`/private/` プレフィックスが付く環境でも、アプリ内で使う URL を一貫させられる。
+
+---
+
 ## CGDisplayIsBuiltin の戻り値は Bool ではなく boolean_t (Int32)
 
 **症状:** `CGDisplayIsBuiltin(id)` を `Bool` として直接使うとコンパイルエラー。

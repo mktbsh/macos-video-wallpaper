@@ -26,6 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var screenControllers: [ScreenController] = []
     private var statusMenuController: StatusMenuController?
     private var playlistEditorWindowController: PlaylistEditorWindowController?
+    private let playlistPersistence = PlaylistPersistence()
     private var playlistStore = PlaylistStore()
     private var isOnBattery: Bool {
         let snapshot = IOPSCopyPowerSourcesInfo().takeRetainedValue()
@@ -57,10 +58,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             name: NSNotification.Name(rawValue: kIOPSNotifyPowerSource),
             object: nil
         )
-
-        if let savedURL = VideoFileValidator.resolveBookmarkedURL() {
-            playlistStore.replace(urls: [savedURL])
-        }
+        playlistStore = playlistPersistence.load()
 
         let menu = StatusMenuController()
         menu.onAddVideos = { [weak self] in
@@ -177,6 +175,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             replacePlaylist(with: urls, setAsCurrent: true)
         } else {
             playlistStore.add(urls: urls)
+            persistPlaylistState()
             reloadPlaylistUI()
         }
     }
@@ -184,31 +183,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func replacePlaylist(with urls: [URL], setAsCurrent: Bool) {
         guard !urls.isEmpty else { return }
         playlistStore.replace(urls: urls)
-        if setAsCurrent, let currentURL = playlistStore.currentItem?.url {
-            VideoFileValidator.saveBookmark(for: currentURL)
-        }
+        persistPlaylistState()
         applyCurrentPlaylistItem()
     }
 
     private func advanceToNextItem() {
         guard playlistStore.next() else { return }
+        persistPlaylistState()
         applyCurrentPlaylistItem()
     }
 
     private func moveToPreviousItem() {
         guard playlistStore.previous() else { return }
+        persistPlaylistState()
         applyCurrentPlaylistItem()
     }
 
     private func clearPlaylist() {
         playlistStore.clear()
-        VideoFileValidator.clearBookmark()
+        playlistPersistence.clear()
         applyCurrentPlaylistItem()
     }
 
     private func applyCurrentPlaylistItem() {
         if let item = playlistStore.currentItem {
-            VideoFileValidator.saveBookmark(for: item.url)
             screenControllers.forEach {
                 $0.controller.load(videoURL: item.url, timeRange: item.playbackTimeRange)
             }
@@ -284,16 +282,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func deletePlaylistItem(id: PlaylistItem.ID) {
         guard playlistStore.delete(id: id) else { return }
+        persistPlaylistState()
         applyCurrentPlaylistItem()
     }
 
     private func movePlaylistItem(id: PlaylistItem.ID, by offset: Int) {
         guard playlistStore.move(id: id, by: offset) else { return }
+        persistPlaylistState()
         reloadPlaylistUI()
     }
 
     private func setCurrentPlaylistItem(id: PlaylistItem.ID) {
         guard playlistStore.setCurrent(id: id) else { return }
+        persistPlaylistState()
         applyCurrentPlaylistItem()
     }
 
@@ -303,11 +304,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         mutation: (inout PlaylistStore) -> Bool
     ) {
         guard mutation(&playlistStore) else { return }
+        persistPlaylistState()
 
         if playbackSensitive, playlistStore.currentItem?.id == id {
             applyCurrentPlaylistItem()
         } else {
             reloadPlaylistUI()
         }
+    }
+
+    private func persistPlaylistState() {
+        playlistPersistence.save(store: playlistStore)
     }
 }
