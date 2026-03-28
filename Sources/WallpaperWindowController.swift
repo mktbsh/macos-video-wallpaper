@@ -12,21 +12,32 @@ final class WallpaperWindowController {
     }
 
     private let window: NSWindow
+    private var isWindowOrderedFront = false
     private let driver: PlayerDriver
     private let dimLayer: CALayer
     private let playbackCompletionObserver: PlaybackCompletionObserver
     private let securityScopedAccessController: SecurityScopedAccessController
     private var currentPlaybackContext: PlaybackContext?
+    private var currentObservationTarget: PlaybackObservationTarget?
     private var playbackCompletionObservationToken: AnyObject?
     private var securityScopedAccessHandle: SecurityScopedAccessHandle?
+    private var isPlaybackStartPending = false
+    private var isPlaybackPaused = true
     private var occlusionObserver: NSObjectProtocol?
 
     var onVideoDropped: ((URL) -> Void)?
     var onPlaybackFinished: ((PlaybackCompletion) -> Void)?
 
     convenience init(screen: NSScreen, videoURL url: URL?) {
+        let window = NSWindow(
+            contentRect: screen.frame,
+            styleMask: .borderless,
+            backing: .buffered,
+            defer: false,
+            screen: screen
+        )
         self.init(
-            screen: screen,
+            window: window,
             videoURL: url,
             driverFactory: AVPlayerDriverFactory(),
             playbackCompletionObserver: NotificationPlaybackCompletionObserver(),
@@ -35,24 +46,16 @@ final class WallpaperWindowController {
     }
 
     init(
-        screen: NSScreen,
+        window: NSWindow,
         videoURL url: URL?,
         driverFactory: PlayerDriverFactory,
         playbackCompletionObserver: PlaybackCompletionObserver,
         securityScopedAccessController: SecurityScopedAccessController
     ) {
-        window = NSWindow(
-            contentRect: screen.frame,
-            styleMask: .borderless,
-            backing: .buffered,
-            defer: false,
-            screen: screen
-        )
+        self.window = window
         driver = driverFactory.makeDriver()
         self.playbackCompletionObserver = playbackCompletionObserver
         self.securityScopedAccessController = securityScopedAccessController
-        window.setFrameOrigin(screen.frame.origin)
-        window.setContentSize(screen.frame.size)
 
         // Sits just below the desktop icon layer
         window.level = NSWindow.Level(
@@ -88,7 +91,7 @@ final class WallpaperWindowController {
 
         if let url = url {
             load(videoURL: url)
-            window.orderFront(nil)
+            showWindowIfNeeded()
         }
 
         // Pause when covered by a fullscreen app; resume when visible again
@@ -99,10 +102,10 @@ final class WallpaperWindowController {
         ) { [weak self] _ in
             MainActor.assumeIsolated {
                 guard let self else { return }
-                if self.window.occlusionState.contains(.visible) {
-                    if self.currentPlaybackContext != nil { self.driver.play() }
+                if self.isWindowOrderedFront {
+                    self.playIfNeeded()
                 } else {
-                    self.driver.pause()
+                    self.pausePlaybackIfNeeded()
                 }
             }
         }
@@ -130,20 +133,34 @@ final class WallpaperWindowController {
         itemID: PlaylistItem.ID? = nil,
         token: RotationEngine<PlaylistItem>.PlaybackToken? = nil
     ) {
-        guard !isSamePlaybackTarget(url: url, timeRange: timeRange, itemID: itemID, token: token) else {
-            if window.occlusionState.contains(.visible) { driver.play() }
-            return
-        }
-
-        driver.pause()
-        stopObservingPlaybackCompletion()
-        stopScopedAccessIfNeeded()
         let playbackContext = PlaybackContext(
             itemID: itemID,
             url: url,
             timeRange: timeRange,
             token: token
         )
+
+        guard !isSamePlaybackTarget(url: url, timeRange: timeRange, itemID: itemID, token: token) else {
+            if isWindowOrderedFront { playIfNeeded() }
+            return
+        }
+
+        if isSameMediaTarget(url: url, timeRange: timeRange),
+           let currentObservationTarget {
+            isPlaybackStartPending = false
+            pausePlaybackIfNeeded()
+            stopObservingPlaybackCompletion()
+            currentPlaybackContext = playbackContext
+            observePlaybackCompletion(for: currentObservationTarget, context: playbackContext)
+            startPlayback(for: playbackContext, reusingCurrentItem: true)
+            return
+        }
+
+        isPlaybackStartPending = false
+        pausePlaybackIfNeeded()
+        stopObservingPlaybackCompletion()
+        currentObservationTarget = nil
+        stopScopedAccessIfNeeded()
         currentPlaybackContext = playbackContext
         securityScopedAccessHandle = securityScopedAccessController.startAccessing(url)
 
@@ -152,44 +169,40 @@ final class WallpaperWindowController {
             forwardPlaybackEndTime: timeRange?.end
         )
         observePlaybackCompletion(for: observationTarget, context: playbackContext)
-
-        if let timeRange {
-            driver.seek(
-                to: timeRange.start,
-                toleranceBefore: .zero,
-                toleranceAfter: .zero
-            ) { [weak self] finished in
-                guard finished, let self, self.isCurrentPlaybackContext(playbackContext) else {
-                    return
-                }
-                self.driver.play()
-            }
-        } else {
-            driver.play()
-        }
+        startPlayback(for: playbackContext, reusingCurrentItem: false)
         // orderFront は AppDelegate の applyBatteryPolicy() が制御する
     }
 
     /// ビデオ再生を停止し、ウィンドウを非表示にする。
     /// セキュリティスコープアクセスを解放する。
     func clearVideo() {
+        guard currentPlaybackContext != nil
+            || currentObservationTarget != nil
+            || isWindowOrderedFront
+            || isPlaybackStartPending
+            || !isPlaybackPaused
+        else {
+            return
+        }
         currentPlaybackContext = nil
-        driver.pause()
+        currentObservationTarget = nil
+        isPlaybackStartPending = false
+        pausePlaybackIfNeeded()
         driver.clearCurrentItem()
         stopObservingPlaybackCompletion()
         stopScopedAccessIfNeeded()
-        window.orderOut(nil)
+        hideWindowIfNeeded()
     }
 
     func resumePlayback() {
         guard currentPlaybackContext != nil else { return }
-        window.orderFront(nil)
-        if window.occlusionState.contains(.visible) { driver.play() }
+        showWindowIfNeeded()
+        playIfNeeded()
     }
 
     func pausePlayback() {
-        driver.pause()
-        window.orderOut(nil)
+        pausePlaybackIfNeeded()
+        hideWindowIfNeeded()
     }
 
     /// Call from AppDelegate on the MainActor to release resources.
@@ -199,11 +212,39 @@ final class WallpaperWindowController {
             occlusionObserver = nil
         }
         currentPlaybackContext = nil
-        driver.pause()
+        currentObservationTarget = nil
+        isPlaybackStartPending = false
+        pausePlaybackIfNeeded()
         driver.clearCurrentItem()
         stopObservingPlaybackCompletion()
         stopScopedAccessIfNeeded()
+        hideWindowIfNeeded()
         window.close()
+    }
+
+    private func showWindowIfNeeded() {
+        guard !isWindowOrderedFront else { return }
+        window.orderFront(nil)
+        isWindowOrderedFront = true
+    }
+
+    private func hideWindowIfNeeded() {
+        guard isWindowOrderedFront else { return }
+        window.orderOut(nil)
+        isWindowOrderedFront = false
+    }
+
+    private func pausePlaybackIfNeeded() {
+        guard !isPlaybackPaused else { return }
+        driver.pause()
+        isPlaybackPaused = true
+    }
+
+    private func playIfNeeded() {
+        guard !isPlaybackStartPending else { return }
+        guard isPlaybackPaused else { return }
+        driver.play()
+        isPlaybackPaused = false
     }
 
     private func stopScopedAccessIfNeeded() {
@@ -223,6 +264,7 @@ final class WallpaperWindowController {
         context: PlaybackContext?
     ) {
         guard let context else { return }
+        currentObservationTarget = target
 
         playbackCompletionObservationToken = playbackCompletionObserver.observePlaybackCompletion(
             for: target
@@ -230,6 +272,42 @@ final class WallpaperWindowController {
             guard let self, self.isCurrentPlaybackContext(context) else { return }
             guard let itemID = context.itemID, let token = context.token else { return }
             self.onPlaybackFinished?(PlaybackCompletion(itemID: itemID, token: token))
+        }
+    }
+
+    private func isSameMediaTarget(url: URL, timeRange: CMTimeRange?) -> Bool {
+        guard let currentPlaybackContext else { return false }
+        guard currentPlaybackContext.url == url else { return false }
+        return timeRangesEqual(currentPlaybackContext.timeRange, timeRange)
+    }
+
+    private func startPlayback(
+        for context: PlaybackContext,
+        reusingCurrentItem: Bool
+    ) {
+        if let timeRange = context.timeRange {
+            seekAndPlay(to: timeRange.start, for: context)
+        } else if reusingCurrentItem {
+            seekAndPlay(to: .zero, for: context)
+        } else {
+            isPlaybackStartPending = false
+            playIfNeeded()
+        }
+    }
+
+    private func seekAndPlay(to time: CMTime, for context: PlaybackContext) {
+        isPlaybackStartPending = true
+        driver.seek(
+            to: time,
+            toleranceBefore: .zero,
+            toleranceAfter: .zero
+        ) { [weak self] finished in
+            guard finished, let self, self.isCurrentPlaybackContext(context) else {
+                return
+            }
+            self.isPlaybackStartPending = false
+            self.isPlaybackPaused = false
+            self.driver.play()
         }
     }
 
@@ -265,6 +343,8 @@ final class WallpaperWindowController {
         }
     }
 }
+
+extension WallpaperWindowController: WallpaperWindowControlling {}
 
 @MainActor
 private final class DropDestinationView: NSView {

@@ -8,6 +8,13 @@
 
 ---
 
+## Maintenance: プレイリスト永続化の負荷削減
+
+- [x] playlist metadata と bookmark payload を分離し、current item 変更や editor 更新で bookmark を再生成しないようにする
+- [x] 旧 `playlistState` 形式から新形式へ移行して既存データを維持する
+
+---
+
 ## Maintenance: PR #20 branch fix
 
 - [x] Lefthook の SwiftPM 用 `Package.swift` を追加する
@@ -45,8 +52,11 @@
 
 - [x] bookmark 解決を pure にし、security-scoped access の開始 / 終了を再生側に集約する
 - [x] drag & drop 時の重複 `load()` を解消し、同一 URL + timeRange の再生を no-op にする
+- [x] 同一 media の token 切り替えでは `AVPlayerItem` / security-scoped access を再利用しつつ seek で再始動する
 - [x] 画面構成変更時の壁紙ウィンドウ更新を差分適用にする
 - [x] `StatusMenuController` の menu rebuild をやめ、固定 `NSMenuItem` の差分更新にする
+- [x] playlist editor の start / end 編集を 1 回の time-range commit にまとめ、current item の再生更新 churn を減らす
+- [x] `WallpaperWindowController` の pause / resume / clear を冪等化し、重複 `orderFront` / `orderOut` と不要な `play` / `pause` を抑制する
 
 ---
 

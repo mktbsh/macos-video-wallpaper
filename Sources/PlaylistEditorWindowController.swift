@@ -49,6 +49,11 @@ final class PlaylistEditorWindowController: NSWindowController {
         set { actions.onEndTimeChanged = newValue }
     }
 
+    var onTimeRangeChanged: ((PlaylistItem.ID, Double?, Double?) -> Void)? {
+        get { actions.onTimeRangeChanged }
+        set { actions.onTimeRangeChanged = newValue }
+    }
+
     var validateTimeRange: ((PlaylistItem.ID, Double?, Double?, Bool) -> String?)? {
         get { actions.validateTimeRange }
         set { actions.validateTimeRange = newValue }
@@ -121,6 +126,7 @@ final class PlaylistEditorActionBridge {
     var onUseFullVideoChanged: ((PlaylistItem.ID, Bool) -> Void)?
     var onStartTimeChanged: ((PlaylistItem.ID, Double?) -> Void)?
     var onEndTimeChanged: ((PlaylistItem.ID, Double?) -> Void)?
+    var onTimeRangeChanged: ((PlaylistItem.ID, Double?, Double?) -> Void)?
     var validateTimeRange: ((PlaylistItem.ID, Double?, Double?, Bool) -> String?)?
 }
 
@@ -310,10 +316,7 @@ private struct PlaylistDetailView: View {
             guard !isSyncingDrafts else { return }
             state.validationMessage = nil
             actions.onUseFullVideoChanged?(item.id, useFullVideo)
-            if useFullVideo {
-                actions.onStartTimeChanged?(item.id, nil)
-                actions.onEndTimeChanged?(item.id, nil)
-            } else {
+            if !useFullVideo {
                 commitPendingEdits()
             }
         }
@@ -348,27 +351,23 @@ private struct PlaylistDetailView: View {
     }
 
     private func commitPendingEdits() {
-        guard !useFullVideo else {
-            state.validationMessage = nil
-            return
-        }
-
-        let trimmedStart = startTime.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedEnd = endTime.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let start = Self.parseSeconds(trimmedStart),
-              let end = Self.parseSeconds(trimmedEnd) else {
-            state.validationMessage = nil
-            return
-        }
-
-        if let validationMessage = actions.validateTimeRange?(item.id, start, end, useFullVideo) {
-            state.validationMessage = validationMessage
-            return
-        }
-
-        state.validationMessage = nil
-        actions.onStartTimeChanged?(item.id, start)
-        actions.onEndTimeChanged?(item.id, end)
+        let rangeUpdate = actions.onTimeRangeChanged
+        PlaylistEditorTimeRangeCommitter.commit(.init(
+            itemID: item.id,
+            startText: startTime,
+            endText: endTime,
+            useFullVideo: useFullVideo,
+            validateTimeRange: actions.validateTimeRange,
+            setValidationMessage: { state.validationMessage = $0 },
+            applyTimeRange: { itemID, start, end in
+                if let rangeUpdate {
+                    rangeUpdate(itemID, start, end)
+                } else {
+                    actions.onStartTimeChanged?(itemID, start)
+                    actions.onEndTimeChanged?(itemID, end)
+                }
+            }
+        ))
     }
 
     private static let secondsFormatter: NumberFormatter = {
@@ -379,7 +378,45 @@ private struct PlaylistDetailView: View {
         return formatter
     }()
 
-    private static func parseSeconds(_ string: String) -> Double? {
-        Double(string)
+}
+
+enum PlaylistEditorTimeRangeCommitter {
+    struct CommitRequest {
+        let itemID: PlaylistItem.ID
+        let startText: String
+        let endText: String
+        let useFullVideo: Bool
+        let validateTimeRange: ((PlaylistItem.ID, Double?, Double?, Bool) -> String?)?
+        let setValidationMessage: (String?) -> Void
+        let applyTimeRange: (PlaylistItem.ID, Double?, Double?) -> Void
+    }
+
+    static func commit(_ request: CommitRequest) {
+        guard !request.useFullVideo else {
+            request.setValidationMessage(nil)
+            request.applyTimeRange(request.itemID, nil, nil)
+            return
+        }
+
+        let trimmedStart = request.startText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedEnd = request.endText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let start = Double(trimmedStart),
+              let end = Double(trimmedEnd) else {
+            request.setValidationMessage(nil)
+            return
+        }
+
+        if let validationMessage = request.validateTimeRange?(
+            request.itemID,
+            start,
+            end,
+            request.useFullVideo
+        ) {
+            request.setValidationMessage(validationMessage)
+            return
+        }
+
+        request.setValidationMessage(nil)
+        request.applyTimeRange(request.itemID, start, end)
     }
 }
