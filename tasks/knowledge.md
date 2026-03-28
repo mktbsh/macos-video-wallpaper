@@ -179,6 +179,22 @@ enum Xxx: String, CaseIterable {
 
 ---
 
+## `didPlayToEndTime` seam は player ではなく item / target 単位で切る
+
+**症状:** `AVPlayer` だけを fake にしても、`didPlayToEndTime` の stale notification や `clearVideo()` / `invalidate()` の security-scoped cleanup を deterministic に検証できない。
+**原因:** 再生完了通知は `AVPlayerItem` 単位で飛び、security-scoped access は `URL.startAccessing...` / `stopAccessing...` の副作用として発生するため、player abstraction だけでは観測点が足りない。
+**対策:** seam は `PlaybackObservationTarget` と `SecurityScopedAccessHandle` まで分ける。`didPlayToEndTime` は player ではなく item / target 単位の観測として扱い、controller test では古い target への finish 発火と access handle の `stop()` 呼び出し回数を直接検証する。
+
+---
+
+## security-scoped cleanup を test するなら `start/stop` を handle 化する
+
+**症状:** `clearVideo()` / `invalidate()` で access が正しく解放されたかを test したくても、`URL.startAccessingSecurityScopedResource()` / `stopAccessingSecurityScopedResource()` を直接叩く実装だと stop 回数を観測できない。
+**原因:** security-scoped API が URL への副作用として露出しており、開始と終了のライフサイクルをテスト側から保持できない。
+**対策:** `startAccessing(...)` は `SecurityScopedAccessHandle` を返し、cleanup はその handle の `stop()` に集約する。fake handle で stop 回数を数えると controller の cleanup を deterministic に検証できる。
+
+---
+
 ## 同じ URL と timeRange でも token が変われば再ロードする
 
 **症状:** single-item playlist や同一 entry の再適用で、`URL + timeRange` だけを見た same-target no-op が効くと再生が再スタートせず、自動ローテーションが止まる。

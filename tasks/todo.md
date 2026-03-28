@@ -50,6 +50,13 @@
 
 ---
 
+## Maintenance: `WallpaperWindowController` の test seam
+
+- [x] `PlayerDriver` / `PlaybackCompletionObserver` / `SecurityScopedAccessController` を追加する
+- [x] fake dependency ベースで `WallpaperWindowController` の media lifecycle edge case をテストする
+
+---
+
 ## Backlog（検討中）
 
 - 動画のボリューム調整（ミュート解除オプション）
