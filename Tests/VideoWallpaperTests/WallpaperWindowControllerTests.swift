@@ -8,8 +8,8 @@ import Testing
 struct WallpaperWindowControllerLoadingTests {
 
     @Test func full_load_replaces_item_and_plays() throws {
-        let context = try TestContext()
-        context.controller.load(videoURL: makeURL("full-load.mov"))
+        let context = try WallpaperWindowControllerTestContext()
+        context.controller.load(videoURL: wallpaperWindowTestURL("full-load.mov"))
 
         #expect(context.driver.replaceCurrentItemCallCount == 1)
         #expect(context.driver.playCallCount == 1)
@@ -18,9 +18,9 @@ struct WallpaperWindowControllerLoadingTests {
     }
 
     @Test func ranged_load_waits_for_current_seek_completion_before_playing() throws {
-        let context = try TestContext()
+        let context = try WallpaperWindowControllerTestContext()
         context.controller.load(
-            videoURL: makeURL("ranged-load.mov"),
+            videoURL: wallpaperWindowTestURL("ranged-load.mov"),
             timeRange: makeTimeRange(start: 2, end: 5)
         )
 
@@ -32,13 +32,13 @@ struct WallpaperWindowControllerLoadingTests {
     }
 
     @Test func stale_seek_completion_is_ignored_after_second_load() throws {
-        let context = try TestContext()
+        let context = try WallpaperWindowControllerTestContext()
         context.controller.load(
-            videoURL: makeURL("first-ranged-load.mov"),
+            videoURL: wallpaperWindowTestURL("first-ranged-load.mov"),
             timeRange: makeTimeRange(start: 1, end: 3)
         )
         context.controller.load(
-            videoURL: makeURL("second-ranged-load.mov"),
+            videoURL: wallpaperWindowTestURL("second-ranged-load.mov"),
             timeRange: makeTimeRange(start: 4, end: 7)
         )
 
@@ -50,8 +50,8 @@ struct WallpaperWindowControllerLoadingTests {
     }
 
     @Test func same_target_and_same_token_is_no_op() throws {
-        let context = try TestContext()
-        let playback = try makePlaybackRequest(url: makeURL("same-target.mov"))
+        let context = try WallpaperWindowControllerTestContext()
+        let playback = try makePlaybackRequest(url: wallpaperWindowTestURL("same-target.mov"))
 
         context.controller.load(
             videoURL: playback.item.url,
@@ -70,9 +70,9 @@ struct WallpaperWindowControllerLoadingTests {
         #expect(context.driver.playCallCount == 1)
     }
 
-    @Test func same_target_with_new_token_reloads_item() throws {
-        let context = try TestContext()
-        var store = PlaylistStore(items: [PlaylistItem(url: makeURL("same-target-token.mov"))])
+    @Test func same_target_with_new_token_reuses_current_item_and_restarts_playback() throws {
+        let context = try WallpaperWindowControllerTestContext()
+        var store = PlaylistStore(items: [PlaylistItem(url: wallpaperWindowTestURL("same-target-token.mov"))])
         var session = PlaybackSession()
         let firstPlaybackResult = session.beginPlayback(using: &store)
         let firstPlayback = try #require(firstPlaybackResult)
@@ -92,14 +92,25 @@ struct WallpaperWindowControllerLoadingTests {
             token: secondPlayback.token
         )
 
-        #expect(context.driver.replaceCurrentItemCallCount == 2)
+        #expect(context.driver.replaceCurrentItemCallCount == 1)
+        #expect(context.accessController.startCount == 1)
+        #expect(context.driver.seekCalls.count == 1)
+        #expect(context.driver.seekCalls[0].time == .zero)
+        #expect(context.driver.playCallCount == 1)
+        #expect(context.observer.events == [
+            .observe(context.driver.observationTargets[0].id),
+            .cancel(context.driver.observationTargets[0].id),
+            .observe(context.driver.observationTargets[0].id)
+        ])
+
+        context.driver.completeSeek(at: 0, finished: true)
         #expect(context.driver.playCallCount == 2)
     }
 
     @Test func old_completion_observation_is_canceled_before_new_one_is_installed() throws {
-        let context = try TestContext()
-        context.controller.load(videoURL: makeURL("first-observed.mov"))
-        context.controller.load(videoURL: makeURL("second-observed.mov"))
+        let context = try WallpaperWindowControllerTestContext()
+        context.controller.load(videoURL: wallpaperWindowTestURL("first-observed.mov"))
+        context.controller.load(videoURL: wallpaperWindowTestURL("second-observed.mov"))
 
         #expect(context.observer.events == [
             .observe(context.driver.observationTargets[0].id),
@@ -113,12 +124,12 @@ struct WallpaperWindowControllerLoadingTests {
 struct WallpaperWindowControllerLifecycleTests {
 
     @Test func stale_completion_target_is_ignored() throws {
-        let context = try TestContext()
+        let context = try WallpaperWindowControllerTestContext()
         var completions: [PlaybackCompletion] = []
         context.controller.onPlaybackFinished = { completions.append($0) }
 
-        let stalePlayback = try makePlaybackRequest(url: makeURL("stale-target-first.mov"))
-        let currentPlayback = try makePlaybackRequest(url: makeURL("stale-target-second.mov"))
+        let stalePlayback = try makePlaybackRequest(url: wallpaperWindowTestURL("stale-target-first.mov"))
+        let currentPlayback = try makePlaybackRequest(url: wallpaperWindowTestURL("stale-target-second.mov"))
 
         context.controller.load(
             videoURL: stalePlayback.item.url,
@@ -145,10 +156,10 @@ struct WallpaperWindowControllerLifecycleTests {
     }
 
     @Test func clear_video_ignores_stale_completion_target() throws {
-        let context = try TestContext()
+        let context = try WallpaperWindowControllerTestContext()
         var completions: [PlaybackCompletion] = []
         context.controller.onPlaybackFinished = { completions.append($0) }
-        let playback = try makePlaybackRequest(url: makeURL("clear-stale-target.mov"))
+        let playback = try makePlaybackRequest(url: wallpaperWindowTestURL("clear-stale-target.mov"))
 
         context.controller.load(
             videoURL: playback.item.url,
@@ -165,11 +176,11 @@ struct WallpaperWindowControllerLifecycleTests {
     }
 
     @Test func reload_stops_previous_scoped_access_once() throws {
-        let context = try TestContext()
-        context.controller.load(videoURL: makeURL("reload-first.mov"))
+        let context = try WallpaperWindowControllerTestContext()
+        context.controller.load(videoURL: wallpaperWindowTestURL("reload-first.mov"))
         let firstHandle = try #require(context.accessController.handles.first)
 
-        context.controller.load(videoURL: makeURL("reload-second.mov"))
+        context.controller.load(videoURL: wallpaperWindowTestURL("reload-second.mov"))
 
         #expect(context.accessController.startCount == 2)
         #expect(firstHandle.stopCount == 1)
@@ -177,11 +188,11 @@ struct WallpaperWindowControllerLifecycleTests {
     }
 
     @Test func clear_video_stops_observation_and_scoped_access() throws {
-        let context = try TestContext()
-        context.controller.load(videoURL: makeURL("clear-video.mov"))
+        let context = try WallpaperWindowControllerTestContext()
+        context.controller.load(videoURL: wallpaperWindowTestURL("clear-video.mov"))
         context.controller.clearVideo()
 
-        #expect(context.driver.pauseCallCount >= 2)
+        #expect(context.driver.pauseCallCount == 1)
         #expect(context.driver.clearCurrentItemCallCount == 1)
         #expect(context.observer.events == [
             .observe(context.driver.observationTargets[0].id),
@@ -191,9 +202,9 @@ struct WallpaperWindowControllerLifecycleTests {
     }
 
     @Test func pending_seek_completion_after_clear_does_not_play() throws {
-        let context = try TestContext()
+        let context = try WallpaperWindowControllerTestContext()
         context.controller.load(
-            videoURL: makeURL("pending-seek-after-clear.mov"),
+            videoURL: wallpaperWindowTestURL("pending-seek-after-clear.mov"),
             timeRange: makeTimeRange(start: 6, end: 9)
         )
         context.controller.clearVideo()
@@ -203,9 +214,9 @@ struct WallpaperWindowControllerLifecycleTests {
     }
 
     @Test func unfinished_seek_completion_does_not_play_current_context() throws {
-        let context = try TestContext()
+        let context = try WallpaperWindowControllerTestContext()
         context.controller.load(
-            videoURL: makeURL("unfinished-seek.mov"),
+            videoURL: wallpaperWindowTestURL("unfinished-seek.mov"),
             timeRange: makeTimeRange(start: 10, end: 14)
         )
         context.driver.completeSeek(at: 0, finished: false)
@@ -214,15 +225,15 @@ struct WallpaperWindowControllerLifecycleTests {
     }
 
     @Test func invalidate_cleans_up_once_and_ignores_pending_seek_completion() throws {
-        let context = try TestContext()
+        let context = try WallpaperWindowControllerTestContext()
         context.controller.load(
-            videoURL: makeURL("invalidate-seek.mov"),
+            videoURL: wallpaperWindowTestURL("invalidate-seek.mov"),
             timeRange: makeTimeRange(start: 8, end: 12)
         )
         context.controller.invalidate()
         context.driver.completeSeek(at: 0, finished: true)
 
-        #expect(context.driver.pauseCallCount >= 2)
+        #expect(context.driver.pauseCallCount == 0)
         #expect(context.driver.clearCurrentItemCallCount == 1)
         #expect(context.observer.events == [
             .observe(context.driver.observationTargets[0].id),
@@ -234,22 +245,25 @@ struct WallpaperWindowControllerLifecycleTests {
 }
 
 @MainActor
-private struct TestContext {
+struct WallpaperWindowControllerTestContext {
+    let window: FakeWindow
     let driver: FakePlayerDriver
     let observer: FakePlaybackCompletionObserver
     let accessController: FakeSecurityScopedAccessController
     let controller: WallpaperWindowController
 
     init() throws {
+        let window = FakeWindow(contentRect: try makeScreen().frame)
         let driver = FakePlayerDriver()
         let observer = FakePlaybackCompletionObserver()
         let accessController = FakeSecurityScopedAccessController()
 
+        self.window = window
         self.driver = driver
         self.observer = observer
         self.accessController = accessController
         controller = WallpaperWindowController(
-            screen: try makeScreen(),
+            window: window,
             videoURL: nil,
             driverFactory: FakePlayerDriverFactory(driver: driver),
             playbackCompletionObserver: observer,
@@ -274,7 +288,7 @@ private func makeScreen() throws -> NSScreen {
     try #require(NSScreen.screens.first)
 }
 
-private func makeURL(_ name: String) -> URL {
+func wallpaperWindowTestURL(_ name: String) -> URL {
     URL(fileURLWithPath: "/tmp/\(name)")
 }
 
@@ -295,6 +309,29 @@ final class FakePlayerDriverFactory: PlayerDriverFactory {
 
     func makeDriver() -> PlayerDriver {
         driver
+    }
+}
+
+@MainActor
+final class FakeWindow: NSWindow {
+    private(set) var orderFrontCallCount = 0
+    private(set) var orderOutCallCount = 0
+    private(set) var closeCallCount = 0
+
+    init(contentRect: CGRect) {
+        super.init(contentRect: contentRect, styleMask: .borderless, backing: .buffered, defer: false)
+    }
+
+    override func orderFront(_ sender: Any?) {
+        orderFrontCallCount += 1
+    }
+
+    override func orderOut(_ sender: Any?) {
+        orderOutCallCount += 1
+    }
+
+    override func close() {
+        closeCallCount += 1
     }
 }
 

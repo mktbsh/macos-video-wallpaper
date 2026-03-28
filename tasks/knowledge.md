@@ -163,6 +163,14 @@ enum Xxx: String, CaseIterable {
 
 ---
 
+## screen 再構成では active playback token を再発行しない
+
+**症状:** `didChangeScreenParametersNotification` のたびに `PlaybackSession.beginPlayback()` を呼ぶと、同じ playlist item でも新しい token が発行され、surviving controller が reload / orderFront / orderOut を再実行してしまう。
+**原因:** 画面構成の更新と playlist の再生開始を同じ経路で扱っていた。
+**対策:** screen 再構成では current token を維持し、新規 controller のみ current playback に同期する。playlist 変更時だけ全 controller に対して `beginPlayback()` を行う。
+
+---
+
 ## `NSMenu` は固定 item を保持して差分更新する
 
 **症状:** summary 更新ごとに `buildMenu()` で全項目を作り直すと UI churn が増え、項目参照を使うテストも不安定になる。
@@ -187,6 +195,14 @@ enum Xxx: String, CaseIterable {
 
 ---
 
+## `pause` / `resume` / `clear` の冪等化は window visibility state と分けて持つ
+
+**症状:** battery policy や screen lifecycle が同じ `pausePlayback()` / `resumePlayback()` / `clearVideo()` を連続で呼ぶと、`orderFront` / `orderOut` と `play` / `pause` が重複する。
+**原因:** これらの操作が「今 visible か」「再生開始待ちか」を見ずに毎回 AppKit と player に触っていた。
+**対策:** controller 内で window の ordered state と playback start pending state を持ち、状態が変わらない呼び出しは no-op にする。`clearVideo()` も既に hidden で paused なら何もしない。
+
+---
+
 ## security-scoped cleanup を test するなら `start/stop` を handle 化する
 
 **症状:** `clearVideo()` / `invalidate()` で access が正しく解放されたかを test したくても、`URL.startAccessingSecurityScopedResource()` / `stopAccessingSecurityScopedResource()` を直接叩く実装だと stop 回数を観測できない。
@@ -195,11 +211,35 @@ enum Xxx: String, CaseIterable {
 
 ---
 
-## 同じ URL と timeRange でも token が変われば再ロードする
+## 同じ URL と timeRange でも token が変われば playback は再始動する
 
-**症状:** single-item playlist や同一 entry の再適用で、`URL + timeRange` だけを見た same-target no-op が効くと再生が再スタートせず、自動ローテーションが止まる。
-**原因:** 再生 target の同一性に playback session の境界が含まれていない。
-**対策:** `WallpaperWindowController.load(...)` の同一判定に playback token を含める。見た目の動画が同じでも token が新しければ新しい `AVPlayerItem` を作り、単発再生をやり直す。
+**症状:** single-item playlist や同一 entry の再適用で、`URL + timeRange` だけを見た same-target no-op が効くと再生が再スタートせず、自動ローテーションが止まる。一方で token 変更のたびに `AVPlayerItem` と security-scoped access まで作り直すと、短いループで CPU / メモリ churn が大きい。
+**原因:** playback session の境界と media resource の同一性を同じ判定で扱っていた。
+**対策:** `WallpaperWindowController.load(...)` の同一判定には playback token を含める。ただし `URL + timeRange` が同じなら `AVPlayerItem` / access handle は再利用し、completion observation の付け替えと `seek` による再始動だけを行う。
+
+---
+
+## seek completion の MainActor ハンドオフは main-thread 直行を優先する
+
+**症状:** `AVPlayer.seek` の完了後に毎回 `Task { @MainActor in ... }` を作ると、すでに main thread 上で戻ってきた完了通知まで余計な task churn が発生する。
+**原因:** completion を常に新規 task に投げていたため、同期的に処理できるケースでも一段余計な hop が入っていた。
+**対策:** まず main thread ならその場で `@MainActor` completion を実行し、background callback のときだけ main queue へ handoff する。これで MainActor 正しさを保ちながら、seek completion の hot path を軽くできる。
+
+---
+
+## playlist 永続化で bookmark payload を hot path に載せない
+
+**症状:** 自動ローテーションや playlist editor の入力で CPU / メモリ使用率が上がる。`currentItem` が変わるだけでも main thread で全 item の security-scoped bookmark を作り直していた。
+**原因:** `PlaylistPersistence.save(store:)` が playlist metadata と bookmark data を同じ blob に詰めており、`currentItemID` や display name だけの更新でも全 bookmark を再生成・再 JSON encode していた。
+**対策:** metadata と bookmark payload を別 key で保存する。bookmark は `item.id + normalized path` が同じ限り再利用し、URL が変わった item だけ再生成する。旧 `playlistState` 形式は load 時に新形式へ migrate する。
+
+---
+
+## playlist editor の start/end は 1 回でコミットする
+
+**症状:** current item を編集中に start と end を別々に保存すると、同じ logical edit で playback-sensitive な更新が複数回走る。
+**原因:** editor が start/end を個別 callback で流し、AppDelegate 側でも個別に `updatePlaylistItem()` と `applyCurrentPlaylistItem()` を呼んでいた。
+**対策:** editor では time range をひとつの commit として扱い、AppDelegate 側も単一の `onTimeRangeChanged` でまとめて更新する。`useFullVideo` の切り替えは既存の `updateUseFullVideo` に寄せて、余分な nil/nil 更新を流さない。
 
 ---
 

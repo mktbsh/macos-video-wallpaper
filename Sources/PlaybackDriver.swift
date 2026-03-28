@@ -1,4 +1,5 @@
 import AVFoundation
+import Dispatch
 import Foundation
 
 @MainActor
@@ -24,6 +25,22 @@ protocol PlayerDriver: AnyObject {
 @MainActor
 protocol PlayerDriverFactory {
     func makeDriver() -> PlayerDriver
+}
+
+enum MainActorCompletionRelay {
+    static func run(_ operation: @escaping @MainActor () -> Void) {
+        if Thread.isMainThread {
+            MainActor.assumeIsolated {
+                operation()
+            }
+        } else {
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    operation()
+                }
+            }
+        }
+    }
 }
 
 @MainActor
@@ -68,7 +85,7 @@ final class AVPlayerDriver: PlayerDriver {
             toleranceBefore: toleranceBefore,
             toleranceAfter: toleranceAfter
         ) { finished in
-            Task { @MainActor in
+            MainActorCompletionRelay.run {
                 completion(finished)
             }
         }
