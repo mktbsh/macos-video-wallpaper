@@ -156,7 +156,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.updateDisplayStates()
                 self?.applyBatteryPolicy()
             }
-            // Per-display mode has no playlist rotation; playback completion is unused
+            // Per-display mode has no playlist rotation; videos loop via AVPlayerLooper
             controller.onPlaybackFinished = { _ in }
             controller.applyDimLevel(DimLevel.saved.opacity)
             controller.applyVideoGravity(VideoGravity.saved)
