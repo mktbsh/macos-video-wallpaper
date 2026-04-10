@@ -106,20 +106,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
 
         let menu = StatusMenuController()
-        menu.onAddVideos = { [weak self] in
-            self?.presentVideoOpenPanel()
+        menu.onVideoURLChanged = { [weak self] url, displayId in
+            self?.handleVideoSelected(url, for: displayId)
         }
-        menu.onEditPlaylist = { [weak self] in
-            self?.showPlaylistEditor()
+        menu.onVideoCleared = { [weak self] displayId in
+            self?.handleVideoCleared(for: displayId)
         }
-        menu.onNext = { [weak self] in
-            self?.advanceToNextItem()
-        }
-        menu.onPrevious = { [weak self] in
-            self?.moveToPreviousItem()
-        }
-        menu.onClear = { [weak self] in
-            self?.clearPlaylist()
+        menu.onDisplayToggled = { [weak self] displayId, enabled in
+            self?.handleDisplayToggled(displayId, enabled: enabled)
         }
         menu.onDimLevelChanged = { [weak self] opacity in
             self?.screenControllers.forEach { $0.controller.applyDimLevel(opacity) }
@@ -310,11 +304,43 @@ private extension AppDelegate {
     }
 
     func reloadPlaylistUI() {
-        statusMenuController?.playlistSummary = playlistStore.summary
+        statusMenuController?.displayStates = buildDisplayStates()
         playlistEditorWindowController?.reload(
             items: playlistStore.items,
             currentItemID: playlistStore.currentItem?.id
         )
+    }
+
+    func buildDisplayStates() -> [DisplayMenuState] {
+        screenProvider().compactMap { screen -> DisplayMenuState? in
+            guard let displayId = screen.displayIdentifier else { return nil }
+            let isEnabled = VideoFileValidator.isDisplayEnabled(displayId)
+            let url = VideoFileValidator.resolveBookmarkedURL(display: displayId)
+            return DisplayMenuState(
+                displayIdentifier: displayId,
+                screenName: screen.localizedName,
+                isEnabled: isEnabled,
+                currentVideoName: url?.lastPathComponent
+            )
+        }
+    }
+
+    func handleVideoSelected(_ url: URL, for displayId: DisplayIdentifier) {
+        VideoFileValidator.saveBookmark(for: url, display: displayId)
+        setupWallpaperWindows()
+        reloadPlaylistUI()
+    }
+
+    func handleVideoCleared(for displayId: DisplayIdentifier) {
+        VideoFileValidator.clearBookmark(display: displayId)
+        setupWallpaperWindows()
+        reloadPlaylistUI()
+    }
+
+    func handleDisplayToggled(_ displayId: DisplayIdentifier, enabled: Bool) {
+        VideoFileValidator.setDisplayEnabled(enabled, display: displayId)
+        setupWallpaperWindows()
+        reloadPlaylistUI()
     }
 
     func showPlaylistEditor() {

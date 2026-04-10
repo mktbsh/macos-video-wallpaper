@@ -4,14 +4,19 @@ import Testing
 @MainActor
 struct StatusMenuControllerTests {
 
-    @Test func playlist_summary_update_reuses_fixed_menu_items() {
+    @Test func rebuild_menu_preserves_fixed_menu_items() {
         let controller = StatusMenuController()
         let initialIdentifiers = controller.fixedMenuItemIdentifiersForTesting
 
-        controller.playlistSummary = PlaylistSummary(itemCount: 2, currentDisplayName: "foo.mov")
+        controller.displayStates = [
+            DisplayMenuState(
+                displayIdentifier: DisplayIdentifier(vendor: 1, model: 2, serial: 3),
+                screenName: "Built-in Display",
+                isEnabled: true,
+                currentVideoName: "ocean.mp4"
+            ),
+        ]
 
         #expect(controller.fixedMenuItemIdentifiersForTesting == initialIdentifiers)
-        #expect(controller.summaryTitleForTesting?.contains("2") == true)
-        #expect(controller.currentTitleForTesting?.contains("foo.mov") == true)
     }
 }
