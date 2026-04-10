@@ -261,7 +261,14 @@ final class StatusMenuController {
         ]
 
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        guard VideoFileValidator.isSupported(extension: url.pathExtension) else { return }
+        guard VideoFileValidator.isSupported(extension: url.pathExtension) else {
+            let alert = NSAlert()
+            alert.messageText = String(localized: "alert.unsupported_file.title")
+            alert.informativeText = String(localized: "alert.unsupported_file.message")
+            alert.alertStyle = .warning
+            alert.runModal()
+            return
+        }
 
         onVideoURLChanged?(url, displayId)
     }
