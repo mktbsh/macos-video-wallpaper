@@ -28,16 +28,16 @@ struct DisplayIdentifierTests {
     // MARK: - Hashable
 
     @Test func equal_identifiers_are_hashable_equal() {
-        let a = DisplayIdentifier(vendor: 100, model: 200, serial: 300)
-        let b = DisplayIdentifier(vendor: 100, model: 200, serial: 300)
-        #expect(a == b)
-        #expect(a.hashValue == b.hashValue)
+        let lhs = DisplayIdentifier(vendor: 100, model: 200, serial: 300)
+        let rhs = DisplayIdentifier(vendor: 100, model: 200, serial: 300)
+        #expect(lhs == rhs)
+        #expect(lhs.hashValue == rhs.hashValue)
     }
 
     @Test func different_identifiers_are_not_equal() {
-        let a = DisplayIdentifier(vendor: 100, model: 200, serial: 300)
-        let b = DisplayIdentifier(vendor: 100, model: 200, serial: 301)
-        #expect(a != b)
+        let lhs = DisplayIdentifier(vendor: 100, model: 200, serial: 300)
+        let rhs = DisplayIdentifier(vendor: 100, model: 200, serial: 301)
+        #expect(lhs != rhs)
     }
 
     @Test func usable_as_dictionary_key() {
