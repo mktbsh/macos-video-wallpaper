@@ -15,7 +15,6 @@ final class StatusMenuController {
     var onNext: (() -> Void)?
     var onPrevious: (() -> Void)?
     var onClear: (() -> Void)?
-    var onScreenTargetChanged: (() -> Void)?
     var onDimLevelChanged: ((CGFloat) -> Void)?
     var onPowerSavingModeChanged: (() -> Void)?
     var onVideoGravityChanged: ((VideoGravity) -> Void)?
@@ -34,8 +33,6 @@ final class StatusMenuController {
     private let previousItem: NSMenuItem
     private let nextItem: NSMenuItem
     private let clearItem: NSMenuItem
-    private let screenMenu: NSMenu
-    private let screenItem: NSMenuItem
     private let dimMenu: NSMenu
     private let dimItem: NSMenuItem
     private let powerMenu: NSMenu
@@ -76,12 +73,6 @@ final class StatusMenuController {
         clearItem = NSMenuItem(
             title: String(localized: "menu.playlist.clear"),
             action: #selector(clearPlaylistAction),
-            keyEquivalent: ""
-        )
-        screenMenu = NSMenu()
-        screenItem = NSMenuItem(
-            title: String(localized: "menu.screen_target"),
-            action: nil,
             keyEquivalent: ""
         )
         dimMenu = NSMenu()
@@ -146,7 +137,6 @@ final class StatusMenuController {
             BuildInfo.version
         )
 
-        screenItem.submenu = screenMenu
         dimItem.submenu = dimMenu
         powerItem.submenu = powerMenu
         gravityItem.submenu = gravityMenu
@@ -163,7 +153,6 @@ final class StatusMenuController {
         menu.addItem(nextItem)
         menu.addItem(clearItem)
         menu.addItem(playlistSeparator)
-        menu.addItem(screenItem)
         menu.addItem(dimItem)
         menu.addItem(powerItem)
         menu.addItem(gravityItem)
@@ -174,16 +163,6 @@ final class StatusMenuController {
         menu.addItem(.separator())
         menu.addItem(quitItem)
 
-        populateSelectionMenu(
-            screenMenu,
-            with: ScreenTarget.allCases.map {
-                SelectionMenuEntry(
-                    title: $0.label,
-                    rawValue: $0.rawValue,
-                    action: #selector(selectScreenTarget(_:))
-                )
-            }
-        )
         populateSelectionMenu(
             dimMenu,
             with: DimLevel.allCases.map {
@@ -279,14 +258,6 @@ final class StatusMenuController {
         )
     }
 
-    @objc private func selectScreenTarget(_ sender: NSMenuItem) {
-        guard let rawValue = sender.representedObject as? String,
-              let target = ScreenTarget(rawValue: rawValue) else { return }
-        target.save()
-        onScreenTargetChanged?()
-        updateSelectionStates(in: screenMenu, selectedRawValue: target.rawValue)
-    }
-
     @objc private func selectDimLevel(_ sender: NSMenuItem) {
         guard let rawValue = sender.representedObject as? String,
               let level = DimLevel(rawValue: rawValue) else { return }
@@ -356,7 +327,6 @@ private extension StatusMenuController {
     }
 
     func refreshSelectionStates() {
-        updateSelectionStates(in: screenMenu, selectedRawValue: ScreenTarget.saved.rawValue)
         updateSelectionStates(in: dimMenu, selectedRawValue: DimLevel.saved.rawValue)
         updateSelectionStates(in: powerMenu, selectedRawValue: PowerSavingMode.saved.rawValue)
         updateSelectionStates(in: gravityMenu, selectedRawValue: VideoGravity.saved.rawValue)
@@ -382,7 +352,6 @@ extension StatusMenuController {
             ObjectIdentifier(previousItem),
             ObjectIdentifier(nextItem),
             ObjectIdentifier(clearItem),
-            ObjectIdentifier(screenItem),
             ObjectIdentifier(dimItem),
             ObjectIdentifier(powerItem),
             ObjectIdentifier(gravityItem),

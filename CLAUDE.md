@@ -65,7 +65,6 @@ AppDelegate
 | `Sources/AppDelegate.swift` | アプリエントリ・ウィンドウ管理・通知ハンドリング |
 | `Sources/WallpaperWindowController.swift` | 1画面分の壁紙ウィンドウ |
 | `Sources/StatusMenuController.swift` | メニューバー UI |
-| `Sources/ScreenTarget.swift` | 対象画面設定 enum |
 | `Sources/DimLevel.swift` | 明るさ調整 enum |
 | `Sources/PowerSavingMode.swift` | 低電力モード enum |
 | `Sources/VideoGravity.swift` | 表示方法 enum (Cover/Contain/Fill) |

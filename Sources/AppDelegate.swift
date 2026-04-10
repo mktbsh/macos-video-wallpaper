@@ -121,7 +121,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.onClear = { [weak self] in
             self?.clearPlaylist()
         }
-        menu.onScreenTargetChanged = { [weak self] in self?.setupWallpaperWindows() }
         menu.onDimLevelChanged = { [weak self] opacity in
             self?.screenControllers.forEach { $0.controller.applyDimLevel(opacity) }
         }
@@ -140,10 +139,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Private
 
     private func setupWallpaperWindows() {
-        let targetScreens: [(id: CGDirectDisplayID, screen: NSScreen)] = ScreenTarget.saved
-            .filter(screenProvider())
+        let targetScreens: [(id: CGDirectDisplayID, screen: NSScreen)] = screenProvider()
             .compactMap { screen in
-                guard let id = displayID(for: screen) else { return nil }
+                guard let id = displayID(for: screen),
+                      let displayIdentifier = screen.displayIdentifier,
+                      VideoFileValidator.isDisplayEnabled(displayIdentifier)
+                else { return nil }
                 return (id, screen)
             }
 
