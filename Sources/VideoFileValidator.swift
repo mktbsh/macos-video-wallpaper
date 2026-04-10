@@ -5,6 +5,8 @@ enum VideoFileValidator {
     private static let supportedExtensions: Set<String> = ["mp4", "mov", "m4v"]
     static let bookmarkKey = "videoBookmark"
     static let legacyPathKey = "videoFilePath"
+    static let bookmarkKeyPrefix = "videoBookmark"
+    static let displayEnabledKeyPrefix = "displayEnabled"
 
     static func isSupported(extension ext: String) -> Bool {
         supportedExtensions.contains(ext.lowercased())
@@ -45,6 +47,61 @@ enum VideoFileValidator {
         }
         return nil
     }
+
+    // MARK: - Per-display bookmark persistence
+
+    /// Saves a security-scoped bookmark for a specific display.
+    static func saveBookmark(
+        for url: URL,
+        display: DisplayIdentifier,
+        defaults: UserDefaults = .standard
+    ) {
+        guard let data = try? bookmarkData(for: url) else { return }
+        defaults.set(data, forKey: display.userDefaultsKey(for: bookmarkKeyPrefix))
+    }
+
+    /// Removes the stored bookmark for a specific display.
+    static func clearBookmark(
+        display: DisplayIdentifier,
+        defaults: UserDefaults = .standard
+    ) {
+        defaults.removeObject(forKey: display.userDefaultsKey(for: bookmarkKeyPrefix))
+    }
+
+    /// Resolves the stored bookmark for a specific display.
+    /// Returns nil if no bookmark is stored or the file no longer exists.
+    static func resolveBookmarkedURL(
+        display: DisplayIdentifier,
+        defaults: UserDefaults = .standard
+    ) -> URL? {
+        let key = display.userDefaultsKey(for: bookmarkKeyPrefix)
+        guard let data = defaults.data(forKey: key) else { return nil }
+        return resolve(from: data, defaults: defaults)
+    }
+
+    // MARK: - Per-display enabled/disabled
+
+    /// Returns whether wallpaper display is enabled for the given display.
+    /// Defaults to `true` when no preference has been stored.
+    static func isDisplayEnabled(
+        _ display: DisplayIdentifier,
+        defaults: UserDefaults = .standard
+    ) -> Bool {
+        let key = display.userDefaultsKey(for: displayEnabledKeyPrefix)
+        guard defaults.object(forKey: key) != nil else { return true }
+        return defaults.bool(forKey: key)
+    }
+
+    /// Sets the wallpaper display enabled state for the given display.
+    static func setDisplayEnabled(
+        _ enabled: Bool,
+        display: DisplayIdentifier,
+        defaults: UserDefaults = .standard
+    ) {
+        defaults.set(enabled, forKey: display.userDefaultsKey(for: displayEnabledKeyPrefix))
+    }
+
+    // MARK: - Bookmark data
 
     static func bookmarkData(for url: URL) throws -> Data {
         try url.bookmarkData(options: .withSecurityScope)

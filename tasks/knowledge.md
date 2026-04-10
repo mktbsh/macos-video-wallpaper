@@ -117,7 +117,7 @@ script: |
 
 ## 設定値 enum パターン
 
-`ScreenTarget` / `DimLevel` / `PowerSavingMode` / `VideoGravity` はすべて同じ構造。新しい設定を追加するときはこのパターンに従う。
+`DimLevel` / `PowerSavingMode` / `VideoGravity` はすべて同じ構造。新しい設定を追加するときはこのパターンに従う。
 
 ```swift
 enum Xxx: String, CaseIterable {
