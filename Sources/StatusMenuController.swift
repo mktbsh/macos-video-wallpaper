@@ -257,7 +257,7 @@ final class StatusMenuController {
         panel.allowedContentTypes = [
             .mpeg4Movie,
             .quickTimeMovie,
-            UTType(filenameExtension: "m4v") ?? .movie,
+            UTType(filenameExtension: "m4v") ?? .movie
         ]
 
         guard panel.runModal() == .OK, let url = panel.url else { return }
@@ -351,7 +351,7 @@ extension StatusMenuController {
             ObjectIdentifier(powerItem),
             ObjectIdentifier(gravityItem),
             ObjectIdentifier(loginItem),
-            ObjectIdentifier(quitItem),
+            ObjectIdentifier(quitItem)
         ]
     }
 

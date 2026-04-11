@@ -14,7 +14,7 @@ struct StatusMenuControllerTests {
                 screenName: "Built-in Display",
                 isEnabled: true,
                 currentVideoName: "ocean.mp4"
-            ),
+            )
         ]
 
         #expect(controller.fixedMenuItemIdentifiersForTesting == initialIdentifiers)
@@ -30,7 +30,7 @@ struct StatusMenuControllerTests {
                 screenName: "Built-in Display",
                 isEnabled: true,
                 currentVideoName: "ocean.mp4"
-            ),
+            )
         ]
 
         // Enabled display adds: separator, header, toggle, current, select, clear = 6
@@ -47,7 +47,7 @@ struct StatusMenuControllerTests {
                 screenName: "External Display",
                 isEnabled: false,
                 currentVideoName: nil
-            ),
+            )
         ]
 
         // Disabled display adds: separator, header, toggle = 3
@@ -70,7 +70,7 @@ struct StatusMenuControllerTests {
                 screenName: "External Display",
                 isEnabled: true,
                 currentVideoName: "city.mp4"
-            ),
+            )
         ]
 
         // Two enabled displays: 2 × (separator + header + toggle + current + select + clear) = 12
