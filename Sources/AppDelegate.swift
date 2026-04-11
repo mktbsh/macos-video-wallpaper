@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 
 @MainActor
 protocol WallpaperWindowControlling: AnyObject {
-    var onVideoDropped: ((URL) -> Void)? { get set }
+    var onVideoDropped: ((URL, DisplayIdentifier) -> Void)? { get set }
     var onPlaybackFinished: ((PlaybackCompletion) -> Void)? { get set }
 
     func load(
@@ -150,9 +150,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         for (id, screen) in targetScreens where !existingIDs.contains(id) {
             let controller = controllerFactory(screen)
             let displayIdentifier = DisplayIdentifier(displayID: id)
-            controller.onVideoDropped = { [weak self] url in
-                VideoFileValidator.saveBookmark(for: url, display: displayIdentifier)
-                self?.reloadVideoForDisplay(displayIdentifier)
+            controller.onVideoDropped = { [weak self] url, displayID in
+                VideoFileValidator.saveBookmark(for: url, display: displayID)
+                self?.reloadVideoForDisplay(displayID)
                 self?.updateDisplayStates()
                 self?.applyBatteryPolicy()
             }

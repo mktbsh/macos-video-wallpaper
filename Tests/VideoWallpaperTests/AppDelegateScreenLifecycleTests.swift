@@ -40,7 +40,7 @@ struct AppDelegateScreenLifecycleTests {
 @MainActor
 private final class FakeWallpaperWindowController: WallpaperWindowControlling {
 
-    var onVideoDropped: ((URL) -> Void)?
+    var onVideoDropped: ((URL, DisplayIdentifier) -> Void)?
     var onPlaybackFinished: ((PlaybackCompletion) -> Void)?
 
     private(set) var loadCallCount = 0
