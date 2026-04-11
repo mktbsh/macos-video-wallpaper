@@ -331,8 +331,11 @@ final class WallpaperWindowController {
             self.driver.play()
         }
     }
+}
 
-    private func isSamePlaybackTarget(
+private extension WallpaperWindowController {
+
+    func isSamePlaybackTarget(
         url: URL,
         timeRange: CMTimeRange?,
         itemID: PlaylistItem.ID? = nil,
@@ -345,7 +348,7 @@ final class WallpaperWindowController {
         return timeRangesEqual(currentPlaybackContext.timeRange, timeRange)
     }
 
-    private func isCurrentPlaybackContext(_ context: PlaybackContext) -> Bool {
+    func isCurrentPlaybackContext(_ context: PlaybackContext) -> Bool {
         guard let currentPlaybackContext else { return false }
         return currentPlaybackContext.url == context.url
             && currentPlaybackContext.itemID == context.itemID
@@ -353,7 +356,7 @@ final class WallpaperWindowController {
             && timeRangesEqual(currentPlaybackContext.timeRange, context.timeRange)
     }
 
-    private func timeRangesEqual(_ lhs: CMTimeRange?, _ rhs: CMTimeRange?) -> Bool {
+    func timeRangesEqual(_ lhs: CMTimeRange?, _ rhs: CMTimeRange?) -> Bool {
         switch (lhs, rhs) {
         case (nil, nil):
             return true
