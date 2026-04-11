@@ -13,7 +13,10 @@ struct WallpaperWindowControllerLoadingTests {
 
         #expect(context.driver.replaceCurrentItemCallCount == 1)
         #expect(context.driver.playCallCount == 1)
-        #expect(context.observer.events == [.observe(context.driver.observationTargets[0].id)])
+        #expect(context.observer.events == [
+            .observe(context.driver.observationTargets[0].id),
+            .observeFailure(context.driver.observationTargets[0].id)
+        ])
         #expect(context.accessController.startCount == 1)
     }
 
@@ -99,8 +102,11 @@ struct WallpaperWindowControllerLoadingTests {
         #expect(context.driver.playCallCount == 1)
         #expect(context.observer.events == [
             .observe(context.driver.observationTargets[0].id),
+            .observeFailure(context.driver.observationTargets[0].id),
             .cancel(context.driver.observationTargets[0].id),
-            .observe(context.driver.observationTargets[0].id)
+            .cancel(context.driver.observationTargets[0].id),
+            .observe(context.driver.observationTargets[0].id),
+            .observeFailure(context.driver.observationTargets[0].id)
         ])
 
         context.driver.completeSeek(at: 0, finished: true)
@@ -114,8 +120,11 @@ struct WallpaperWindowControllerLoadingTests {
 
         #expect(context.observer.events == [
             .observe(context.driver.observationTargets[0].id),
+            .observeFailure(context.driver.observationTargets[0].id),
             .cancel(context.driver.observationTargets[0].id),
-            .observe(context.driver.observationTargets[1].id)
+            .cancel(context.driver.observationTargets[0].id),
+            .observe(context.driver.observationTargets[1].id),
+            .observeFailure(context.driver.observationTargets[1].id)
         ])
     }
 }
@@ -196,6 +205,8 @@ struct WallpaperWindowControllerLifecycleTests {
         #expect(context.driver.clearCurrentItemCallCount == 1)
         #expect(context.observer.events == [
             .observe(context.driver.observationTargets[0].id),
+            .observeFailure(context.driver.observationTargets[0].id),
+            .cancel(context.driver.observationTargets[0].id),
             .cancel(context.driver.observationTargets[0].id)
         ])
         #expect(context.accessController.handles.first?.stopCount == 1)
@@ -237,10 +248,62 @@ struct WallpaperWindowControllerLifecycleTests {
         #expect(context.driver.clearCurrentItemCallCount == 1)
         #expect(context.observer.events == [
             .observe(context.driver.observationTargets[0].id),
+            .observeFailure(context.driver.observationTargets[0].id),
+            .cancel(context.driver.observationTargets[0].id),
             .cancel(context.driver.observationTargets[0].id)
         ])
         #expect(context.accessController.handles.first?.stopCount == 1)
         #expect(context.driver.playCallCount == 0)
+    }
+}
+
+@Suite @MainActor
+struct WallpaperWindowControllerPlaybackFailureTests {
+
+    @Test func playback_failure_fires_callback() throws {
+        let context = try WallpaperWindowControllerTestContext()
+        var failedDisplayIDs: [DisplayIdentifier] = []
+        context.controller.onPlaybackFailed = { failedDisplayIDs.append($0) }
+
+        context.controller.load(videoURL: wallpaperWindowTestURL("failure-test.mov"))
+        let target = try #require(context.driver.observationTargets.first) as? FakePlaybackObservationTarget
+        let fakeTarget = try #require(target)
+        context.observer.emitPlaybackFailed(for: fakeTarget)
+
+        #expect(failedDisplayIDs.count == 1)
+        #expect(failedDisplayIDs.first == DisplayIdentifier(vendor: 0, model: 0, serial: 0))
+    }
+
+    @Test func stale_playback_failure_is_ignored() throws {
+        let context = try WallpaperWindowControllerTestContext()
+        var failedDisplayIDs: [DisplayIdentifier] = []
+        context.controller.onPlaybackFailed = { failedDisplayIDs.append($0) }
+
+        context.controller.load(videoURL: wallpaperWindowTestURL("stale-failure-first.mov"))
+        let staleTarget = try #require(
+            context.driver.observationTargets.first as? FakePlaybackObservationTarget
+        )
+
+        context.controller.load(videoURL: wallpaperWindowTestURL("stale-failure-second.mov"))
+        context.observer.emitPlaybackFailed(for: staleTarget)
+
+        #expect(failedDisplayIDs.isEmpty)
+    }
+
+    @Test func cleared_playback_failure_is_ignored() throws {
+        let context = try WallpaperWindowControllerTestContext()
+        var failedDisplayIDs: [DisplayIdentifier] = []
+        context.controller.onPlaybackFailed = { failedDisplayIDs.append($0) }
+
+        context.controller.load(videoURL: wallpaperWindowTestURL("cleared-failure.mov"))
+        let target = try #require(
+            context.driver.observationTargets.first as? FakePlaybackObservationTarget
+        )
+
+        context.controller.clearVideo()
+        context.observer.emitPlaybackFailed(for: target)
+
+        #expect(failedDisplayIDs.isEmpty)
     }
 }
 
@@ -417,6 +480,7 @@ final class FakePlaybackObservationTarget: NSObject, PlaybackObservationTarget {
 final class FakePlaybackCompletionObserver: PlaybackCompletionObserver {
     enum Event: Equatable {
         case observe(UUID)
+        case observeFailure(UUID)
         case cancel(UUID)
     }
 
@@ -429,6 +493,7 @@ final class FakePlaybackCompletionObserver: PlaybackCompletionObserver {
     }
 
     private var handlers: [UUID: () -> Void] = [:]
+    private var failureHandlers: [UUID: () -> Void] = [:]
     private(set) var events: [Event] = []
 
     func observePlaybackCompletion(
@@ -441,14 +506,29 @@ final class FakePlaybackCompletionObserver: PlaybackCompletionObserver {
         return ObservationToken(targetID: targetID)
     }
 
+    func observePlaybackFailure(
+        for target: PlaybackObservationTarget,
+        handler: @escaping @MainActor () -> Void
+    ) -> AnyObject {
+        let targetID = targetID(for: target)
+        failureHandlers[targetID] = { handler() }
+        events.append(.observeFailure(targetID))
+        return ObservationToken(targetID: targetID)
+    }
+
     func cancelObservation(_ token: AnyObject) {
         guard let token = token as? ObservationToken else { return }
         events.append(.cancel(token.targetID))
         handlers[token.targetID] = nil
+        failureHandlers[token.targetID] = nil
     }
 
     func emitPlaybackFinished(for target: FakePlaybackObservationTarget) {
         handlers[target.id]?()
+    }
+
+    func emitPlaybackFailed(for target: FakePlaybackObservationTarget) {
+        failureHandlers[target.id]?()
     }
 
     private func targetID(for target: PlaybackObservationTarget) -> UUID {

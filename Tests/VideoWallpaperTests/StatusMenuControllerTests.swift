@@ -76,4 +76,80 @@ struct StatusMenuControllerTests {
         // Two enabled displays: 2 × (separator + header + toggle + current + select + clear) = 12
         #expect(controller.menuItemCountForTesting == emptyCount + 12)
     }
+
+    @Test func error_message_adds_extra_menu_item() {
+        let controller = StatusMenuController()
+        let emptyCount = controller.menuItemCountForTesting
+
+        controller.displayStates = [
+            DisplayMenuState(
+                displayIdentifier: DisplayIdentifier(vendor: 1, model: 2, serial: 3),
+                screenName: "Built-in Display",
+                isEnabled: true,
+                currentVideoName: "ocean.mp4",
+                errorMessage: "Video file not found"
+            )
+        ]
+
+        // Enabled display with error adds: separator, header, toggle, error, current, select, clear = 7
+        #expect(controller.menuItemCountForTesting == emptyCount + 7)
+    }
+
+    @Test func no_error_uses_normal_icon() {
+        let controller = StatusMenuController()
+
+        controller.displayStates = [
+            DisplayMenuState(
+                displayIdentifier: DisplayIdentifier(vendor: 1, model: 2, serial: 3),
+                screenName: "Built-in Display",
+                isEnabled: true,
+                currentVideoName: "ocean.mp4"
+            )
+        ]
+
+        #expect(controller.statusIconNameForTesting == "play.rectangle.fill")
+    }
+
+    @Test func error_state_uses_warning_icon() {
+        let controller = StatusMenuController()
+
+        controller.displayStates = [
+            DisplayMenuState(
+                displayIdentifier: DisplayIdentifier(vendor: 1, model: 2, serial: 3),
+                screenName: "Built-in Display",
+                isEnabled: true,
+                currentVideoName: nil,
+                errorMessage: "Video file not found"
+            )
+        ]
+
+        #expect(controller.statusIconNameForTesting == "exclamationmark.triangle.fill")
+    }
+
+    @Test func icon_reverts_to_normal_after_error_clears() {
+        let controller = StatusMenuController()
+
+        controller.displayStates = [
+            DisplayMenuState(
+                displayIdentifier: DisplayIdentifier(vendor: 1, model: 2, serial: 3),
+                screenName: "Built-in Display",
+                isEnabled: true,
+                currentVideoName: nil,
+                errorMessage: "Video file not found"
+            )
+        ]
+
+        #expect(controller.statusIconNameForTesting == "exclamationmark.triangle.fill")
+
+        controller.displayStates = [
+            DisplayMenuState(
+                displayIdentifier: DisplayIdentifier(vendor: 1, model: 2, serial: 3),
+                screenName: "Built-in Display",
+                isEnabled: true,
+                currentVideoName: "ocean.mp4"
+            )
+        ]
+
+        #expect(controller.statusIconNameForTesting == "play.rectangle.fill")
+    }
 }
