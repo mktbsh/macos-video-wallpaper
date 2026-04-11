@@ -113,6 +113,22 @@
         }
       }
     },
+    "menu.display.show_wallpaper" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show Wallpaper"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "壁紙を表示"
+          }
+        }
+      }
+    },
     "menu.launch_at_login" : {
       "localizations" : {
         "en" : {

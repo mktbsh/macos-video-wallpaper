@@ -1,5 +1,13 @@
 import Cocoa
 import ServiceManagement
+import UniformTypeIdentifiers
+
+struct DisplayMenuState: Equatable {
+    let displayIdentifier: DisplayIdentifier
+    let screenName: String
+    let isEnabled: Bool
+    let currentVideoName: String?
+}
 
 private struct SelectionMenuEntry {
     let title: String
@@ -10,29 +18,19 @@ private struct SelectionMenuEntry {
 @MainActor
 final class StatusMenuController {
 
-    var onAddVideos: (() -> Void)?
-    var onEditPlaylist: (() -> Void)?
-    var onNext: (() -> Void)?
-    var onPrevious: (() -> Void)?
-    var onClear: (() -> Void)?
+    var onVideoURLChanged: ((URL, DisplayIdentifier) -> Void)?
+    var onVideoCleared: ((DisplayIdentifier) -> Void)?
+    var onDisplayToggled: ((DisplayIdentifier, Bool) -> Void)?
     var onDimLevelChanged: ((CGFloat) -> Void)?
     var onPowerSavingModeChanged: (() -> Void)?
     var onVideoGravityChanged: ((VideoGravity) -> Void)?
 
-    var playlistSummary: PlaylistSummary? {
-        didSet { refreshPlaylistSection() }
+    var displayStates: [DisplayMenuState] = [] {
+        didSet { rebuildMenu() }
     }
 
     private let statusItem: NSStatusItem
     private let menu: NSMenu
-    private let summaryItem: NSMenuItem
-    private let currentItem: NSMenuItem
-    private let playlistSeparator: NSMenuItem
-    private let addItem: NSMenuItem
-    private let editItem: NSMenuItem
-    private let previousItem: NSMenuItem
-    private let nextItem: NSMenuItem
-    private let clearItem: NSMenuItem
     private let dimMenu: NSMenu
     private let dimItem: NSMenuItem
     private let powerMenu: NSMenu
@@ -47,49 +45,21 @@ final class StatusMenuController {
     init() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         menu = NSMenu()
-        summaryItem = NSMenuItem()
-        currentItem = NSMenuItem()
-        playlistSeparator = .separator()
-        addItem = NSMenuItem(
-            title: String(localized: "menu.playlist.add_videos"),
-            action: #selector(addVideosAction),
-            keyEquivalent: ""
-        )
-        editItem = NSMenuItem(
-            title: String(localized: "menu.playlist.edit"),
-            action: #selector(editPlaylistAction),
-            keyEquivalent: ""
-        )
-        previousItem = NSMenuItem(
-            title: String(localized: "menu.playlist.previous"),
-            action: #selector(previousPlaylistAction),
-            keyEquivalent: ""
-        )
-        nextItem = NSMenuItem(
-            title: String(localized: "menu.playlist.next"),
-            action: #selector(nextPlaylistAction),
-            keyEquivalent: ""
-        )
-        clearItem = NSMenuItem(
-            title: String(localized: "menu.playlist.clear"),
-            action: #selector(clearPlaylistAction),
-            keyEquivalent: ""
-        )
         dimMenu = NSMenu()
         dimItem = NSMenuItem(
-            title: String(localized: "menu.dim_level"),
+            title: "☀ " + String(localized: "menu.dim_level"),
             action: nil,
             keyEquivalent: ""
         )
         powerMenu = NSMenu()
         powerItem = NSMenuItem(
-            title: String(localized: "menu.power_saving"),
+            title: "🔋 " + String(localized: "menu.power_saving"),
             action: nil,
             keyEquivalent: ""
         )
         gravityMenu = NSMenu()
         gravityItem = NSMenuItem(
-            title: String(localized: "menu.video_gravity"),
+            title: "📐 " + String(localized: "menu.video_gravity"),
             action: nil,
             keyEquivalent: ""
         )
@@ -115,21 +85,16 @@ final class StatusMenuController {
         loginItemEnabled = SMAppService.mainApp.status == .enabled
 
         configureMenuItems()
-        buildStaticMenus()
-        refreshPlaylistSection()
+        populateSubmenus()
+        rebuildMenu()
         refreshSelectionStates()
         refreshLoginState()
         statusItem.menu = menu
     }
 
     private func configureMenuItems() {
-        summaryItem.isEnabled = false
-        currentItem.isEnabled = false
-        currentItem.isHidden = true
+        [loginItem, quitItem].forEach { $0.target = self }
 
-        [addItem, editItem, previousItem, nextItem, clearItem, loginItem, quitItem].forEach {
-            $0.target = self
-        }
         versionItem.isEnabled = false
         versionItem.title = String(
             format: String(localized: "menu.version"),
@@ -142,27 +107,7 @@ final class StatusMenuController {
         gravityItem.submenu = gravityMenu
     }
 
-    private func buildStaticMenus() {
-        menu.removeAllItems()
-        menu.addItem(summaryItem)
-        menu.addItem(currentItem)
-        menu.addItem(.separator())
-        menu.addItem(addItem)
-        menu.addItem(editItem)
-        menu.addItem(previousItem)
-        menu.addItem(nextItem)
-        menu.addItem(clearItem)
-        menu.addItem(playlistSeparator)
-        menu.addItem(dimItem)
-        menu.addItem(powerItem)
-        menu.addItem(gravityItem)
-        menu.addItem(.separator())
-        menu.addItem(loginItem)
-        menu.addItem(.separator())
-        menu.addItem(versionItem)
-        menu.addItem(.separator())
-        menu.addItem(quitItem)
-
+    private func populateSubmenus() {
         populateSelectionMenu(
             dimMenu,
             with: DimLevel.allCases.map {
@@ -208,54 +153,129 @@ final class StatusMenuController {
         }
     }
 
-    private var hasPlaylist: Bool {
-        guard let playlistSummary else { return false }
-        return playlistSummary.itemCount > 0
+    private func rebuildMenu() {
+        menu.removeAllItems()
+
+        menu.addItem(versionItem)
+        menu.addItem(.separator())
+
+        menu.addItem(dimItem)
+        menu.addItem(gravityItem)
+        menu.addItem(powerItem)
+
+        for state in displayStates {
+            menu.addItem(.separator())
+            addDisplaySection(for: state)
+        }
+
+        menu.addItem(.separator())
+        menu.addItem(loginItem)
+        menu.addItem(.separator())
+        menu.addItem(quitItem)
     }
 
-    private func refreshPlaylistSection() {
-        guard let playlistSummary else {
-            summaryItem.title = String(localized: "menu.playlist.summary.empty")
-            currentItem.isHidden = true
-            playlistSeparator.isHidden = true
-            refreshPlaylistActions()
+    private func addDisplaySection(for state: DisplayMenuState) {
+        let header = NSMenuItem(
+            title: "🖥 " + state.screenName,
+            action: nil,
+            keyEquivalent: ""
+        )
+        header.isEnabled = false
+        menu.addItem(header)
+
+        let toggle = NSMenuItem(
+            title: String(localized: "menu.display.show_wallpaper"),
+            action: #selector(toggleDisplay(_:)),
+            keyEquivalent: ""
+        )
+        toggle.target = self
+        toggle.representedObject = state.displayIdentifier
+        toggle.state = state.isEnabled ? .on : .off
+        toggle.indentationLevel = 1
+        menu.addItem(toggle)
+
+        guard state.isEnabled else { return }
+
+        if let videoName = state.currentVideoName {
+            let currentItem = NSMenuItem(
+                title: String(
+                    format: String(localized: "menu.wallpaper.current"),
+                    locale: .current,
+                    videoName
+                ),
+                action: nil,
+                keyEquivalent: ""
+            )
+            currentItem.isEnabled = false
+            currentItem.indentationLevel = 1
+            menu.addItem(currentItem)
+        } else {
+            let unsetItem = NSMenuItem(
+                title: String(localized: "menu.wallpaper.unset"),
+                action: nil,
+                keyEquivalent: ""
+            )
+            unsetItem.isEnabled = false
+            unsetItem.indentationLevel = 1
+            menu.addItem(unsetItem)
+        }
+
+        let selectItem = NSMenuItem(
+            title: String(localized: "menu.video.select"),
+            action: #selector(selectVideo(_:)),
+            keyEquivalent: ""
+        )
+        selectItem.target = self
+        selectItem.representedObject = state.displayIdentifier
+        selectItem.indentationLevel = 1
+        menu.addItem(selectItem)
+
+        let clearItem = NSMenuItem(
+            title: String(localized: "menu.wallpaper.clear"),
+            action: #selector(clearWallpaper(_:)),
+            keyEquivalent: ""
+        )
+        clearItem.target = self
+        clearItem.representedObject = state.displayIdentifier
+        clearItem.indentationLevel = 1
+        menu.addItem(clearItem)
+    }
+
+    @objc private func toggleDisplay(_ sender: NSMenuItem) {
+        guard let displayId = sender.representedObject as? DisplayIdentifier else { return }
+        let newState = sender.state != .on
+        onDisplayToggled?(displayId, newState)
+    }
+
+    @objc private func selectVideo(_ sender: NSMenuItem) {
+        guard let displayId = sender.representedObject as? DisplayIdentifier else { return }
+
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.allowedContentTypes = [
+            .mpeg4Movie,
+            .quickTimeMovie,
+            UTType(filenameExtension: "m4v") ?? .movie
+        ]
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        guard VideoFileValidator.isSupported(extension: url.pathExtension) else {
+            let alert = NSAlert()
+            alert.messageText = String(localized: "alert.unsupported_file.title")
+            alert.informativeText = String(localized: "alert.unsupported_file.message")
+            alert.alertStyle = .warning
+            alert.runModal()
             return
         }
 
-        summaryItem.title = playlistSummaryTitle(for: playlistSummary)
-
-        if let currentDisplayName = playlistSummary.currentDisplayName {
-            currentItem.title = String(
-                format: String(localized: "menu.playlist.current"),
-                locale: .current,
-                currentDisplayName
-            )
-            currentItem.isHidden = false
-        } else {
-            currentItem.isHidden = true
-        }
-
-        playlistSeparator.isHidden = !hasPlaylist
-        refreshPlaylistActions()
+        onVideoURLChanged?(url, displayId)
     }
 
-    private func refreshPlaylistActions() {
-        editItem.isEnabled = hasPlaylist
-        previousItem.isEnabled = hasPlaylist
-        nextItem.isEnabled = hasPlaylist
-        clearItem.isEnabled = hasPlaylist
-    }
-
-    private func playlistSummaryTitle(for summary: PlaylistSummary) -> String {
-        if summary.itemCount == 1 {
-            return String(localized: "menu.playlist.summary.single")
-        }
-
-        return String(
-            format: String(localized: "menu.playlist.summary.multiple"),
-            locale: .current,
-            summary.itemCount
-        )
+    @objc private func clearWallpaper(_ sender: NSMenuItem) {
+        guard let displayId = sender.representedObject as? DisplayIdentifier else { return }
+        onVideoCleared?(displayId)
     }
 
     @objc private func selectDimLevel(_ sender: NSMenuItem) {
@@ -302,26 +322,6 @@ final class StatusMenuController {
 }
 
 private extension StatusMenuController {
-    @objc func addVideosAction() {
-        onAddVideos?()
-    }
-
-    @objc func editPlaylistAction() {
-        onEditPlaylist?()
-    }
-
-    @objc func previousPlaylistAction() {
-        onPrevious?()
-    }
-
-    @objc func nextPlaylistAction() {
-        onNext?()
-    }
-
-    @objc func clearPlaylistAction() {
-        onClear?()
-    }
-
     @objc func quitApp() {
         NSApp.terminate(nil)
     }
@@ -346,26 +346,16 @@ private extension StatusMenuController {
 extension StatusMenuController {
     var fixedMenuItemIdentifiersForTesting: [ObjectIdentifier] {
         [
-            ObjectIdentifier(summaryItem),
-            ObjectIdentifier(addItem),
-            ObjectIdentifier(editItem),
-            ObjectIdentifier(previousItem),
-            ObjectIdentifier(nextItem),
-            ObjectIdentifier(clearItem),
+            ObjectIdentifier(versionItem),
             ObjectIdentifier(dimItem),
             ObjectIdentifier(powerItem),
             ObjectIdentifier(gravityItem),
             ObjectIdentifier(loginItem),
-            ObjectIdentifier(versionItem),
             ObjectIdentifier(quitItem)
         ]
     }
 
-    var summaryTitleForTesting: String? {
-        summaryItem.title
-    }
-
-    var currentTitleForTesting: String? {
-        currentItem.isHidden ? nil : currentItem.title
+    var menuItemCountForTesting: Int {
+        menu.items.count
     }
 }

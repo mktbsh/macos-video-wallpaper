@@ -54,7 +54,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var playlistEditorWindowController: PlaylistEditorWindowController?
     private let playlistPersistence = PlaylistPersistence()
     private var playlistStore: PlaylistStore
-    private var playbackSession: PlaybackSession
     private let screenProvider: () -> [NSScreen]
     private let controllerFactory: (NSScreen) -> any WallpaperWindowControlling
     private let isOnBatteryProvider: () -> Bool
@@ -65,12 +64,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             WallpaperWindowController(screen: screen, videoURL: nil)
         },
         playlistStore: PlaylistStore = PlaylistPersistence().load(),
-        playbackSession: PlaybackSession = PlaybackSession(),
         isOnBatteryProvider: @escaping () -> Bool = defaultIsOnBattery
     ) {
         self.screenControllers = []
         self.playlistStore = playlistStore
-        self.playbackSession = playbackSession
         self.screenProvider = screenProvider
         self.controllerFactory = controllerFactory
         self.isOnBatteryProvider = isOnBatteryProvider
@@ -106,20 +103,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
 
         let menu = StatusMenuController()
-        menu.onAddVideos = { [weak self] in
-            self?.presentVideoOpenPanel()
+        menu.onVideoURLChanged = { [weak self] url, displayId in
+            self?.handleVideoSelected(url, for: displayId)
         }
-        menu.onEditPlaylist = { [weak self] in
-            self?.showPlaylistEditor()
+        menu.onVideoCleared = { [weak self] displayId in
+            self?.handleVideoCleared(for: displayId)
         }
-        menu.onNext = { [weak self] in
-            self?.advanceToNextItem()
-        }
-        menu.onPrevious = { [weak self] in
-            self?.moveToPreviousItem()
-        }
-        menu.onClear = { [weak self] in
-            self?.clearPlaylist()
+        menu.onDisplayToggled = { [weak self] displayId, enabled in
+            self?.handleDisplayToggled(displayId, enabled: enabled)
         }
         menu.onDimLevelChanged = { [weak self] opacity in
             self?.screenControllers.forEach { $0.controller.applyDimLevel(opacity) }
@@ -133,7 +124,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusMenuController = menu
 
         setupWallpaperWindows()
-        reloadPlaylistUI()
     }
 
     // MARK: - Private
@@ -159,12 +149,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let existingIDs = Set(screenControllers.map(\.id))
         for (id, screen) in targetScreens where !existingIDs.contains(id) {
             let controller = controllerFactory(screen)
+            let displayIdentifier = DisplayIdentifier(displayID: id)
             controller.onVideoDropped = { [weak self] url in
-                self?.replacePlaylist(with: [url], setAsCurrent: true)
+                VideoFileValidator.saveBookmark(for: url, display: displayIdentifier)
+                self?.reloadVideoForDisplay(displayIdentifier)
+                self?.updateDisplayStates()
+                self?.applyBatteryPolicy()
             }
-            controller.onPlaybackFinished = { [weak self] completion in
-                self?.handlePlaybackFinished(completion)
-            }
+            // Per-display mode has no playlist rotation; videos loop via AVPlayerLooper
+            controller.onPlaybackFinished = { _ in }
             controller.applyDimLevel(DimLevel.saved.opacity)
             controller.applyVideoGravity(VideoGravity.saved)
             newScreenControllers.append(ScreenController(id: id, controller: controller))
@@ -177,11 +170,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let rhsIndex = orderedIDs.firstIndex(of: rhs.id) ?? .max
             return lhsIndex < rhsIndex
         }
-        applyCurrentPlayback(
-            to: newScreenControllers.map(\.controller),
-            reuseExistingToken: true
-        )
+        for slot in newScreenControllers {
+            let displayId = DisplayIdentifier(displayID: slot.id)
+            loadVideoForDisplay(displayId, on: slot.controller)
+        }
         applyBatteryPolicy(to: newScreenControllers.map(\.controller))
+        updateDisplayStates()
     }
 
     @objc private func screensDidChange() {
@@ -211,110 +205,62 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func displayID(for screen: NSScreen) -> CGDirectDisplayID? {
         screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID
     }
-
-    private func presentVideoOpenPanel() {
-        let panel = NSOpenPanel()
-        panel.allowsMultipleSelection = true
-        panel.canChooseDirectories = false
-        panel.canChooseFiles = true
-        panel.allowedContentTypes = [
-            .mpeg4Movie,
-            .quickTimeMovie,
-            UTType(filenameExtension: "m4v") ?? .movie
-        ]
-        guard panel.runModal() == .OK else { return }
-        let urls = panel.urls.filter { VideoFileValidator.isSupported(extension: $0.pathExtension) }
-        guard !urls.isEmpty else { return }
-
-        let shouldReplace = playlistStore.items.isEmpty
-        if shouldReplace {
-            replacePlaylist(with: urls, setAsCurrent: true)
-        } else {
-            playlistStore.add(urls: urls)
-            persistPlaylistState()
-            reloadPlaylistUI()
-        }
-    }
-
-    private func replacePlaylist(with urls: [URL], setAsCurrent: Bool) {
-        guard !urls.isEmpty else { return }
-        playlistStore.replace(urls: urls)
-        persistPlaylistState()
-        applyCurrentPlaylistItem()
-    }
-
-    private func advanceToNextItem() {
-        guard playlistStore.next() else { return }
-        persistPlaylistState()
-        applyCurrentPlaylistItem()
-    }
-
-    private func moveToPreviousItem() {
-        guard playlistStore.previous() else { return }
-        persistPlaylistState()
-        applyCurrentPlaylistItem()
-    }
-
-    private func clearPlaylist() {
-        playlistStore.clear()
-        playlistPersistence.clear()
-        applyCurrentPlaylistItem()
-    }
 }
 
 @MainActor
 private extension AppDelegate {
-    func applyCurrentPlaylistItem() {
-        applyCurrentPlayback(
-            to: screenControllers.map(\.controller),
-            reuseExistingToken: false
-        )
-        reloadPlaylistUI()
-        applyBatteryPolicy()  // 省電力一時停止中は orderFront しない
-    }
-
-    func applyCurrentPlayback(
-        to controllers: [any WallpaperWindowControlling],
-        reuseExistingToken: Bool
+    func loadVideoForDisplay(
+        _ displayId: DisplayIdentifier,
+        on controller: any WallpaperWindowControlling
     ) {
-        guard !controllers.isEmpty else { return }
-
-        if let playback = playbackRequest(reusingExistingToken: reuseExistingToken) {
-            controllers.forEach {
-                $0.load(
-                    videoURL: playback.item.url,
-                    timeRange: playback.item.playbackTimeRange,
-                    itemID: playback.item.id,
-                    token: playback.token
-                )
-            }
+        if let url = VideoFileValidator.resolveBookmarkedURL(display: displayId) {
+            controller.load(videoURL: url, timeRange: nil, itemID: nil, token: nil)
         } else {
-            controllers.forEach { $0.clearVideo() }
+            controller.clearVideo()
         }
     }
 
-    func playbackRequest(reusingExistingToken: Bool) -> PlaybackSession.PlaybackRequest? {
-        guard let currentItem = playlistStore.currentItem else { return nil }
+    func reloadVideoForDisplay(_ displayId: DisplayIdentifier) {
+        guard let slot = screenControllers.first(where: {
+            DisplayIdentifier(displayID: $0.id) == displayId
+        }) else { return }
+        loadVideoForDisplay(displayId, on: slot.controller)
+    }
 
-        if reusingExistingToken, let currentToken = playbackSession.currentToken {
-            return PlaybackSession.PlaybackRequest(item: currentItem, token: currentToken)
+    func updateDisplayStates() {
+        statusMenuController?.displayStates = buildDisplayStates()
+    }
+
+    func buildDisplayStates() -> [DisplayMenuState] {
+        screenProvider().compactMap { screen -> DisplayMenuState? in
+            guard let displayId = screen.displayIdentifier else { return nil }
+            let isEnabled = VideoFileValidator.isDisplayEnabled(displayId)
+            let url = VideoFileValidator.resolveBookmarkedURL(display: displayId)
+            return DisplayMenuState(
+                displayIdentifier: displayId,
+                screenName: screen.localizedName,
+                isEnabled: isEnabled,
+                currentVideoName: url?.lastPathComponent
+            )
         }
-
-        return playbackSession.beginPlayback(using: &playlistStore)
     }
 
-    func handlePlaybackFinished(_ completion: PlaybackCompletion) {
-        guard playbackSession.consume(completion, using: &playlistStore) else { return }
-        persistPlaylistState()
-        applyCurrentPlaylistItem()
+    func handleVideoSelected(_ url: URL, for displayId: DisplayIdentifier) {
+        VideoFileValidator.saveBookmark(for: url, display: displayId)
+        reloadVideoForDisplay(displayId)
+        updateDisplayStates()
+        applyBatteryPolicy()
     }
 
-    func reloadPlaylistUI() {
-        statusMenuController?.playlistSummary = playlistStore.summary
-        playlistEditorWindowController?.reload(
-            items: playlistStore.items,
-            currentItemID: playlistStore.currentItem?.id
-        )
+    func handleVideoCleared(for displayId: DisplayIdentifier) {
+        VideoFileValidator.clearBookmark(display: displayId)
+        reloadVideoForDisplay(displayId)
+        updateDisplayStates()
+    }
+
+    func handleDisplayToggled(_ displayId: DisplayIdentifier, enabled: Bool) {
+        VideoFileValidator.setDisplayEnabled(enabled, display: displayId)
+        setupWallpaperWindows()
     }
 
     func showPlaylistEditor() {
@@ -369,10 +315,36 @@ private extension AppDelegate {
         }
     }
 
+    func presentVideoOpenPanel() {
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.allowedContentTypes = [
+            .mpeg4Movie,
+            .quickTimeMovie,
+            UTType(filenameExtension: "m4v") ?? .movie
+        ]
+        guard panel.runModal() == .OK else { return }
+        let urls = panel.urls.filter { VideoFileValidator.isSupported(extension: $0.pathExtension) }
+        guard !urls.isEmpty else { return }
+
+        playlistStore.add(urls: urls)
+        persistPlaylistState()
+        reloadPlaylistUI()
+    }
+
+    func reloadPlaylistUI() {
+        playlistEditorWindowController?.reload(
+            items: playlistStore.items,
+            currentItemID: playlistStore.currentItem?.id
+        )
+    }
+
     func deletePlaylistItem(id: PlaylistItem.ID) {
         guard playlistStore.delete(id: id) else { return }
         persistPlaylistState()
-        applyCurrentPlaylistItem()
+        reloadPlaylistUI()
     }
 
     func movePlaylistItem(id: PlaylistItem.ID, by offset: Int) {
@@ -384,7 +356,7 @@ private extension AppDelegate {
     func setCurrentPlaylistItem(id: PlaylistItem.ID) {
         guard playlistStore.setCurrent(id: id) else { return }
         persistPlaylistState()
-        applyCurrentPlaylistItem()
+        reloadPlaylistUI()
     }
 
     func updatePlaylistItem(
@@ -394,12 +366,7 @@ private extension AppDelegate {
     ) {
         guard mutation(&playlistStore) else { return }
         persistPlaylistState()
-
-        if playbackSensitive, playlistStore.currentItem?.id == id {
-            applyCurrentPlaylistItem()
-        } else {
-            reloadPlaylistUI()
-        }
+        reloadPlaylistUI()
     }
 
     func persistPlaylistState() {

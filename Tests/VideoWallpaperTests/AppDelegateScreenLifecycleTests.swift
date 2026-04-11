@@ -10,30 +10,30 @@ struct AppDelegateScreenLifecycleTests {
     @Test func screen_reconfiguration_keeps_surviving_controller_alive_without_reload() throws {
         let screen = try #require(NSScreen.screens.first)
         let controller = FakeWallpaperWindowController()
-        let playlistStore = PlaylistStore(
-            items: [PlaylistItem(url: URL(fileURLWithPath: "/tmp/reconfig.mov"))]
-        )
         let appDelegate = AppDelegate(
             screenProvider: { [screen] },
             controllerFactory: { _ in controller },
-            playlistStore: playlistStore,
             isOnBatteryProvider: { false }
         )
 
         appDelegate.applicationDidFinishLaunching(Notification(name: Notification.Name("test")))
 
-        #expect(controller.loadCallCount == 1)
-        #expect(controller.resumeCallCount == 1)
-        #expect(controller.pauseCallCount == 0)
+        // No per-display bookmark → clearVideo is called; battery policy resumes
+        let loadAfterSetup = controller.loadCallCount
+        let clearAfterSetup = controller.clearVideoCallCount
+        let resumeAfterSetup = controller.resumeCallCount
+        let invalidateAfterSetup = controller.invalidateCallCount
 
         NotificationCenter.default.post(
             name: NSApplication.didChangeScreenParametersNotification,
             object: nil
         )
 
-        #expect(controller.loadCallCount == 1)
-        #expect(controller.resumeCallCount == 1)
-        #expect(controller.pauseCallCount == 0)
+        // Surviving controller is not touched on screen reconfiguration
+        #expect(controller.loadCallCount == loadAfterSetup)
+        #expect(controller.clearVideoCallCount == clearAfterSetup)
+        #expect(controller.resumeCallCount == resumeAfterSetup)
+        #expect(controller.invalidateCallCount == invalidateAfterSetup)
     }
 }
 

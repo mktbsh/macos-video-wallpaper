@@ -252,3 +252,11 @@ enum Xxx: String, CaseIterable {
 - 壁紙非表示: `window.orderOut(nil)` / 再表示: `window.orderFront(nil)`
 
 ---
+
+## SwiftLint の trailing_comma ルール
+
+**症状:** CI の Lint ステージで `Collection literals should not have trailing commas (trailing_comma)` エラーが出る。
+**原因:** 配列リテラルの最終要素の後にカンマを付けていた（例: `[.foo, .bar,]`）。Swift の標準スタイルでは許容されるが、SwiftLint のデフォルトルール `trailing_comma` は禁止している。
+**対策:** 配列リテラル `[...]` の最終要素にはカンマを付けない。関数呼び出しの末尾引数のカンマとは無関係で、配列・辞書リテラルの `]` / `}` 直前のカンマだけが対象。
+
+---
