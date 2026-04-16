@@ -151,7 +151,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let existingIDs = Set(screenControllers.map(\.id))
         for (id, screen) in targetScreens where !existingIDs.contains(id) {
             let controller = controllerFactory(screen)
-            let displayIdentifier = DisplayIdentifier(displayID: id)
             controller.onVideoDropped = { [weak self] url, displayID in
                 let saved = VideoFileValidator.saveBookmark(for: url, display: displayID)
                 if !saved {

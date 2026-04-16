@@ -8,6 +8,14 @@
 
 ---
 
+## `private extension` 内でも private nested type を受ける関数は `private` 明示が必要
+
+**症状:** CI / Release build で `method must be declared private because its parameter uses a private type` が出てコンパイル失敗する。
+**原因:** `private extension Foo` 内のメソッドは、明示しないと `private` nested type を引数に取れない可視性として扱われることがある。Swift 6 / Xcode 16.4 では nested private type を受ける helper に `private` を明示しないと落ちる。
+**対策:** `private struct Context` などを引数に取る helper は、`private extension` の中でも `private func ...` を明示する。必要がない限り nested type 側の可視性は広げない。
+
+---
+
 ## NSWindow.isReleasedWhenClosed = false が必須
 
 **症状:** 対象画面を切り替えると `invalidate()` → `window.close()` でクラッシュ。
