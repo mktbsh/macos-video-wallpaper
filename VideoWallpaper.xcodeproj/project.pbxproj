@@ -43,6 +43,7 @@
 		CBCF24AA2083C5548551ECD2 /* RotationEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA14D0E5C4FC75A307E870A3 /* RotationEngine.swift */; };
 		D6875A0DE133C54B5F4E59A2 /* VideoGravityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC6830C1FF8BBF9A1EA7B9C4 /* VideoGravityTests.swift */; };
 		D73BC697807321FEC7051A4C /* StatusMenuControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF8592DFC85E2545AD325F6E /* StatusMenuControllerTests.swift */; };
+		E78A2AFB2F9D58201B7514C6 /* ProjectConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ACB2103041D4A070CC65238 /* ProjectConfigurationTests.swift */; };
 		E98B5F118852E36FAE0BF6C6 /* PlaylistStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 733A86058A8A9C9A5061D3CD /* PlaylistStoreTests.swift */; };
 		F05B7966B0C866FF92CEBC08 /* DisplayIdentifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86525F5E5891F881AD2245E5 /* DisplayIdentifierTests.swift */; };
 		FABE24788495DBF95C375BA5 /* WallpaperError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D85B5BD1E9DC222F1C58FD7 /* WallpaperError.swift */; };
@@ -68,6 +69,7 @@
 		31040E52243775CD942522F6 /* PlaylistEditorWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistEditorWindowController.swift; sourceTree = "<group>"; };
 		395BC54125AE19AF2356B520 /* PlaybackDriver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackDriver.swift; sourceTree = "<group>"; };
 		3CC145CB1EAB55FFF5B521DF /* SecurityScopedAccessController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityScopedAccessController.swift; sourceTree = "<group>"; };
+		4ACB2103041D4A070CC65238 /* ProjectConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectConfigurationTests.swift; sourceTree = "<group>"; };
 		547F0B21F6C7D44A4726246B /* PlaybackCompletionObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackCompletionObserver.swift; sourceTree = "<group>"; };
 		5CA9572D6BA4139CA447AF3F /* VideoWallpaperTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VideoWallpaperTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5F826E40AC579D838B5D1A16 /* VideoGravity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoGravity.swift; sourceTree = "<group>"; };
@@ -184,6 +186,7 @@
 				B5B2CCD4F02D25D8195FD571 /* PlaylistEditorWindowControllerTests.swift */,
 				09CFD949B8A13D34A1B517F8 /* PlaylistPersistenceTests.swift */,
 				733A86058A8A9C9A5061D3CD /* PlaylistStoreTests.swift */,
+				4ACB2103041D4A070CC65238 /* ProjectConfigurationTests.swift */,
 				8998A34405A4B5FF24B27948 /* RotationEngineTests.swift */,
 				CF8592DFC85E2545AD325F6E /* StatusMenuControllerTests.swift */,
 				CB6DDD2F2C0B77517B37A5AA /* VideoFileValidatorTests.swift */,
@@ -331,6 +334,7 @@
 				3B94D8EB77C8F9C6DE951472 /* PlaylistEditorWindowControllerTests.swift in Sources */,
 				24DE1AE620FBA10AD275A2A6 /* PlaylistPersistenceTests.swift in Sources */,
 				E98B5F118852E36FAE0BF6C6 /* PlaylistStoreTests.swift in Sources */,
+				E78A2AFB2F9D58201B7514C6 /* ProjectConfigurationTests.swift in Sources */,
 				4B48F9AA2B7E0EE3EC577DA0 /* RotationEngineTests.swift in Sources */,
 				D73BC697807321FEC7051A4C /* StatusMenuControllerTests.swift in Sources */,
 				3DFDEA6BE7D42CFBE8283BAE /* VideoFileValidatorTests.swift in Sources */,
@@ -468,7 +472,7 @@
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				ENABLE_HARDENED_RUNTIME = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -528,7 +532,7 @@
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				ENABLE_HARDENED_RUNTIME = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;

@@ -2,6 +2,43 @@ import Cocoa
 import ServiceManagement
 import UniformTypeIdentifiers
 
+@MainActor
+protocol LoginItemManaging {
+    var isEnabled: Bool { get }
+    func register() throws
+    func unregister() throws
+}
+
+@MainActor
+protocol StatusMenuErrorPresenting {
+    func presentLoginItemError(_ error: Error)
+}
+
+@MainActor
+struct MainAppLoginItemManager: LoginItemManaging {
+    var isEnabled: Bool {
+        SMAppService.mainApp.status == .enabled
+    }
+
+    func register() throws {
+        try SMAppService.mainApp.register()
+    }
+
+    func unregister() throws {
+        try SMAppService.mainApp.unregister()
+    }
+}
+
+@MainActor
+struct AlertStatusMenuErrorPresenter: StatusMenuErrorPresenting {
+    func presentLoginItemError(_ error: Error) {
+        let alert = NSAlert()
+        alert.messageText = String(localized: "alert.login_item_failed.title")
+        alert.informativeText = error.localizedDescription
+        alert.runModal()
+    }
+}
+
 struct DisplayMenuState: Equatable {
     let displayIdentifier: DisplayIdentifier
     let screenName: String
@@ -58,10 +95,17 @@ final class StatusMenuController {
     private let loginItem: NSMenuItem
     private let versionItem: NSMenuItem
     private let quitItem: NSMenuItem
+    private let loginItemManager: any LoginItemManaging
+    private let errorPresenter: any StatusMenuErrorPresenting
     private var loginItemEnabled: Bool = false
     private(set) var currentIconName: String = "play.rectangle.fill"
 
-    init() {
+    init(
+        loginItemManager: any LoginItemManaging = MainAppLoginItemManager(),
+        errorPresenter: any StatusMenuErrorPresenting = AlertStatusMenuErrorPresenter()
+    ) {
+        self.loginItemManager = loginItemManager
+        self.errorPresenter = errorPresenter
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         menu = NSMenu()
         dimMenu = NSMenu()
@@ -101,7 +145,7 @@ final class StatusMenuController {
             )
         }
 
-        loginItemEnabled = SMAppService.mainApp.status == .enabled
+        loginItemEnabled = loginItemManager.isEnabled
 
         configureMenuItems()
         populateSubmenus()
@@ -345,17 +389,14 @@ final class StatusMenuController {
     @objc private func toggleLoginItem() {
         do {
             if loginItemEnabled {
-                try SMAppService.mainApp.unregister()
+                try loginItemManager.unregister()
                 loginItemEnabled = false
             } else {
-                try SMAppService.mainApp.register()
+                try loginItemManager.register()
                 loginItemEnabled = true
             }
         } catch {
-            let alert = NSAlert()
-            alert.messageText = String(localized: "alert.login_item_failed.title")
-            alert.informativeText = error.localizedDescription
-            alert.runModal()
+            errorPresenter.presentLoginItemError(error)
         }
         refreshLoginState()
     }
@@ -401,5 +442,13 @@ extension StatusMenuController {
 
     var statusIconNameForTesting: String {
         currentIconName
+    }
+
+    var loginItemStateForTesting: NSControl.StateValue {
+        loginItem.state
+    }
+
+    func toggleLoginItemForTesting() {
+        toggleLoginItem()
     }
 }

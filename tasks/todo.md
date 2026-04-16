@@ -8,6 +8,16 @@
 
 ---
 
+## Feature: App Store リリース準備 (#32)
+
+- [x] `project.yml` 起点で `com.apple.security.app-sandbox` / `com.apple.security.files.user-selected.read-only` / `com.apple.security.files.bookmarks.app-scope` を設定する
+- [x] Hardened Runtime を有効化する
+- [x] Release build とフルテストで Step 1 の動作検証を完了する
+- [ ] Step 2 は issue [#39](https://github.com/mktbsh/macos-video-wallpaper/issues/39) で進める
+- [ ] Step 3 は issue [#40](https://github.com/mktbsh/macos-video-wallpaper/issues/40) で進める
+
+---
+
 ## Maintenance: PR #37 CI build fix
 
 - [x] `WallpaperWindowController` の `PlaybackContext` helper を Swift 6 access control に合わせて `private` 明示にする
