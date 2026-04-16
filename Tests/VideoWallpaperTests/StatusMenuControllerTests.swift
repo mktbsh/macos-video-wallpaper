@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import VideoWallpaper
 
@@ -151,5 +152,121 @@ struct StatusMenuControllerTests {
         ]
 
         #expect(controller.statusIconNameForTesting == "play.rectangle.fill")
+    }
+
+    @Test func login_item_state_reflects_injected_manager_on_init() {
+        let manager = FakeLoginItemManager(isEnabled: true)
+        let controller = StatusMenuController(
+            loginItemManager: manager,
+            errorPresenter: FakeStatusMenuErrorPresenter()
+        )
+
+        #expect(controller.loginItemStateForTesting == .on)
+    }
+
+    @Test func toggle_login_item_registers_when_disabled() {
+        let manager = FakeLoginItemManager(isEnabled: false)
+        let presenter = FakeStatusMenuErrorPresenter()
+        let controller = StatusMenuController(
+            loginItemManager: manager,
+            errorPresenter: presenter
+        )
+
+        controller.toggleLoginItemForTesting()
+
+        #expect(manager.registerCallCount == 1)
+        #expect(manager.unregisterCallCount == 0)
+        #expect(controller.loginItemStateForTesting == .on)
+        #expect(presenter.presentedMessages.isEmpty)
+    }
+
+    @Test func toggle_login_item_unregisters_when_enabled() {
+        let manager = FakeLoginItemManager(isEnabled: true)
+        let presenter = FakeStatusMenuErrorPresenter()
+        let controller = StatusMenuController(
+            loginItemManager: manager,
+            errorPresenter: presenter
+        )
+
+        controller.toggleLoginItemForTesting()
+
+        #expect(manager.registerCallCount == 0)
+        #expect(manager.unregisterCallCount == 1)
+        #expect(controller.loginItemStateForTesting == .off)
+        #expect(presenter.presentedMessages.isEmpty)
+    }
+
+    @Test func login_item_error_preserves_state_and_presents_alert() {
+        let manager = FakeLoginItemManager(
+            isEnabled: false,
+            registerError: FakeLoginItemManager.SampleError.registrationFailed
+        )
+        let presenter = FakeStatusMenuErrorPresenter()
+        let controller = StatusMenuController(
+            loginItemManager: manager,
+            errorPresenter: presenter
+        )
+
+        controller.toggleLoginItemForTesting()
+
+        #expect(manager.registerCallCount == 1)
+        #expect(controller.loginItemStateForTesting == .off)
+        #expect(
+            presenter.presentedMessages == [
+                FakeLoginItemManager.SampleError.registrationFailed.localizedDescription
+            ]
+        )
+    }
+}
+
+@MainActor
+private final class FakeLoginItemManager: LoginItemManaging {
+    enum SampleError: Error, LocalizedError {
+        case registrationFailed
+
+        var errorDescription: String? {
+            "Registration failed"
+        }
+    }
+
+    private(set) var isEnabled: Bool
+    private(set) var registerCallCount = 0
+    private(set) var unregisterCallCount = 0
+    private let registerError: Error?
+    private let unregisterError: Error?
+
+    init(
+        isEnabled: Bool,
+        registerError: Error? = nil,
+        unregisterError: Error? = nil
+    ) {
+        self.isEnabled = isEnabled
+        self.registerError = registerError
+        self.unregisterError = unregisterError
+    }
+
+    func register() throws {
+        registerCallCount += 1
+        if let registerError {
+            throw registerError
+        }
+        isEnabled = true
+    }
+
+    func unregister() throws {
+        unregisterCallCount += 1
+        if let unregisterError {
+            throw unregisterError
+        }
+        isEnabled = false
+    }
+}
+
+@MainActor
+private final class FakeStatusMenuErrorPresenter: StatusMenuErrorPresenting {
+    private(set) var presentedMessages: [String] = []
+
+    func presentLoginItemError(_ error: any Error) {
+        presentedMessages.append(error.localizedDescription)
     }
 }

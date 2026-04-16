@@ -8,6 +8,22 @@
 
 ---
 
+## XcodeGen の entitlements は `project.yml` を source of truth にする
+
+**症状:** `Sources/VideoWallpaper.entitlements` を直接編集しても `xcodegen generate` 後に内容が消える、または build 中に `Entitlements file ... was modified during the build` で失敗する。
+**原因:** このリポジトリでは entitlements が `project.yml` から生成される。さらに `ENABLE_APP_SANDBOX = YES` の build setting を併用すると、Xcode 側の自動生成と hand-authored entitlements が衝突する。
+**対策:** sandbox 関連キーは `project.yml` の `entitlements.properties` に定義し、`Sources/VideoWallpaper.entitlements` は生成物として扱う。`ENABLE_APP_SANDBOX` は追加しない。
+
+---
+
+## Hardened Runtime の有効確認は Release build の `codesign` で行う
+
+**症状:** test / Debug build で `Disabling hardened runtime with ad-hoc codesigning.` と出て、設定が効いていないように見える。
+**原因:** ad-hoc 署名の test / Debug build では hardened runtime が無効化されるが、`ENABLE_HARDENED_RUNTIME = YES` の Release build では `codesign -o runtime` が有効になる。
+**対策:** 判定は `xcodebuild build -configuration Release` 後に `codesign -dv --verbose=4 <app>` を見て `flags=...runtime` が付いていることを確認する。
+
+---
+
 ## `private extension` 内でも private nested type を受ける関数は `private` 明示が必要
 
 **症状:** CI / Release build で `method must be declared private because its parameter uses a private type` が出てコンパイル失敗する。
