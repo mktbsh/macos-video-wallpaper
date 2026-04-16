@@ -22,6 +22,7 @@ final class WallpaperWindowController {
     private var currentPlaybackContext: PlaybackContext?
     private var currentObservationTarget: PlaybackObservationTarget?
     private var playbackCompletionObservationToken: AnyObject?
+    private var playbackFailureObservationToken: AnyObject?
     private var securityScopedAccessHandle: SecurityScopedAccessHandle?
     private var isPlaybackStartPending = false
     private var isPlaybackPaused = true
@@ -29,6 +30,7 @@ final class WallpaperWindowController {
 
     var onVideoDropped: ((URL, DisplayIdentifier) -> Void)?
     var onPlaybackFinished: ((PlaybackCompletion) -> Void)?
+    var onPlaybackFailed: ((DisplayIdentifier) -> Void)?
 
     convenience init(screen: NSScreen, videoURL url: URL?) {
         let window = NSWindow(
@@ -265,6 +267,10 @@ final class WallpaperWindowController {
             playbackCompletionObserver.cancelObservation(playbackCompletionObservationToken)
             self.playbackCompletionObservationToken = nil
         }
+        if let playbackFailureObservationToken {
+            playbackCompletionObserver.cancelObservation(playbackFailureObservationToken)
+            self.playbackFailureObservationToken = nil
+        }
     }
 
     private func observePlaybackCompletion(
@@ -280,6 +286,13 @@ final class WallpaperWindowController {
             guard let self, self.isCurrentPlaybackContext(context) else { return }
             guard let itemID = context.itemID, let token = context.token else { return }
             self.onPlaybackFinished?(PlaybackCompletion(itemID: itemID, token: token))
+        }
+
+        playbackFailureObservationToken = playbackCompletionObserver.observePlaybackFailure(
+            for: target
+        ) { [weak self] in
+            guard let self, self.isCurrentPlaybackContext(context) else { return }
+            self.onPlaybackFailed?(self.displayIdentifier)
         }
     }
 
@@ -318,8 +331,11 @@ final class WallpaperWindowController {
             self.driver.play()
         }
     }
+}
 
-    private func isSamePlaybackTarget(
+private extension WallpaperWindowController {
+
+    func isSamePlaybackTarget(
         url: URL,
         timeRange: CMTimeRange?,
         itemID: PlaylistItem.ID? = nil,
@@ -340,7 +356,7 @@ final class WallpaperWindowController {
             && timeRangesEqual(currentPlaybackContext.timeRange, context.timeRange)
     }
 
-    private func timeRangesEqual(_ lhs: CMTimeRange?, _ rhs: CMTimeRange?) -> Bool {
+    func timeRangesEqual(_ lhs: CMTimeRange?, _ rhs: CMTimeRange?) -> Bool {
         switch (lhs, rhs) {
         case (nil, nil):
             return true

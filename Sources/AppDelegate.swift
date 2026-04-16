@@ -7,6 +7,7 @@ import UniformTypeIdentifiers
 protocol WallpaperWindowControlling: AnyObject {
     var onVideoDropped: ((URL, DisplayIdentifier) -> Void)? { get set }
     var onPlaybackFinished: ((PlaybackCompletion) -> Void)? { get set }
+    var onPlaybackFailed: ((DisplayIdentifier) -> Void)? { get set }
 
     func load(
         videoURL url: URL,
@@ -57,6 +58,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let screenProvider: () -> [NSScreen]
     private let controllerFactory: (NSScreen) -> any WallpaperWindowControlling
     private let isOnBatteryProvider: () -> Bool
+    private var displayErrors: [DisplayIdentifier: WallpaperError] = [:]
 
     init(
         screenProvider: @escaping () -> [NSScreen] = { NSScreen.screens },
@@ -149,15 +151,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let existingIDs = Set(screenControllers.map(\.id))
         for (id, screen) in targetScreens where !existingIDs.contains(id) {
             let controller = controllerFactory(screen)
-            let displayIdentifier = DisplayIdentifier(displayID: id)
             controller.onVideoDropped = { [weak self] url, displayID in
-                VideoFileValidator.saveBookmark(for: url, display: displayID)
+                let saved = VideoFileValidator.saveBookmark(for: url, display: displayID)
+                if !saved {
+                    self?.setError(.bookmarkSaveFailed(displayID), for: displayID)
+                } else {
+                    self?.clearError(for: displayID)
+                }
                 self?.reloadVideoForDisplay(displayID)
                 self?.updateDisplayStates()
                 self?.applyBatteryPolicy()
             }
             // Per-display mode has no playlist rotation; videos loop via AVPlayerLooper
             controller.onPlaybackFinished = { _ in }
+            controller.onPlaybackFailed = { [weak self] displayID in
+                self?.setError(.playbackFailed(displayID), for: displayID)
+                self?.updateDisplayStates()
+            }
             controller.applyDimLevel(DimLevel.saved.opacity)
             controller.applyVideoGravity(VideoGravity.saved)
             newScreenControllers.append(ScreenController(id: id, controller: controller))
@@ -214,7 +224,11 @@ private extension AppDelegate {
         on controller: any WallpaperWindowControlling
     ) {
         if let url = VideoFileValidator.resolveBookmarkedURL(display: displayId) {
+            clearError(for: displayId)
             controller.load(videoURL: url, timeRange: nil, itemID: nil, token: nil)
+        } else if VideoFileValidator.hasBookmark(display: displayId) {
+            setError(.bookmarkResolveFailed(displayId), for: displayId)
+            controller.clearVideo()
         } else {
             controller.clearVideo()
         }
@@ -236,17 +250,24 @@ private extension AppDelegate {
             guard let displayId = screen.displayIdentifier else { return nil }
             let isEnabled = VideoFileValidator.isDisplayEnabled(displayId)
             let url = VideoFileValidator.resolveBookmarkedURL(display: displayId)
+            let errorMessage = displayErrors[displayId]?.localizedMessage
             return DisplayMenuState(
                 displayIdentifier: displayId,
                 screenName: screen.localizedName,
                 isEnabled: isEnabled,
-                currentVideoName: url?.lastPathComponent
+                currentVideoName: url?.lastPathComponent,
+                errorMessage: errorMessage
             )
         }
     }
 
     func handleVideoSelected(_ url: URL, for displayId: DisplayIdentifier) {
-        VideoFileValidator.saveBookmark(for: url, display: displayId)
+        let saved = VideoFileValidator.saveBookmark(for: url, display: displayId)
+        if saved {
+            clearError(for: displayId)
+        } else {
+            setError(.bookmarkSaveFailed(displayId), for: displayId)
+        }
         reloadVideoForDisplay(displayId)
         updateDisplayStates()
         applyBatteryPolicy()
@@ -254,6 +275,7 @@ private extension AppDelegate {
 
     func handleVideoCleared(for displayId: DisplayIdentifier) {
         VideoFileValidator.clearBookmark(display: displayId)
+        clearError(for: displayId)
         reloadVideoForDisplay(displayId)
         updateDisplayStates()
     }
@@ -371,5 +393,15 @@ private extension AppDelegate {
 
     func persistPlaylistState() {
         playlistPersistence.save(store: playlistStore)
+    }
+
+    // MARK: - Error management
+
+    func setError(_ error: WallpaperError, for displayId: DisplayIdentifier) {
+        displayErrors[displayId] = error
+    }
+
+    func clearError(for displayId: DisplayIdentifier) {
+        displayErrors[displayId] = nil
     }
 }

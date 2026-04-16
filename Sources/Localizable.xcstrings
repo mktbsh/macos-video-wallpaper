@@ -832,6 +832,54 @@
           }
         }
       }
+    },
+    "error.bookmark_save_failed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Failed to save video bookmark"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "動画のブックマーク保存に失敗しました"
+          }
+        }
+      }
+    },
+    "error.bookmark_resolve_failed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video file not found"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "動画ファイルが見つかりません"
+          }
+        }
+      }
+    },
+    "error.playback_failed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cannot play video"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "動画を再生できません"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

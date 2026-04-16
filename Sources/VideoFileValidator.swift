@@ -51,13 +51,16 @@ enum VideoFileValidator {
     // MARK: - Per-display bookmark persistence
 
     /// Saves a security-scoped bookmark for a specific display.
+    /// Returns `true` on success, `false` if bookmark creation failed.
+    @discardableResult
     static func saveBookmark(
         for url: URL,
         display: DisplayIdentifier,
         defaults: UserDefaults = .standard
-    ) {
-        guard let data = try? bookmarkData(for: url) else { return }
+    ) -> Bool {
+        guard let data = try? bookmarkData(for: url) else { return false }
         defaults.set(data, forKey: display.userDefaultsKey(for: bookmarkKeyPrefix))
+        return true
     }
 
     /// Removes the stored bookmark for a specific display.
@@ -77,6 +80,14 @@ enum VideoFileValidator {
         let key = display.userDefaultsKey(for: bookmarkKeyPrefix)
         guard let data = defaults.data(forKey: key) else { return nil }
         return resolve(from: data, defaults: defaults)
+    }
+
+    /// Returns whether a bookmark is stored for the given display.
+    static func hasBookmark(
+        display: DisplayIdentifier,
+        defaults: UserDefaults = .standard
+    ) -> Bool {
+        defaults.data(forKey: display.userDefaultsKey(for: bookmarkKeyPrefix)) != nil
     }
 
     // MARK: - Per-display enabled/disabled

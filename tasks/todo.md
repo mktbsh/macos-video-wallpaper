@@ -8,6 +8,14 @@
 
 ---
 
+## Maintenance: PR #37 CI build fix
+
+- [x] `WallpaperWindowController` の `PlaybackContext` helper を Swift 6 access control に合わせて `private` 明示にする
+- [x] `AppDelegate` の未使用ローカル変数 warning を除去する
+- [x] 今回の CI 失敗パターンを `tasks/knowledge.md` に記録する
+
+---
+
 ## Maintenance: プレイリスト永続化の負荷削減
 
 - [x] playlist metadata と bookmark payload を分離し、current item 変更や editor 更新で bookmark を再生成しないようにする

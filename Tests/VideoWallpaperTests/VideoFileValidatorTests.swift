@@ -184,6 +184,40 @@ import Testing
         )
     }
 
+    // MARK: - hasBookmark(display:)
+
+    @Test func hasBookmark_returns_false_when_no_bookmark_stored() {
+        let context = makeIsolatedDefaults()
+        defer { context.defaults.removePersistentDomain(forName: context.suiteName) }
+
+        let display = DisplayIdentifier(vendor: 1, model: 2, serial: 3)
+        #expect(!VideoFileValidator.hasBookmark(display: display, defaults: context.defaults))
+    }
+
+    @Test func hasBookmark_returns_true_when_bookmark_is_stored() {
+        let context = makeIsolatedDefaults()
+        defer { context.defaults.removePersistentDomain(forName: context.suiteName) }
+
+        let display = DisplayIdentifier(vendor: 1, model: 2, serial: 3)
+        let key = display.userDefaultsKey(for: "videoBookmark")
+        context.defaults.set(Data([0x01]), forKey: key)
+
+        #expect(VideoFileValidator.hasBookmark(display: display, defaults: context.defaults))
+    }
+
+    @Test func hasBookmark_returns_false_after_clear() {
+        let context = makeIsolatedDefaults()
+        defer { context.defaults.removePersistentDomain(forName: context.suiteName) }
+
+        let display = DisplayIdentifier(vendor: 1, model: 2, serial: 3)
+        let key = display.userDefaultsKey(for: "videoBookmark")
+        context.defaults.set(Data([0x01]), forKey: key)
+
+        VideoFileValidator.clearBookmark(display: display, defaults: context.defaults)
+
+        #expect(!VideoFileValidator.hasBookmark(display: display, defaults: context.defaults))
+    }
+
     // MARK: - isDisplayEnabled
 
     @Test func display_enabled_defaults_to_true() {

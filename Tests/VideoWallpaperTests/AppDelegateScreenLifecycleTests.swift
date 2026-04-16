@@ -42,6 +42,7 @@ private final class FakeWallpaperWindowController: WallpaperWindowControlling {
 
     var onVideoDropped: ((URL, DisplayIdentifier) -> Void)?
     var onPlaybackFinished: ((PlaybackCompletion) -> Void)?
+    var onPlaybackFailed: ((DisplayIdentifier) -> Void)?
 
     private(set) var loadCallCount = 0
     private(set) var resumeCallCount = 0

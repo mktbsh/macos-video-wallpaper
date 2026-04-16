@@ -7,6 +7,10 @@ protocol PlaybackCompletionObserver {
         for target: PlaybackObservationTarget,
         handler: @escaping @MainActor () -> Void
     ) -> AnyObject
+    func observePlaybackFailure(
+        for target: PlaybackObservationTarget,
+        handler: @escaping @MainActor () -> Void
+    ) -> AnyObject
     func cancelObservation(_ token: AnyObject)
 }
 
@@ -16,6 +20,15 @@ private final class NotificationPlaybackObservationToken: NSObject {
 
     init(token: NSObjectProtocol) {
         self.token = token
+    }
+}
+
+@MainActor
+private final class KVOPlaybackObservationToken: NSObject {
+    let observation: NSKeyValueObservation
+
+    init(observation: NSKeyValueObservation) {
+        self.observation = observation
     }
 }
 
@@ -47,8 +60,31 @@ struct NotificationPlaybackCompletionObserver: PlaybackCompletionObserver {
         return NotificationPlaybackObservationToken(token: token)
     }
 
+    func observePlaybackFailure(
+        for target: PlaybackObservationTarget,
+        handler: @escaping @MainActor () -> Void
+    ) -> AnyObject {
+        guard let target = target as? AVPlayerObservationTarget else {
+            fatalError("Unexpected playback observation target: \(type(of: target))")
+        }
+
+        let observation = target.item.observe(
+            \.status,
+            options: [.new]
+        ) { item, _ in
+            guard item.status == .failed else { return }
+            MainActorCompletionRelay.run {
+                handler()
+            }
+        }
+        return KVOPlaybackObservationToken(observation: observation)
+    }
+
     func cancelObservation(_ token: AnyObject) {
-        guard let token = token as? NotificationPlaybackObservationToken else { return }
-        notificationCenter.removeObserver(token.token)
+        if let token = token as? NotificationPlaybackObservationToken {
+            notificationCenter.removeObserver(token.token)
+        } else if let token = token as? KVOPlaybackObservationToken {
+            token.observation.invalidate()
+        }
     }
 }

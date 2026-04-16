@@ -29,6 +29,33 @@ struct LocalizationCatalogTests {
         #expect(try localizedString("playlist_editor.use_full_video", locale: "ja") == "動画全体を使う")
     }
 
+    @Test func error_messages_are_translated_for_both_locales() throws {
+        #expect(
+            try localizedString("error.bookmark_save_failed", locale: "en")
+                == "Failed to save video bookmark"
+        )
+        #expect(
+            try localizedString("error.bookmark_save_failed", locale: "ja")
+                == "動画のブックマーク保存に失敗しました"
+        )
+        #expect(
+            try localizedString("error.bookmark_resolve_failed", locale: "en")
+                == "Video file not found"
+        )
+        #expect(
+            try localizedString("error.bookmark_resolve_failed", locale: "ja")
+                == "動画ファイルが見つかりません"
+        )
+        #expect(
+            try localizedString("error.playback_failed", locale: "en")
+                == "Cannot play video"
+        )
+        #expect(
+            try localizedString("error.playback_failed", locale: "ja")
+                == "動画を再生できません"
+        )
+    }
+
     private func localizedString(_ key: String, locale: String) throws -> String {
         let bundle = Bundle(for: AppDelegate.self)
         let path = try #require(bundle.path(forResource: locale, ofType: "lproj"))

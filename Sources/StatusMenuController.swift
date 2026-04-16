@@ -7,6 +7,21 @@ struct DisplayMenuState: Equatable {
     let screenName: String
     let isEnabled: Bool
     let currentVideoName: String?
+    let errorMessage: String?
+
+    init(
+        displayIdentifier: DisplayIdentifier,
+        screenName: String,
+        isEnabled: Bool,
+        currentVideoName: String?,
+        errorMessage: String? = nil
+    ) {
+        self.displayIdentifier = displayIdentifier
+        self.screenName = screenName
+        self.isEnabled = isEnabled
+        self.currentVideoName = currentVideoName
+        self.errorMessage = errorMessage
+    }
 }
 
 private struct SelectionMenuEntry {
@@ -26,7 +41,10 @@ final class StatusMenuController {
     var onVideoGravityChanged: ((VideoGravity) -> Void)?
 
     var displayStates: [DisplayMenuState] = [] {
-        didSet { rebuildMenu() }
+        didSet {
+            rebuildMenu()
+            updateStatusIcon()
+        }
     }
 
     private let statusItem: NSStatusItem
@@ -41,6 +59,7 @@ final class StatusMenuController {
     private let versionItem: NSMenuItem
     private let quitItem: NSMenuItem
     private var loginItemEnabled: Bool = false
+    private(set) var currentIconName: String = "play.rectangle.fill"
 
     init() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -174,6 +193,16 @@ final class StatusMenuController {
         menu.addItem(quitItem)
     }
 
+    private func updateStatusIcon() {
+        let hasErrors = displayStates.contains { $0.errorMessage != nil }
+        let iconName = hasErrors ? "exclamationmark.triangle.fill" : "play.rectangle.fill"
+        currentIconName = iconName
+        statusItem.button?.image = NSImage(
+            systemSymbolName: iconName,
+            accessibilityDescription: "VideoWallpaper"
+        )
+    }
+
     private func addDisplaySection(for state: DisplayMenuState) {
         let header = NSMenuItem(
             title: "🖥 " + state.screenName,
@@ -195,6 +224,17 @@ final class StatusMenuController {
         menu.addItem(toggle)
 
         guard state.isEnabled else { return }
+
+        if let errorMessage = state.errorMessage {
+            let errorItem = NSMenuItem(
+                title: "⚠ " + errorMessage,
+                action: nil,
+                keyEquivalent: ""
+            )
+            errorItem.isEnabled = false
+            errorItem.indentationLevel = 1
+            menu.addItem(errorItem)
+        }
 
         if let videoName = state.currentVideoName {
             let currentItem = NSMenuItem(
@@ -357,5 +397,9 @@ extension StatusMenuController {
 
     var menuItemCountForTesting: Int {
         menu.items.count
+    }
+
+    var statusIconNameForTesting: String {
+        currentIconName
     }
 }
