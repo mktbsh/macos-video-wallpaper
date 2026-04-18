@@ -36,6 +36,7 @@
 		91DDBD55080BB2726E2F96EE /* StatusMenuController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4EC1249156CE1ADAA638E74 /* StatusMenuController.swift */; };
 		925751E1C7583A96B7E9874B /* VideoGravity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F826E40AC579D838B5D1A16 /* VideoGravity.swift */; };
 		93FC6707786330FEA0FE5A11 /* PlaybackCompletion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D95DDED0ADC8FC9F9C486D1 /* PlaybackCompletion.swift */; };
+		A961EF3566B9DBFCA9EBCD66 /* TimeSlotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DAA06D45F2241238B16CD82 /* TimeSlotTests.swift */; };
 		AD4BB290B0EFB6257747672B /* WallpaperWindowControllerVisibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0410FE64263209A848048650 /* WallpaperWindowControllerVisibilityTests.swift */; };
 		B45057CE694749E56E2442C0 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DEF45366BAD6487E21EEE4A1 /* Cocoa.framework */; };
 		C153620C536E4D19EEBEF9D6 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ECF176FDB5E802560F3E884 /* AppDelegate.swift */; };
@@ -44,6 +45,7 @@
 		D6875A0DE133C54B5F4E59A2 /* VideoGravityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC6830C1FF8BBF9A1EA7B9C4 /* VideoGravityTests.swift */; };
 		D73BC697807321FEC7051A4C /* StatusMenuControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF8592DFC85E2545AD325F6E /* StatusMenuControllerTests.swift */; };
 		E78A2AFB2F9D58201B7514C6 /* ProjectConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ACB2103041D4A070CC65238 /* ProjectConfigurationTests.swift */; };
+		E7F6256E5DD4A953524954DC /* TimeSlot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DDEE4579F9020FC392D5E70 /* TimeSlot.swift */; };
 		E98B5F118852E36FAE0BF6C6 /* PlaylistStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 733A86058A8A9C9A5061D3CD /* PlaylistStoreTests.swift */; };
 		F05B7966B0C866FF92CEBC08 /* DisplayIdentifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86525F5E5891F881AD2245E5 /* DisplayIdentifierTests.swift */; };
 		FABE24788495DBF95C375BA5 /* WallpaperError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D85B5BD1E9DC222F1C58FD7 /* WallpaperError.swift */; };
@@ -72,9 +74,11 @@
 		4ACB2103041D4A070CC65238 /* ProjectConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectConfigurationTests.swift; sourceTree = "<group>"; };
 		547F0B21F6C7D44A4726246B /* PlaybackCompletionObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackCompletionObserver.swift; sourceTree = "<group>"; };
 		5CA9572D6BA4139CA447AF3F /* VideoWallpaperTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VideoWallpaperTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		5DAA06D45F2241238B16CD82 /* TimeSlotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeSlotTests.swift; sourceTree = "<group>"; };
 		5F826E40AC579D838B5D1A16 /* VideoGravity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoGravity.swift; sourceTree = "<group>"; };
 		659F0F582E2023111558C4A9 /* WallpaperWindowTestHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallpaperWindowTestHelpers.swift; sourceTree = "<group>"; };
 		68D2CE7EFE1524AE6AFC3D5B /* PowerSavingMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerSavingMode.swift; sourceTree = "<group>"; };
+		6DDEE4579F9020FC392D5E70 /* TimeSlot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeSlot.swift; sourceTree = "<group>"; };
 		733A86058A8A9C9A5061D3CD /* PlaylistStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistStoreTests.swift; sourceTree = "<group>"; };
 		7D95DDED0ADC8FC9F9C486D1 /* PlaybackCompletion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackCompletion.swift; sourceTree = "<group>"; };
 		809212198451A87D94290609 /* PlaylistPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistPersistence.swift; sourceTree = "<group>"; };
@@ -165,6 +169,7 @@
 				CA14D0E5C4FC75A307E870A3 /* RotationEngine.swift */,
 				3CC145CB1EAB55FFF5B521DF /* SecurityScopedAccessController.swift */,
 				A4EC1249156CE1ADAA638E74 /* StatusMenuController.swift */,
+				6DDEE4579F9020FC392D5E70 /* TimeSlot.swift */,
 				C11D09B17061EE66ED81CBC6 /* VideoFileValidator.swift */,
 				5F826E40AC579D838B5D1A16 /* VideoGravity.swift */,
 				9D78977C7889D2A5D6B3D48C /* VideoWallpaper.entitlements */,
@@ -189,6 +194,7 @@
 				4ACB2103041D4A070CC65238 /* ProjectConfigurationTests.swift */,
 				8998A34405A4B5FF24B27948 /* RotationEngineTests.swift */,
 				CF8592DFC85E2545AD325F6E /* StatusMenuControllerTests.swift */,
+				5DAA06D45F2241238B16CD82 /* TimeSlotTests.swift */,
 				CB6DDD2F2C0B77517B37A5AA /* VideoFileValidatorTests.swift */,
 				CC6830C1FF8BBF9A1EA7B9C4 /* VideoGravityTests.swift */,
 				9DC9C22335ABC35E7E15CE34 /* WallpaperErrorTests.swift */,
@@ -337,6 +343,7 @@
 				E78A2AFB2F9D58201B7514C6 /* ProjectConfigurationTests.swift in Sources */,
 				4B48F9AA2B7E0EE3EC577DA0 /* RotationEngineTests.swift in Sources */,
 				D73BC697807321FEC7051A4C /* StatusMenuControllerTests.swift in Sources */,
+				A961EF3566B9DBFCA9EBCD66 /* TimeSlotTests.swift in Sources */,
 				3DFDEA6BE7D42CFBE8283BAE /* VideoFileValidatorTests.swift in Sources */,
 				D6875A0DE133C54B5F4E59A2 /* VideoGravityTests.swift in Sources */,
 				44B1D11DD4F892D3A0FDCFDC /* WallpaperErrorTests.swift in Sources */,
@@ -365,6 +372,7 @@
 				CBCF24AA2083C5548551ECD2 /* RotationEngine.swift in Sources */,
 				39F4D7B17FDA5740F91E2E96 /* SecurityScopedAccessController.swift in Sources */,
 				91DDBD55080BB2726E2F96EE /* StatusMenuController.swift in Sources */,
+				E7F6256E5DD4A953524954DC /* TimeSlot.swift in Sources */,
 				8BA96F07BF0A15F80872085D /* VideoFileValidator.swift in Sources */,
 				925751E1C7583A96B7E9874B /* VideoGravity.swift in Sources */,
 				FABE24788495DBF95C375BA5 /* WallpaperError.swift in Sources */,
