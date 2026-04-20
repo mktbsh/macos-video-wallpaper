@@ -18,6 +18,8 @@ targets:
     platform: macOS
     sources:
       - Sources
+    resources:
+      - path: Sources/PrivacyInfo.xcprivacy
     info:
       path: Sources/Info.plist
       properties:
@@ -25,6 +27,7 @@ targets:
         NSHighResolutionCapable: true
         NSPrincipalClass: NSApplication
         NSMainNibFile: ""
+        NSSupportsAutomaticGraphicsSwitching: true
     entitlements:
       path: Sources/VideoWallpaper.entitlements
       properties:
@@ -35,6 +38,8 @@ targets:
       INFOPLIST_FILE: Sources/Info.plist
       CODE_SIGN_ENTITLEMENTS: Sources/VideoWallpaper.entitlements
       PRODUCT_BUNDLE_IDENTIFIER: com.local.VideoWallpaper
+      DEAD_CODE_STRIPPING: YES
+      STRIP_INSTALLED_PRODUCT: YES
     preBuildScripts:
       - name: Generate BuildInfo
         script: |

@@ -295,6 +295,9 @@ final class WallpaperWindowController {
             for: target
         ) { [weak self] in
             guard let self, self.isCurrentPlaybackContext(context) else { return }
+            Log.playback.error(
+                "Playback failed for display \(self.displayIdentifier.description, privacy: .public)"
+            )
             self.onPlaybackFailed?(self.displayIdentifier)
         }
     }

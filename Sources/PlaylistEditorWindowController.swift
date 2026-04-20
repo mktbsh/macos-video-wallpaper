@@ -401,7 +401,9 @@ enum PlaylistEditorTimeRangeCommitter {
         let trimmedStart = request.startText.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedEnd = request.endText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let start = Double(trimmedStart),
-              let end = Double(trimmedEnd) else {
+              let end = Double(trimmedEnd),
+              start.isFinite && end.isFinite,
+              start >= 0, end >= 0 else {
             request.setValidationMessage(nil)
             return
         }
