@@ -162,7 +162,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.updateDisplayStates()
                 self?.applyBatteryPolicy()
             }
-            // Per-display mode has no playlist rotation; videos loop via AVPlayerLooper
+            // Per-display mode has no playlist rotation; videos loop via seek-to-start
             controller.onPlaybackFinished = { _ in }
             controller.onPlaybackFailed = { [weak self] displayID in
                 self?.setError(.playbackFailed(displayID), for: displayID)

@@ -235,6 +235,40 @@ struct WallpaperWindowControllerLifecycleTests {
         #expect(context.driver.playCallCount == 0)
     }
 
+    @Test func completion_without_playlist_token_loops_playback_from_start() throws {
+        let context = try WallpaperWindowControllerTestContext()
+        context.controller.load(videoURL: wallpaperWindowTestURL("loop-video.mov"))
+
+        let target = try #require(context.driver.observationTargets.first)
+        context.observer.emitPlaybackFinished(for: target)
+
+        #expect(context.driver.seekCalls.count == 1)
+        #expect(context.driver.seekCalls[0].time == .zero)
+
+        context.driver.completeSeek(at: 0, finished: true)
+        #expect(context.driver.playCallCount == 2)
+    }
+
+    @Test func completion_without_playlist_token_loops_from_time_range_start() throws {
+        let context = try WallpaperWindowControllerTestContext()
+        let timeRange = makeTimeRange(start: 3, end: 8)
+        context.controller.load(
+            videoURL: wallpaperWindowTestURL("loop-ranged.mov"),
+            timeRange: timeRange
+        )
+        context.driver.completeSeek(at: 0, finished: true)
+        #expect(context.driver.playCallCount == 1)
+
+        let target = try #require(context.driver.observationTargets.first)
+        context.observer.emitPlaybackFinished(for: target)
+
+        #expect(context.driver.seekCalls.count == 2)
+        #expect(context.driver.seekCalls[1].time == timeRange.start)
+
+        context.driver.completeSeek(at: 0, finished: true)
+        #expect(context.driver.playCallCount == 2)
+    }
+
     @Test func invalidate_cleans_up_once_and_ignores_pending_seek_completion() throws {
         let context = try WallpaperWindowControllerTestContext()
         context.controller.load(
