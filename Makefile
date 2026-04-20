@@ -29,7 +29,7 @@ build:
 	           -configuration Release \
 	           -derivedDataPath $(DERIVED_DATA) \
 	           -quiet \
-	           clean build
+	           build
 
 install: build
 	$(call stop-app)
