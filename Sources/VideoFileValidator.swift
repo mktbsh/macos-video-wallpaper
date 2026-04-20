@@ -9,7 +9,7 @@ enum VideoFileValidator {
     static let displayEnabledKeyPrefix = "displayEnabled"
 
     static func isSupported(extension ext: String) -> Bool {
-        supportedExtensions.contains(ext.lowercased())
+        !ext.isEmpty && supportedExtensions.contains(ext.lowercased())
     }
 
     // MARK: - Bookmark-based persistence
@@ -17,7 +17,16 @@ enum VideoFileValidator {
     /// Saves a security-scoped bookmark for the given URL to UserDefaults.
     /// Migrates a legacy path string (key: "videoFilePath") if present.
     static func saveBookmark(for url: URL, defaults: UserDefaults = .standard) {
-        guard let data = try? bookmarkData(for: url) else { return }
+        let data: Data
+        do {
+            data = try bookmarkData(for: url)
+        } catch {
+            let file = url.lastPathComponent
+            Log.security.error(
+                "Failed to create bookmark for \(file, privacy: .public): \(error.localizedDescription)"
+            )
+            return
+        }
         defaults.set(data, forKey: bookmarkKey)
         defaults.removeObject(forKey: legacyPathKey)
     }
@@ -58,7 +67,16 @@ enum VideoFileValidator {
         display: DisplayIdentifier,
         defaults: UserDefaults = .standard
     ) -> Bool {
-        guard let data = try? bookmarkData(for: url) else { return false }
+        let data: Data
+        do {
+            data = try bookmarkData(for: url)
+        } catch {
+            let file = url.lastPathComponent
+            Log.security.error(
+                "Failed to create per-display bookmark for \(file, privacy: .public): \(error.localizedDescription)"
+            )
+            return false
+        }
         defaults.set(data, forKey: display.userDefaultsKey(for: bookmarkKeyPrefix))
         return true
     }
@@ -124,12 +142,18 @@ enum VideoFileValidator {
 
     private static func resolve(from data: Data, defaults: UserDefaults?) -> URL? {
         var isStale = false
-        guard let url = try? URL(
-            resolvingBookmarkData: data,
-            options: .withSecurityScope,
-            relativeTo: nil,
-            bookmarkDataIsStale: &isStale
-        ) else { return nil }
+        let url: URL
+        do {
+            url = try URL(
+                resolvingBookmarkData: data,
+                options: .withSecurityScope,
+                relativeTo: nil,
+                bookmarkDataIsStale: &isStale
+            )
+        } catch {
+            Log.security.error("Failed to resolve bookmark data: \(error.localizedDescription)")
+            return nil
+        }
 
         let normalizedURL = normalizeFileURL(url)
         guard FileManager.default.fileExists(atPath: normalizedURL.path) else { return nil }

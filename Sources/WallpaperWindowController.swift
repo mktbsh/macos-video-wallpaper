@@ -284,14 +284,20 @@ final class WallpaperWindowController {
             for: target
         ) { [weak self] in
             guard let self, self.isCurrentPlaybackContext(context) else { return }
-            guard let itemID = context.itemID, let token = context.token else { return }
-            self.onPlaybackFinished?(PlaybackCompletion(itemID: itemID, token: token))
+            if let itemID = context.itemID, let token = context.token {
+                self.onPlaybackFinished?(PlaybackCompletion(itemID: itemID, token: token))
+            } else {
+                self.loopPlayback(for: context)
+            }
         }
 
         playbackFailureObservationToken = playbackCompletionObserver.observePlaybackFailure(
             for: target
         ) { [weak self] in
             guard let self, self.isCurrentPlaybackContext(context) else { return }
+            Log.playback.error(
+                "Playback failed for display \(self.displayIdentifier.description, privacy: .public)"
+            )
             self.onPlaybackFailed?(self.displayIdentifier)
         }
     }
@@ -300,6 +306,11 @@ final class WallpaperWindowController {
         guard let currentPlaybackContext else { return false }
         guard currentPlaybackContext.url == url else { return false }
         return timeRangesEqual(currentPlaybackContext.timeRange, timeRange)
+    }
+
+    private func loopPlayback(for context: PlaybackContext) {
+        let startTime = context.timeRange?.start ?? .zero
+        seekAndPlay(to: startTime, for: context)
     }
 
     private func startPlayback(

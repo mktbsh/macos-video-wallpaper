@@ -154,6 +154,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             controller.onVideoDropped = { [weak self] url, displayID in
                 let saved = VideoFileValidator.saveBookmark(for: url, display: displayID)
                 if !saved {
+                    let file = url.lastPathComponent
+                    let display = displayID.description
+                    Log.persistence.error(
+                        "Bookmark save failed for \(file, privacy: .public) on display \(display, privacy: .public)"
+                    )
                     self?.setError(.bookmarkSaveFailed(displayID), for: displayID)
                 } else {
                     self?.clearError(for: displayID)
@@ -162,7 +167,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.updateDisplayStates()
                 self?.applyBatteryPolicy()
             }
-            // Per-display mode has no playlist rotation; videos loop via AVPlayerLooper
+            // Per-display mode has no playlist rotation; videos loop via seek-to-start
             controller.onPlaybackFinished = { _ in }
             controller.onPlaybackFailed = { [weak self] displayID in
                 self?.setError(.playbackFailed(displayID), for: displayID)
@@ -227,6 +232,9 @@ private extension AppDelegate {
             clearError(for: displayId)
             controller.load(videoURL: url, timeRange: nil, itemID: nil, token: nil)
         } else if VideoFileValidator.hasBookmark(display: displayId) {
+            Log.persistence.warning(
+                "Bookmark resolve failed for display \(displayId.description, privacy: .public)"
+            )
             setError(.bookmarkResolveFailed(displayId), for: displayId)
             controller.clearVideo()
         } else {

@@ -1,4 +1,5 @@
 import Foundation
+import os.log
 
 @MainActor
 protocol SecurityScopedAccessHandle: AnyObject {
@@ -23,13 +24,19 @@ private final class URLSecurityScopedAccessHandle: SecurityScopedAccessHandle {
         guard !isStopped else { return }
         isStopped = true
         url.stopAccessingSecurityScopedResource()
+        Log.security.debug("Stopped security-scoped access for \(self.url.lastPathComponent, privacy: .public)")
     }
 }
 
 @MainActor
 struct URLSecurityScopedAccessController: SecurityScopedAccessController {
     func startAccessing(_ url: URL) -> SecurityScopedAccessHandle? {
-        guard url.startAccessingSecurityScopedResource() else { return nil }
+        guard url.startAccessingSecurityScopedResource() else {
+            Log.security.error(
+                "Failed to start security-scoped access for \(url.lastPathComponent, privacy: .public)"
+            )
+            return nil
+        }
         return URLSecurityScopedAccessHandle(url: url)
     }
 }
