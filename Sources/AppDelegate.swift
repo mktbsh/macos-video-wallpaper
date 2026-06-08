@@ -327,17 +327,17 @@ private extension AppDelegate {
             self?.setCurrentPlaylistItem(id: id)
         }
         editor.onDisplayNameChanged = { [weak self] id, displayName in
-            self?.updatePlaylistItem(id: id, playbackSensitive: false) {
+            self?.updatePlaylistItem {
                 $0.updateDisplayName(id: id, displayName: displayName)
             }
         }
         editor.onUseFullVideoChanged = { [weak self] id, useFullVideo in
-            self?.updatePlaylistItem(id: id, playbackSensitive: true) {
+            self?.updatePlaylistItem {
                 $0.updateUseFullVideo(id: id, useFullVideo: useFullVideo)
             }
         }
         editor.onTimeRangeChanged = { [weak self] id, startTime, endTime in
-            self?.updatePlaylistItem(id: id, playbackSensitive: true) {
+            self?.updatePlaylistItem {
                 let updatedStart = $0.updateStartTime(id: id, startTime: startTime)
                 let updatedEnd = $0.updateEndTime(id: id, endTime: endTime)
                 return updatedStart || updatedEnd
@@ -390,8 +390,6 @@ private extension AppDelegate {
     }
 
     func updatePlaylistItem(
-        id: PlaylistItem.ID,
-        playbackSensitive: Bool,
         mutation: (inout PlaylistStore) -> Bool
     ) {
         guard mutation(&playlistStore) else { return }

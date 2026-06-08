@@ -26,10 +26,6 @@ struct PlaylistItem: Identifiable, Equatable {
         self.endTime = endTime
     }
 
-    var effectiveDisplayName: String {
-        displayName.isEmpty ? url.lastPathComponent : displayName
-    }
-
     var playbackTimeRange: CMTimeRange? {
         guard !useFullVideo,
               let startTime,
@@ -69,7 +65,7 @@ struct PlaylistStore {
         guard let currentItem, !items.isEmpty else { return nil }
         return PlaylistSummary(
             itemCount: items.count,
-            currentDisplayName: currentItem.effectiveDisplayName
+            currentDisplayName: currentItem.displayName
         )
     }
 
@@ -149,7 +145,9 @@ struct PlaylistStore {
     }
 
     mutating func updateDisplayName(id: PlaylistItem.ID, displayName: String) -> Bool {
-        updateItem(id: id) { $0.displayName = displayName }
+        updateItem(id: id) { item in
+            item.displayName = displayName.isEmpty ? item.url.lastPathComponent : displayName
+        }
     }
 
     mutating func updateUseFullVideo(id: PlaylistItem.ID, useFullVideo: Bool) -> Bool {

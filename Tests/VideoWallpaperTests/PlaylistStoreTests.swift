@@ -235,7 +235,7 @@ import Testing
 
         #expect(store.updateDisplayName(id: currentID, displayName: "Custom Name") == true)
         #expect(store.updateDisplayName(id: currentID, displayName: "") == true)
-        #expect(store.currentItem?.effectiveDisplayName == "first.mov")
+        #expect(store.currentItem?.displayName == "first.mov")
         #expect(store.summary?.currentDisplayName == "first.mov")
     }
 

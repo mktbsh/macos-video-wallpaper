@@ -394,7 +394,8 @@ private final class DropDestinationView: NSView {
     required init?(coder: NSCoder) { fatalError() }
 
     override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
-        guard fileURL(from: sender) != nil else { return [] }
+        guard let url = fileURL(from: sender),
+              VideoFileValidator.isSupported(extension: url.pathExtension) else { return [] }
         return .copy
     }
 

@@ -39,16 +39,6 @@ final class PlaylistEditorWindowController: NSWindowController {
         set { actions.onUseFullVideoChanged = newValue }
     }
 
-    var onStartTimeChanged: ((PlaylistItem.ID, Double?) -> Void)? {
-        get { actions.onStartTimeChanged }
-        set { actions.onStartTimeChanged = newValue }
-    }
-
-    var onEndTimeChanged: ((PlaylistItem.ID, Double?) -> Void)? {
-        get { actions.onEndTimeChanged }
-        set { actions.onEndTimeChanged = newValue }
-    }
-
     var onTimeRangeChanged: ((PlaylistItem.ID, Double?, Double?) -> Void)? {
         get { actions.onTimeRangeChanged }
         set { actions.onTimeRangeChanged = newValue }
@@ -124,8 +114,6 @@ final class PlaylistEditorActionBridge {
     var onSetCurrentItem: ((PlaylistItem.ID) -> Void)?
     var onDisplayNameChanged: ((PlaylistItem.ID, String) -> Void)?
     var onUseFullVideoChanged: ((PlaylistItem.ID, Bool) -> Void)?
-    var onStartTimeChanged: ((PlaylistItem.ID, Double?) -> Void)?
-    var onEndTimeChanged: ((PlaylistItem.ID, Double?) -> Void)?
     var onTimeRangeChanged: ((PlaylistItem.ID, Double?, Double?) -> Void)?
     var validateTimeRange: ((PlaylistItem.ID, Double?, Double?, Bool) -> String?)?
 }
@@ -205,7 +193,7 @@ private struct PlaylistSidebarRow: View {
                 .foregroundStyle(.secondary)
                 .frame(width: 24, alignment: .trailing)
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.effectiveDisplayName)
+                Text(item.displayName)
                     .lineLimit(1)
                 Text(item.url.lastPathComponent)
                     .font(.caption)
@@ -351,7 +339,6 @@ private struct PlaylistDetailView: View {
     }
 
     private func commitPendingEdits() {
-        let rangeUpdate = actions.onTimeRangeChanged
         PlaylistEditorTimeRangeCommitter.commit(.init(
             itemID: item.id,
             startText: startTime,
@@ -359,13 +346,8 @@ private struct PlaylistDetailView: View {
             useFullVideo: useFullVideo,
             validateTimeRange: actions.validateTimeRange,
             setValidationMessage: { state.validationMessage = $0 },
-            applyTimeRange: { itemID, start, end in
-                if let rangeUpdate {
-                    rangeUpdate(itemID, start, end)
-                } else {
-                    actions.onStartTimeChanged?(itemID, start)
-                    actions.onEndTimeChanged?(itemID, end)
-                }
+            applyTimeRange: { [actions] itemID, start, end in
+                actions.onTimeRangeChanged?(itemID, start, end)
             }
         ))
     }
