@@ -152,20 +152,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         for (id, screen) in targetScreens where !existingIDs.contains(id) {
             let controller = controllerFactory(screen)
             controller.onVideoDropped = { [weak self] url, displayID in
-                let saved = VideoFileValidator.saveBookmark(for: url, display: displayID)
-                if !saved {
-                    let file = url.lastPathComponent
-                    let display = displayID.description
-                    Log.persistence.error(
-                        "Bookmark save failed for \(file, privacy: .public) on display \(display, privacy: .public)"
-                    )
-                    self?.setError(.bookmarkSaveFailed(displayID), for: displayID)
-                } else {
-                    self?.clearError(for: displayID)
-                }
-                self?.reloadVideoForDisplay(displayID)
-                self?.updateDisplayStates()
-                self?.applyBatteryPolicy()
+                self?.handleVideoSelected(url, for: displayID)
             }
             // Per-display mode has no playlist rotation; videos loop via seek-to-start
             controller.onPlaybackFinished = { _ in }
@@ -274,6 +261,11 @@ private extension AppDelegate {
         if saved {
             clearError(for: displayId)
         } else {
+            let file = url.lastPathComponent
+            let display = displayId.description
+            Log.persistence.error(
+                "Bookmark save failed for \(file, privacy: .public) on display \(display, privacy: .public)"
+            )
             setError(.bookmarkSaveFailed(displayId), for: displayId)
         }
         reloadVideoForDisplay(displayId)
