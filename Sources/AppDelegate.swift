@@ -370,21 +370,15 @@ private extension AppDelegate {
     }
 
     func deletePlaylistItem(id: PlaylistItem.ID) {
-        guard playlistStore.delete(id: id) else { return }
-        persistPlaylistState()
-        reloadPlaylistUI()
+        updatePlaylistItem { $0.delete(id: id) }
     }
 
     func movePlaylistItem(id: PlaylistItem.ID, by offset: Int) {
-        guard playlistStore.move(id: id, by: offset) else { return }
-        persistPlaylistState()
-        reloadPlaylistUI()
+        updatePlaylistItem { $0.move(id: id, by: offset) }
     }
 
     func setCurrentPlaylistItem(id: PlaylistItem.ID) {
-        guard playlistStore.setCurrent(id: id) else { return }
-        persistPlaylistState()
-        reloadPlaylistUI()
+        updatePlaylistItem { $0.setCurrent(id: id) }
     }
 
     func updatePlaylistItem(

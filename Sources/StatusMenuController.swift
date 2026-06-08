@@ -280,29 +280,20 @@ final class StatusMenuController {
             menu.addItem(errorItem)
         }
 
+        let videoTitle: String
         if let videoName = state.currentVideoName {
-            let currentItem = NSMenuItem(
-                title: String(
-                    format: String(localized: "menu.wallpaper.current"),
-                    locale: .current,
-                    videoName
-                ),
-                action: nil,
-                keyEquivalent: ""
+            videoTitle = String(
+                format: String(localized: "menu.wallpaper.current"),
+                locale: .current,
+                videoName
             )
-            currentItem.isEnabled = false
-            currentItem.indentationLevel = 1
-            menu.addItem(currentItem)
         } else {
-            let unsetItem = NSMenuItem(
-                title: String(localized: "menu.wallpaper.unset"),
-                action: nil,
-                keyEquivalent: ""
-            )
-            unsetItem.isEnabled = false
-            unsetItem.indentationLevel = 1
-            menu.addItem(unsetItem)
+            videoTitle = String(localized: "menu.wallpaper.unset")
         }
+        let videoItem = NSMenuItem(title: videoTitle, action: nil, keyEquivalent: "")
+        videoItem.isEnabled = false
+        videoItem.indentationLevel = 1
+        menu.addItem(videoItem)
 
         let selectItem = NSMenuItem(
             title: String(localized: "menu.video.select"),

@@ -351,11 +351,12 @@ private extension WallpaperWindowController {
     }
 
     private func isCurrentPlaybackContext(_ context: PlaybackContext) -> Bool {
-        guard let currentPlaybackContext else { return false }
-        return currentPlaybackContext.url == context.url
-            && currentPlaybackContext.itemID == context.itemID
-            && currentPlaybackContext.token == context.token
-            && timeRangesEqual(currentPlaybackContext.timeRange, context.timeRange)
+        isSamePlaybackTarget(
+            url: context.url,
+            timeRange: context.timeRange,
+            itemID: context.itemID,
+            token: context.token
+        )
     }
 
     func timeRangesEqual(_ lhs: CMTimeRange?, _ rhs: CMTimeRange?) -> Bool {
