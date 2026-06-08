@@ -277,6 +277,18 @@ import Testing
         #expect(store.items == originalItems)
     }
 
+    @Test func add_urls_to_non_empty_store_preserves_current_item() {
+        var store = PlaylistStore()
+        store.add(urls: [makeURL("first.mov")])
+        let originalCurrentID = store.currentItem?.id
+
+        store.add(urls: [makeURL("second.mov"), makeURL("third.mov")])
+
+        #expect(store.items.count == 3)
+        #expect(store.currentItem?.id == originalCurrentID)
+        #expect(store.currentItem?.url == makeURL("first.mov"))
+    }
+
     @Test func summary_is_nil_when_playlist_is_empty() {
         let store = PlaylistStore()
         #expect(store.summary == nil)
