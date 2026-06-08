@@ -160,12 +160,15 @@ struct PlaylistStore {
         }
     }
 
-    mutating func updateStartTime(id: PlaylistItem.ID, startTime: Double?) -> Bool {
-        updateItem(id: id) { $0.startTime = startTime }
-    }
-
-    mutating func updateEndTime(id: PlaylistItem.ID, endTime: Double?) -> Bool {
-        updateItem(id: id) { $0.endTime = endTime }
+    mutating func updateTimeRange(
+        id: PlaylistItem.ID,
+        startTime: Double?,
+        endTime: Double?
+    ) -> Bool {
+        updateItem(id: id) {
+            $0.startTime = startTime
+            $0.endTime = endTime
+        }
     }
 
     private mutating func updateItem(

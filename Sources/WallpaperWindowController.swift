@@ -275,9 +275,8 @@ final class WallpaperWindowController {
 
     private func observePlaybackCompletion(
         for target: PlaybackObservationTarget,
-        context: PlaybackContext?
+        context: PlaybackContext
     ) {
-        guard let context else { return }
         currentObservationTarget = target
 
         playbackCompletionObservationToken = playbackCompletionObserver.observePlaybackCompletion(

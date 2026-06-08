@@ -338,9 +338,7 @@ private extension AppDelegate {
         }
         editor.onTimeRangeChanged = { [weak self] id, startTime, endTime in
             self?.updatePlaylistItem {
-                let updatedStart = $0.updateStartTime(id: id, startTime: startTime)
-                let updatedEnd = $0.updateEndTime(id: id, endTime: endTime)
-                return updatedStart || updatedEnd
+                $0.updateTimeRange(id: id, startTime: startTime, endTime: endTime)
             }
         }
     }

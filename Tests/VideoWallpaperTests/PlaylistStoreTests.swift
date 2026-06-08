@@ -263,8 +263,7 @@ import Testing
 
         #expect(store.updateDisplayName(id: UUID(), displayName: "Missing") == false)
         #expect(store.updateUseFullVideo(id: UUID(), useFullVideo: false) == false)
-        #expect(store.updateStartTime(id: UUID(), startTime: 1) == false)
-        #expect(store.updateEndTime(id: UUID(), endTime: 2) == false)
+        #expect(store.updateTimeRange(id: UUID(), startTime: 1, endTime: 2) == false)
         #expect(store.items == originalItems)
     }
 
