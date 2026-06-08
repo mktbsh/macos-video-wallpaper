@@ -4,6 +4,35 @@ import Testing
 
 @Suite(.serialized) struct PlaylistStoreTests {
 
+    // MARK: - PlaylistItem init
+
+    @Test func init_with_empty_display_name_normalizes_to_filename() {
+        let item = PlaylistItem(url: makeURL("intro.mov"), displayName: "")
+        #expect(item.displayName == "intro.mov")
+    }
+
+    @Test func init_with_non_empty_display_name_preserves_it() {
+        let item = PlaylistItem(url: makeURL("clip.mov"), displayName: "Intro Sequence")
+        #expect(item.displayName == "Intro Sequence")
+    }
+
+    @Test func playbackTimeRange_is_nil_when_use_full_video_is_true() {
+        let item = PlaylistItem(url: makeURL("v.mov"), useFullVideo: true, startTime: 1.0, endTime: 5.0)
+        #expect(item.playbackTimeRange == nil)
+    }
+
+    @Test func playbackTimeRange_is_nil_when_end_not_after_start() {
+        let item = PlaylistItem(url: makeURL("v.mov"), useFullVideo: false, startTime: 5.0, endTime: 3.0)
+        #expect(item.playbackTimeRange == nil)
+    }
+
+    @Test func playbackTimeRange_is_set_when_valid_range_and_not_full_video() {
+        let item = PlaylistItem(url: makeURL("v.mov"), useFullVideo: false, startTime: 2.0, endTime: 8.0)
+        #expect(item.playbackTimeRange != nil)
+    }
+
+    // MARK: - PlaylistStore
+
     @Test func add_urls_sets_first_item_current() {
         var store = PlaylistStore()
         let first = makeURL("first.mov")
