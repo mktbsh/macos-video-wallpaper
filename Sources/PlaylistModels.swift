@@ -79,9 +79,8 @@ struct PlaylistStore {
     }
 
     mutating func add(urls: [URL]) {
+        guard !urls.isEmpty else { return }
         let newItems = urls.map { PlaylistItem(url: $0) }
-        guard !newItems.isEmpty else { return }
-
         let newEntries = items + newItems
         let currentID = engine.currentEntryID ?? newEntries.first?.id
         engine.replace(entries: newEntries, currentEntryID: currentID)
