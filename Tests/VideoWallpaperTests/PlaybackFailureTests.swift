@@ -10,8 +10,7 @@ struct PlaybackFailureTests {
         context.controller.onPlaybackFailed = { failedDisplayIDs.append($0) }
 
         context.controller.load(videoURL: wallpaperWindowTestURL("failure-test.mov"))
-        let target = try #require(context.driver.observationTargets.first) as? FakePlaybackObservationTarget
-        let fakeTarget = try #require(target)
+        let fakeTarget = try #require(context.driver.observationTargets.first)
         context.observer.emitPlaybackFailed(for: fakeTarget)
 
         #expect(failedDisplayIDs.count == 1)
@@ -24,9 +23,7 @@ struct PlaybackFailureTests {
         context.controller.onPlaybackFailed = { failedDisplayIDs.append($0) }
 
         context.controller.load(videoURL: wallpaperWindowTestURL("stale-failure-first.mov"))
-        let staleTarget = try #require(
-            context.driver.observationTargets.first as? FakePlaybackObservationTarget
-        )
+        let staleTarget = try #require(context.driver.observationTargets.first)
 
         context.controller.load(videoURL: wallpaperWindowTestURL("stale-failure-second.mov"))
         context.observer.emitPlaybackFailed(for: staleTarget)
@@ -40,9 +37,7 @@ struct PlaybackFailureTests {
         context.controller.onPlaybackFailed = { failedDisplayIDs.append($0) }
 
         context.controller.load(videoURL: wallpaperWindowTestURL("cleared-failure.mov"))
-        let target = try #require(
-            context.driver.observationTargets.first as? FakePlaybackObservationTarget
-        )
+        let target = try #require(context.driver.observationTargets.first)
 
         context.controller.clearVideo()
         context.observer.emitPlaybackFailed(for: target)

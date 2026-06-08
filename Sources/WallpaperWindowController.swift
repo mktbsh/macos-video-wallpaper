@@ -129,13 +129,9 @@ final class WallpaperWindowController {
         driver.layer.videoGravity = gravity.avGravity
     }
 
-    func load(videoURL url: URL) {
-        load(videoURL: url, timeRange: nil, itemID: nil, token: nil)
-    }
-
     func load(
         videoURL url: URL,
-        timeRange: CMTimeRange?,
+        timeRange: CMTimeRange? = nil,
         itemID: PlaylistItem.ID? = nil,
         token: RotationEngine<PlaylistItem>.PlaybackToken? = nil
     ) {

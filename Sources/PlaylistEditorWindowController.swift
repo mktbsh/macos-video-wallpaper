@@ -194,10 +194,12 @@ private struct PlaylistSidebarRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.displayName)
                     .lineLimit(1)
-                Text(item.url.lastPathComponent)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                if item.displayName != item.url.lastPathComponent {
+                    Text(item.url.lastPathComponent)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
             }
             Spacer()
             if isCurrent {
