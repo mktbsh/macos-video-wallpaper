@@ -334,8 +334,8 @@ private struct PlaylistDetailView: View {
 
         displayName = item.displayName
         useFullVideo = item.useFullVideo
-        startTime = item.startTime.map { Self.secondsFormatter.string(from: NSNumber(value: $0)) ?? "" } ?? ""
-        endTime = item.endTime.map { Self.secondsFormatter.string(from: NSNumber(value: $0)) ?? "" } ?? ""
+        startTime = item.startTime.flatMap { Self.secondsFormatter.string(from: NSNumber(value: $0)) } ?? ""
+        endTime = item.endTime.flatMap { Self.secondsFormatter.string(from: NSNumber(value: $0)) } ?? ""
         state.validationMessage = nil
     }
 
