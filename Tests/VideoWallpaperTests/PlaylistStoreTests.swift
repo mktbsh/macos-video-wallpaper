@@ -285,6 +285,20 @@ import Testing
         #expect(store.currentItem?.playbackTimeRange == nil)
     }
 
+    @Test func update_use_full_video_to_false_preserves_existing_time_range() throws {
+        let item = PlaylistItem(
+            url: makeURL("clip.mov"),
+            useFullVideo: false,
+            startTime: 2.0,
+            endTime: 7.0
+        )
+        var store = PlaylistStore(items: [item], currentItemID: item.id)
+
+        #expect(store.updateUseFullVideo(id: item.id, useFullVideo: false) == true)
+        #expect(store.currentItem?.startTime == 2.0)
+        #expect(store.currentItem?.endTime == 7.0)
+    }
+
     @Test func update_time_range_sets_both_start_and_end_atomically() throws {
         let item = PlaylistItem(url: makeURL("clip.mov"), useFullVideo: false)
         var store = PlaylistStore(items: [item], currentItemID: item.id)
