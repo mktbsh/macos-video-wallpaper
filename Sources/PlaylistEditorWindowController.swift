@@ -62,7 +62,6 @@ final class PlaylistEditorWindowController: NSWindowController {
         window.contentViewController = hostingController
         window.title = String(localized: "playlist_editor.title")
         window.isReleasedWhenClosed = false
-        window.setContentSize(NSSize(width: 920, height: 560))
         super.init(window: window)
     }
 
