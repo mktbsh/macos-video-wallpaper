@@ -9,7 +9,7 @@ enum VideoFileValidator {
     static let displayEnabledKeyPrefix = "displayEnabled"
 
     static func isSupported(extension ext: String) -> Bool {
-        !ext.isEmpty && supportedExtensions.contains(ext.lowercased())
+        supportedExtensions.contains(ext.lowercased())
     }
 
     // MARK: - Bookmark-based persistence
