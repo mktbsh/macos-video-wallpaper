@@ -256,6 +256,16 @@ import Testing
         #expect(store.currentItem?.playbackTimeRange == nil)
     }
 
+    @Test func update_time_range_sets_both_start_and_end_atomically() throws {
+        let item = PlaylistItem(url: makeURL("clip.mov"), useFullVideo: false)
+        var store = PlaylistStore(items: [item], currentItemID: item.id)
+
+        #expect(store.updateTimeRange(id: item.id, startTime: 2.0, endTime: 8.0) == true)
+        #expect(store.currentItem?.startTime == 2.0)
+        #expect(store.currentItem?.endTime == 8.0)
+        #expect(store.currentItem?.playbackTimeRange != nil)
+    }
+
     @Test func update_methods_return_false_for_missing_item() {
         var store = PlaylistStore()
         store.add(urls: [makeURL("first.mov")])
