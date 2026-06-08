@@ -1,4 +1,3 @@
-// Tests/VideoWallpaperTests/ScheduleConfigTests.swift
 import Foundation
 import Testing
 @testable import VideoWallpaper

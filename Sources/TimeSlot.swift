@@ -1,4 +1,3 @@
-// Sources/TimeSlot.swift
 import Foundation
 
 enum TimeSlot: String, CaseIterable, Codable {

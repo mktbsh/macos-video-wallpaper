@@ -1,4 +1,3 @@
-// Tests/VideoWallpaperTests/TimeSlotTests.swift
 import Foundation
 import Testing
 @testable import VideoWallpaper

@@ -1,4 +1,3 @@
-// Sources/ScheduleConfig.swift
 import Foundation
 
 struct ScheduleConfig: Codable, Equatable {
