@@ -62,7 +62,7 @@ struct PlaylistStore {
     }
 
     var summary: PlaylistSummary? {
-        guard let currentItem, !items.isEmpty else { return nil }
+        guard let currentItem else { return nil }
         return PlaylistSummary(
             itemCount: items.count,
             currentDisplayName: currentItem.displayName
