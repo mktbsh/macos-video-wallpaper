@@ -69,11 +69,6 @@ struct PlaylistStore {
         )
     }
 
-    mutating func replace(urls: [URL]) {
-        let newItems = urls.map { PlaylistItem(url: $0) }
-        replace(items: newItems, currentItemID: newItems.first?.id)
-    }
-
     mutating func replace(items newItems: [PlaylistItem], currentItemID: PlaylistItem.ID?) {
         engine.replace(entries: newItems, currentEntryID: currentItemID)
     }
