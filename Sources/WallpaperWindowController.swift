@@ -133,10 +133,6 @@ final class WallpaperWindowController {
         load(videoURL: url, timeRange: nil, itemID: nil, token: nil)
     }
 
-    func load(videoURL url: URL, timeRange: CMTimeRange?) {
-        load(videoURL: url, timeRange: timeRange, itemID: nil, token: nil)
-    }
-
     func load(
         videoURL url: URL,
         timeRange: CMTimeRange?,
