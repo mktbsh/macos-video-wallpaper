@@ -289,6 +289,15 @@ struct WallpaperWindowControllerLifecycleTests {
         #expect(context.driver.playCallCount == 2)
     }
 
+    @Test func invalidate_closes_window() throws {
+        let context = try WallpaperWindowControllerTestContext()
+        context.controller.load(videoURL: wallpaperWindowTestURL("invalidate-close.mov"))
+
+        context.controller.invalidate()
+
+        #expect(context.window.closeCallCount == 1)
+    }
+
     @Test func invalidate_cleans_up_once_and_ignores_pending_seek_completion() throws {
         let context = try WallpaperWindowControllerTestContext()
         context.controller.load(
