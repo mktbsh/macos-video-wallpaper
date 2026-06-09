@@ -44,13 +44,10 @@ struct NotificationPlaybackCompletionObserver: PlaybackCompletionObserver {
         for target: PlaybackObservationTarget,
         handler: @escaping @MainActor () -> Void
     ) -> AnyObject {
-        guard let target = target as? AVPlayerObservationTarget else {
-            fatalError("Unexpected playback observation target: \(type(of: target))")
-        }
-
+        let avTarget = requireAVPlayerTarget(target)
         let token = notificationCenter.addObserver(
             forName: AVPlayerItem.didPlayToEndTimeNotification,
-            object: target.item,
+            object: avTarget.item,
             queue: .main
         ) { _ in
             MainActor.assumeIsolated {
@@ -64,11 +61,8 @@ struct NotificationPlaybackCompletionObserver: PlaybackCompletionObserver {
         for target: PlaybackObservationTarget,
         handler: @escaping @MainActor () -> Void
     ) -> AnyObject {
-        guard let target = target as? AVPlayerObservationTarget else {
-            fatalError("Unexpected playback observation target: \(type(of: target))")
-        }
-
-        let observation = target.item.observe(
+        let avTarget = requireAVPlayerTarget(target)
+        let observation = avTarget.item.observe(
             \.status,
             options: [.new]
         ) { item, _ in
@@ -78,6 +72,13 @@ struct NotificationPlaybackCompletionObserver: PlaybackCompletionObserver {
             }
         }
         return KVOPlaybackObservationToken(observation: observation)
+    }
+
+    private func requireAVPlayerTarget(_ target: PlaybackObservationTarget) -> AVPlayerObservationTarget {
+        guard let avTarget = target as? AVPlayerObservationTarget else {
+            fatalError("Unexpected playback observation target: \(type(of: target))")
+        }
+        return avTarget
     }
 
     func cancelObservation(_ token: AnyObject) {
