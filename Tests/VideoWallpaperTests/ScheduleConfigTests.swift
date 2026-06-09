@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import VideoWallpaper
 
-@Suite(.serialized) struct ScheduleConfigTests {
+@Suite struct ScheduleConfigTests {
 
     private let config = ScheduleConfig.default  // morning=6, afternoon=12, night=18
 
