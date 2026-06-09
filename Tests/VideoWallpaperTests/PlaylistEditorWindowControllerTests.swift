@@ -224,6 +224,27 @@ struct PlaylistEditorWindowControllerTests {
         #expect(capturedMessages == [nil])
     }
 
+    @Test func commit_without_validator_applies_valid_time_range() {
+        let item = PlaylistItem(url: makeEditorURL("sample.mov"))
+        var appliedRanges: [AppliedRange] = []
+
+        PlaylistEditorTimeRangeCommitter.commit(.init(
+            itemID: item.id,
+            startText: "2.0",
+            endText: "6.0",
+            useFullVideo: false,
+            validateTimeRange: nil,
+            setValidationMessage: { _ in },
+            applyTimeRange: { itemID, start, end in
+                appliedRanges.append(AppliedRange(itemID: itemID, start: start, end: end))
+            }
+        ))
+
+        #expect(appliedRanges.count == 1)
+        #expect(appliedRanges.first?.start == 2.0)
+        #expect(appliedRanges.first?.end == 6.0)
+    }
+
     @Test func commit_time_range_emits_single_batched_update() {
         let item = PlaylistItem(url: makeEditorURL("sample.mov"))
         var appliedRanges: [AppliedRange] = []
