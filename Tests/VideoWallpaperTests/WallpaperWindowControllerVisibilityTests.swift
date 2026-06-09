@@ -1,3 +1,4 @@
+import AVFoundation
 import CoreGraphics
 import Testing
 @testable import VideoWallpaper
@@ -42,6 +43,28 @@ struct WallpaperWindowControllerVisibilityTests {
 
         #expect(context.window.orderFrontCallCount == 1)
         #expect(context.driver.playCallCount == 2)
+    }
+
+    @Test func apply_video_gravity_updates_player_layer() throws {
+        let context = try WallpaperWindowControllerTestContext()
+
+        context.controller.applyVideoGravity(.fit)
+        #expect(context.driver.layer.videoGravity == .resizeAspect)
+
+        context.controller.applyVideoGravity(.stretch)
+        #expect(context.driver.layer.videoGravity == .resize)
+
+        context.controller.applyVideoGravity(.fill)
+        #expect(context.driver.layer.videoGravity == .resizeAspectFill)
+    }
+
+    @Test func apply_dim_level_does_not_crash() throws {
+        let context = try WallpaperWindowControllerTestContext()
+
+        context.controller.applyDimLevel(0.0)
+        context.controller.applyDimLevel(0.3)
+        context.controller.applyDimLevel(0.6)
+        // No assertion needed — verifies the method does not crash for all DimLevel opacities
     }
 
     @Test func clear_video_is_idempotent_after_first_clear() throws {
