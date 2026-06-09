@@ -86,6 +86,18 @@ import Testing
         #expect(store.summary?.currentDisplayName == "second.mov")
     }
 
+    @Test func replace_with_unknown_current_item_id_falls_back_to_existing_current() throws {
+        let first = PlaylistItem(url: makeURL("first.mov"))
+        let second = PlaylistItem(url: makeURL("second.mov"))
+        var store = PlaylistStore(items: [first, second], currentItemID: second.id)
+
+        let unknown = UUID()
+        store.replace(items: [first, second], currentItemID: unknown)
+
+        // Explicit ID not present → preserves existing current
+        #expect(store.currentItem?.id == second.id)
+    }
+
     @Test func replace_with_nil_current_item_id_preserves_existing_current() throws {
         let first = PlaylistItem(url: makeURL("first.mov"))
         let second = PlaylistItem(url: makeURL("second.mov"))
