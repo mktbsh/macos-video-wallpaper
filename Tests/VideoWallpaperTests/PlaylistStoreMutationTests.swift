@@ -133,6 +133,13 @@ import Testing
         let store = PlaylistStore()
         #expect(store.summary == nil)
     }
+
+    @Test func summary_item_count_is_one_for_single_item_store() {
+        let item = PlaylistItem(url: makeMutURL("solo.mov"))
+        let store = PlaylistStore(items: [item], currentItemID: item.id)
+        #expect(store.summary?.itemCount == 1)
+        #expect(store.summary?.currentDisplayName == "solo.mov")
+    }
 }
 
 private func makeMutURL(_ name: String) -> URL {
