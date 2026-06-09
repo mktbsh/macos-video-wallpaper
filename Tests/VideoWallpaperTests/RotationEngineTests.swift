@@ -118,6 +118,14 @@ import Testing
         #expect(engine.currentEntryID == "a")
     }
 
+    @Test func single_entry_previous_wraps_to_itself() {
+        let entries = [Entry(id: "a")]
+        var engine = RotationEngine(entries: entries, currentEntryID: entries[0].id)
+
+        #expect(engine.previous() == true)
+        #expect(engine.currentEntryID == "a")
+    }
+
     @Test func advance_after_completion_returns_false_without_active_playback() {
         let entries = [Entry(id: "a"), Entry(id: "b")]
         var engine = RotationEngine(entries: entries, currentEntryID: entries[0].id)
