@@ -52,12 +52,12 @@ struct RotationEngine<Entry: Identifiable> {
     }
 
     mutating func replace(entries newEntries: [Entry], currentEntryID: Entry.ID?) {
+        let preservedID = self.currentEntryID
         entries = newEntries
-        if let currentEntryID, newEntries.contains(where: { $0.id == currentEntryID }) {
-            self.currentEntryID = currentEntryID
-        } else if let currentEntryID = self.currentEntryID,
-                  newEntries.contains(where: { $0.id == currentEntryID }) {
-            self.currentEntryID = currentEntryID
+        if let id = currentEntryID, newEntries.contains(where: { $0.id == id }) {
+            self.currentEntryID = id
+        } else if let id = preservedID, newEntries.contains(where: { $0.id == id }) {
+            self.currentEntryID = id
         } else {
             self.currentEntryID = newEntries.first?.id
         }
