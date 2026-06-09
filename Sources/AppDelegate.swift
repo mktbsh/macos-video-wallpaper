@@ -138,7 +138,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 return (id, screen)
             }
 
-        let targetIDs = Set(targetScreens.map(\.0))
+        let targetIDs = Set(targetScreens.map(\.id))
         var newScreenControllers: [ScreenController] = []
 
         screenControllers.removeAll { slot in
