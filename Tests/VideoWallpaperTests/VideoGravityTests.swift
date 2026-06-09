@@ -69,6 +69,12 @@ import Testing
         #expect(VideoGravity.saved == .fit)
     }
 
+    @Test func saved_defaults_to_fill_when_unknown_value_stored() {
+        defer { UserDefaults.standard.removeObject(forKey: VideoGravity.storageKey) }
+        UserDefaults.standard.set("unknown_gravity", forKey: VideoGravity.storageKey)
+        #expect(VideoGravity.saved == .fill)
+    }
+
     private func localizedString(_ key: String) -> String {
         Bundle(for: AppDelegate.self).localizedString(forKey: key, value: nil, table: nil)
     }
