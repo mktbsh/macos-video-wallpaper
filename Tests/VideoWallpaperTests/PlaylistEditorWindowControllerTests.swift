@@ -41,6 +41,19 @@ struct PlaylistEditorWindowControllerTests {
         #expect(controller.state.currentItemID == item.id)
     }
 
+    @Test func reload_with_empty_items_clears_selection_and_validation() {
+        let controller = PlaylistEditorWindowController()
+        let item = PlaylistItem(url: URL(fileURLWithPath: "/tmp/clip.mov"))
+        controller.reload(items: [item], currentItemID: item.id)
+        controller.state.validationMessage = "stale"
+
+        controller.reload(items: [], currentItemID: nil)
+
+        #expect(controller.state.items.isEmpty)
+        #expect(controller.state.selection == nil)
+        #expect(controller.state.validationMessage == nil)
+    }
+
     @Test func reload_preserves_valid_selection_without_resetting_validation() {
         let controller = PlaylistEditorWindowController()
         let first = PlaylistItem(url: URL(fileURLWithPath: "/tmp/first.mov"))
