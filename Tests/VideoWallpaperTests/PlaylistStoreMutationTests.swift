@@ -77,6 +77,22 @@ import Testing
         #expect(store.currentItem?.playbackTimeRange != nil)
     }
 
+    @Test func update_time_range_with_nil_clears_existing_range() throws {
+        let item = PlaylistItem(
+            url: makeMutURL("trim.mov"),
+            useFullVideo: false,
+            startTime: 1.0,
+            endTime: 6.0
+        )
+        var store = PlaylistStore(items: [item], currentItemID: item.id)
+        #expect(store.currentItem?.playbackTimeRange != nil)
+
+        #expect(store.updateTimeRange(id: item.id, startTime: nil, endTime: nil) == true)
+        #expect(store.currentItem?.startTime == nil)
+        #expect(store.currentItem?.endTime == nil)
+        #expect(store.currentItem?.playbackTimeRange == nil)
+    }
+
     @Test func update_methods_return_false_for_missing_item() {
         var store = PlaylistStore()
         store.add(urls: [makeMutURL("first.mov")])
