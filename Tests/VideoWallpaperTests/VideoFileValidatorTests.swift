@@ -190,6 +190,24 @@ import Testing
         )
     }
 
+    @Test func resolve_per_display_returns_url_when_bookmark_is_valid() throws {
+        let context = makeIsolatedDefaults()
+        defer { context.defaults.removePersistentDomain(forName: context.suiteName) }
+
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("resolve_per_display_\(UUID().uuidString).mp4")
+        FileManager.default.createFile(atPath: url.path, contents: Data())
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let display = DisplayIdentifier(vendor: 10, model: 20, serial: 30)
+        VideoFileValidator.saveBookmark(for: url, display: display, defaults: context.defaults)
+
+        let resolved = VideoFileValidator.resolveBookmarkedURL(display: display, defaults: context.defaults)
+
+        #expect(resolved != nil)
+        #expect(resolved?.lastPathComponent == url.lastPathComponent)
+    }
+
     // MARK: - hasBookmark(display:)
 
     @Test func hasBookmark_returns_false_when_no_bookmark_stored() {
