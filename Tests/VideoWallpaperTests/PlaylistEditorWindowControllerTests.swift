@@ -72,6 +72,44 @@ struct PlaylistEditorWindowControllerTests {
         #expect(capturedMessage == "End must be after start")
     }
 
+    @Test func commit_with_negative_time_does_not_apply() {
+        let item = PlaylistItem(url: URL(fileURLWithPath: "/tmp/sample.mov"))
+        var appliedRanges: [AppliedRange] = []
+
+        PlaylistEditorTimeRangeCommitter.commit(.init(
+            itemID: item.id,
+            startText: "-1.0",
+            endText: "5.0",
+            useFullVideo: false,
+            validateTimeRange: nil,
+            setValidationMessage: { _ in },
+            applyTimeRange: { itemID, start, end in
+                appliedRanges.append(AppliedRange(itemID: itemID, start: start, end: end))
+            }
+        ))
+
+        #expect(appliedRanges.isEmpty)
+    }
+
+    @Test func commit_with_empty_text_does_not_apply() {
+        let item = PlaylistItem(url: URL(fileURLWithPath: "/tmp/sample.mov"))
+        var appliedRanges: [AppliedRange] = []
+
+        PlaylistEditorTimeRangeCommitter.commit(.init(
+            itemID: item.id,
+            startText: "",
+            endText: "",
+            useFullVideo: false,
+            validateTimeRange: nil,
+            setValidationMessage: { _ in },
+            applyTimeRange: { itemID, start, end in
+                appliedRanges.append(AppliedRange(itemID: itemID, start: start, end: end))
+            }
+        ))
+
+        #expect(appliedRanges.isEmpty)
+    }
+
     @Test func commit_time_range_emits_single_batched_update() {
         let item = PlaylistItem(url: URL(fileURLWithPath: "/tmp/sample.mov"))
         var appliedRanges: [AppliedRange] = []
