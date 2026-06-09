@@ -134,6 +134,24 @@ import Testing
         #expect(secondPlayback.token != firstPlayback.token)
     }
 
+    @Test func consume_after_store_cleared_returns_false_and_clears_token() throws {
+        var store = makeStore(["first.mov", "second.mov"])
+        var session = PlaybackSession()
+        let maybePlayback = session.beginPlayback(using: &store)
+        let playback = try #require(maybePlayback)
+
+        store.clear()
+
+        let result = session.consume(
+            PlaybackCompletion(itemID: playback.item.id, token: playback.token),
+            using: &store
+        )
+
+        #expect(result == false)
+        #expect(session.currentToken == nil)
+        #expect(store.items.isEmpty)
+    }
+
     @Test func manual_playlist_change_followed_by_begin_invalidates_old_completion() throws {
         var store = makeStore(["first.mov", "second.mov", "third.mov"])
         var session = PlaybackSession()
