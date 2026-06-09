@@ -210,7 +210,7 @@ struct PlaylistPersistenceTests {
         #expect(context.defaults.data(forKey: playlistBookmarksKey) != nil)
     }
 
-    private let bookmarkKey = "videoBookmark"
+    private let bookmarkKey = VideoFileValidator.bookmarkKey
     private let playlistBookmarksKey = PlaylistPersistence.bookmarkStorageKey
 
     private func decodeBookmarks(_ data: Data) -> [PersistedBookmarkPayload]? {
