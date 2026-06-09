@@ -14,6 +14,12 @@ import Testing
         #expect(TimeSlot.night.rawValue == "night")
     }
 
+    @Test func all_labels_are_non_empty() {
+        for slot in TimeSlot.allCases {
+            #expect(!slot.label.isEmpty)
+        }
+    }
+
     @Test func codable_roundtrip() throws {
         for slot in TimeSlot.allCases {
             let data = try JSONEncoder().encode(slot)
