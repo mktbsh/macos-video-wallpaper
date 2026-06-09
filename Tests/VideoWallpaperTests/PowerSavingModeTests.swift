@@ -20,10 +20,16 @@ import Testing
 
     // MARK: - label
 
-    @Test func all_labels_are_non_empty() {
-        for mode in PowerSavingMode.allCases {
-            #expect(!mode.label.isEmpty)
-        }
+    @Test func never_label_is_localized_power_saving_mode_never() {
+        #expect(PowerSavingMode.never.label == localizedString("power_saving_mode.never"))
+    }
+
+    @Test func always_label_is_localized_power_saving_mode_always() {
+        #expect(PowerSavingMode.always.label == localizedString("power_saving_mode.always"))
+    }
+
+    @Test func battery_label_is_localized_power_saving_mode_battery() {
+        #expect(PowerSavingMode.battery.label == localizedString("power_saving_mode.battery"))
     }
 
     // MARK: - shouldPause
@@ -60,5 +66,9 @@ import Testing
         defer { UserDefaults.standard.removeObject(forKey: PowerSavingMode.storageKey) }
         UserDefaults.standard.set("unknown_mode", forKey: PowerSavingMode.storageKey)
         #expect(PowerSavingMode.saved == .never)
+    }
+
+    private func localizedString(_ key: String) -> String {
+        Bundle(for: AppDelegate.self).localizedString(forKey: key, value: nil, table: nil)
     }
 }

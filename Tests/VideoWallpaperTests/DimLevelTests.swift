@@ -20,10 +20,16 @@ import Testing
 
     // MARK: - label
 
-    @Test func all_labels_are_non_empty() {
-        for level in DimLevel.allCases {
-            #expect(!level.label.isEmpty)
-        }
+    @Test func none_label_is_localized_dim_level_none() {
+        #expect(DimLevel.none.label == localizedString("dim_level.none"))
+    }
+
+    @Test func slight_label_is_localized_dim_level_slight() {
+        #expect(DimLevel.slight.label == localizedString("dim_level.slight"))
+    }
+
+    @Test func dark_label_is_localized_dim_level_dark() {
+        #expect(DimLevel.dark.label == localizedString("dim_level.dark"))
     }
 
     // MARK: - opacity
@@ -57,5 +63,9 @@ import Testing
         defer { UserDefaults.standard.removeObject(forKey: DimLevel.storageKey) }
         UserDefaults.standard.set("unknown_level", forKey: DimLevel.storageKey)
         #expect(DimLevel.saved == .none)
+    }
+
+    private func localizedString(_ key: String) -> String {
+        Bundle(for: AppDelegate.self).localizedString(forKey: key, value: nil, table: nil)
     }
 }
