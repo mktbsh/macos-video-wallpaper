@@ -98,6 +98,7 @@ struct PersistedPlaylistState: Codable {
 struct PlaylistPersistence {
     static let storageKey = "playlistState"
     static let bookmarkStorageKey = "playlistBookmarks"
+    private static let emptyBookmarksPayload = Data("[]".utf8)
 
     private let defaults: UserDefaults
 
@@ -193,7 +194,7 @@ struct PlaylistPersistence {
             Log.persistence.error("Failed to resolve bookmarks: \(error.localizedDescription)")
             return nil
         }
-        guard !bookmarks.isEmpty else { return Data("[]".utf8) }
+        guard !bookmarks.isEmpty else { return Self.emptyBookmarksPayload }
         do {
             return try JSONEncoder().encode(bookmarks)
         } catch {
@@ -223,7 +224,7 @@ struct PlaylistPersistence {
         let existingData = defaults.data(forKey: Self.bookmarkStorageKey)
         guard existingData != bookmarkData else { return }
 
-        if bookmarkData == Data("[]".utf8) {
+        if bookmarkData == Self.emptyBookmarksPayload {
             defaults.removeObject(forKey: Self.bookmarkStorageKey)
         } else {
             defaults.set(bookmarkData, forKey: Self.bookmarkStorageKey)
