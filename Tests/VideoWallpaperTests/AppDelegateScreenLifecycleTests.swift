@@ -97,6 +97,25 @@ struct AppDelegateScreenLifecycleTests {
         #expect(controller.resumeCallCount == 0)
     }
 
+    @Test func setup_resumes_playback_when_power_saving_mode_is_battery_but_on_ac() throws {
+        let screen = try #require(NSScreen.screens.first)
+        let controller = FakeWallpaperWindowController()
+        let originalValue = UserDefaults.standard.string(forKey: PowerSavingMode.storageKey)
+        defer { UserDefaults.standard.set(originalValue, forKey: PowerSavingMode.storageKey) }
+        UserDefaults.standard.set(PowerSavingMode.battery.rawValue, forKey: PowerSavingMode.storageKey)
+
+        let appDelegate = AppDelegate(
+            screenProvider: { [screen] },
+            controllerFactory: { _ in controller },
+            isOnBatteryProvider: { false }
+        )
+
+        appDelegate.applicationDidFinishLaunching(Notification(name: Notification.Name("test")))
+
+        #expect(controller.resumeCallCount >= 1)
+        #expect(controller.pauseCallCount == 0)
+    }
+
     @Test func terminate_invalidates_all_screen_controllers() throws {
         let screen = try #require(NSScreen.screens.first)
         let controller = FakeWallpaperWindowController()
