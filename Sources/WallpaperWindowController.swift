@@ -292,8 +292,7 @@ final class WallpaperWindowController {
     }
 
     private func isSameMediaTarget(url: URL, timeRange: CMTimeRange?) -> Bool {
-        guard let currentPlaybackContext else { return false }
-        guard currentPlaybackContext.url == url else { return false }
+        guard let currentPlaybackContext, currentPlaybackContext.url == url else { return false }
         return timeRangesEqual(currentPlaybackContext.timeRange, timeRange)
     }
 
@@ -341,8 +340,8 @@ private extension WallpaperWindowController {
         itemID: PlaylistItem.ID? = nil,
         token: RotationEngine<PlaylistItem>.PlaybackToken? = nil
     ) -> Bool {
-        guard let currentPlaybackContext else { return false }
-        guard currentPlaybackContext.url == url,
+        guard let currentPlaybackContext,
+              currentPlaybackContext.url == url,
               currentPlaybackContext.itemID == itemID,
               currentPlaybackContext.token == token else { return false }
         return timeRangesEqual(currentPlaybackContext.timeRange, timeRange)
