@@ -179,6 +179,16 @@ import Testing
         #expect(engine.currentEntryID == replacementEntries[0].id)
     }
 
+    @Test func replace_with_nil_current_id_falls_back_to_first_when_existing_current_is_missing() {
+        let originalEntries = [Entry(id: "a"), Entry(id: "b")]
+        var engine = RotationEngine(entries: originalEntries, currentEntryID: entriesID("b"))
+
+        let replacementEntries = [Entry(id: "x"), Entry(id: "y")]
+        engine.replace(entries: replacementEntries, currentEntryID: nil)
+
+        #expect(engine.currentEntryID == replacementEntries[0].id)
+    }
+
     @Test func replace_to_empty_clears_current_and_rejects_existing_token() {
         let entries = [Entry(id: "a"), Entry(id: "b")]
         var engine = RotationEngine(entries: entries, currentEntryID: entries[0].id)
