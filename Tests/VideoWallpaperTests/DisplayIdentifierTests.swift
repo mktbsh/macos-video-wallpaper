@@ -62,7 +62,8 @@ struct DisplayIdentifierTests {
 
     @Test func userDefaultsKey_format_is_prefix_display_description() {
         let id = DisplayIdentifier(vendor: 1552, model: 16418, serial: 0)
-        #expect(id.userDefaultsKey(for: "videoBookmark") == "videoBookmark_display_1552_16418_0")
+        let key = VideoFileValidator.bookmarkKey
+        #expect(id.userDefaultsKey(for: key) == "\(key)_display_1552_16418_0")
     }
 
     @Test func userDefaultsKey_with_different_prefix() {
