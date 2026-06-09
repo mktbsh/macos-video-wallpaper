@@ -211,7 +211,7 @@ struct PlaylistPersistenceTests {
     }
 
     private let bookmarkKey = "videoBookmark"
-    private let playlistBookmarksKey = "playlistBookmarks"
+    private let playlistBookmarksKey = PlaylistPersistence.bookmarkStorageKey
 
     private func decodeBookmarks(_ data: Data) -> [PersistedBookmarkPayload]? {
         try? JSONDecoder().decode([PersistedBookmarkPayload].self, from: data)
