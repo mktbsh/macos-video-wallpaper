@@ -55,6 +55,17 @@ struct PlaylistEditorWindowControllerTests {
         #expect(controller.state.validationMessage == "some error")
     }
 
+    @Test func reload_sets_selection_to_current_item_when_selection_is_nil() {
+        let controller = PlaylistEditorWindowController()
+        let first = PlaylistItem(url: URL(fileURLWithPath: "/tmp/first.mov"))
+        let second = PlaylistItem(url: URL(fileURLWithPath: "/tmp/second.mov"))
+
+        controller.reload(items: [first, second], currentItemID: second.id)
+
+        #expect(controller.state.selection == second.id)
+        #expect(controller.state.validationMessage == nil)
+    }
+
     @Test func reload_resets_selection_to_current_when_selected_item_is_removed() {
         let controller = PlaylistEditorWindowController()
         let first = PlaylistItem(url: URL(fileURLWithPath: "/tmp/first.mov"))
