@@ -181,6 +181,23 @@ struct PlaylistEditorWindowControllerTests {
         #expect(appliedRanges.isEmpty)
     }
 
+    @Test func commit_with_unparseable_text_clears_validation_message() {
+        let item = PlaylistItem(url: URL(fileURLWithPath: "/tmp/sample.mov"))
+        var capturedMessages: [String?] = []
+
+        PlaylistEditorTimeRangeCommitter.commit(.init(
+            itemID: item.id,
+            startText: "abc",
+            endText: "3.0",
+            useFullVideo: false,
+            validateTimeRange: nil,
+            setValidationMessage: { capturedMessages.append($0) },
+            applyTimeRange: { _, _, _ in }
+        ))
+
+        #expect(capturedMessages == [nil])
+    }
+
     @Test func commit_time_range_emits_single_batched_update() {
         let item = PlaylistItem(url: URL(fileURLWithPath: "/tmp/sample.mov"))
         var appliedRanges: [AppliedRange] = []
