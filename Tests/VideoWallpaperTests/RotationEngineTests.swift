@@ -134,6 +134,21 @@ import Testing
         #expect(engine.currentEntryID == nil)
     }
 
+    @Test func same_token_can_advance_again_before_next_begin_playback() {
+        // RotationEngine allows a token to advance multiple times; duplicate-use
+        // protection is enforced at the PlaybackSession layer.
+        let entries = [Entry(id: "a"), Entry(id: "b"), Entry(id: "c")]
+        var engine = RotationEngine(entries: entries, currentEntryID: entries[0].id)
+        let token = engine.beginPlayback()
+
+        #expect(engine.advanceAfterPlaybackCompletion(using: token) == true)
+        #expect(engine.currentEntryID == entries[1].id)
+
+        // Same token is still accepted because beginPlayback hasn't been called again
+        #expect(engine.advanceAfterPlaybackCompletion(using: token) == true)
+        #expect(engine.currentEntryID == entries[2].id)
+    }
+
     @Test func advance_after_completion_returns_false_without_active_playback() {
         let entries = [Entry(id: "a"), Entry(id: "b")]
         var engine = RotationEngine(entries: entries, currentEntryID: entries[0].id)
