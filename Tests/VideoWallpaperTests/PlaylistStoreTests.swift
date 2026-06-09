@@ -26,6 +26,11 @@ import Testing
         #expect(item.playbackTimeRange == nil)
     }
 
+    @Test func playbackTimeRange_is_nil_when_end_equals_start() {
+        let item = PlaylistItem(url: makeURL("v.mov"), useFullVideo: false, startTime: 4.0, endTime: 4.0)
+        #expect(item.playbackTimeRange == nil)
+    }
+
     @Test func playbackTimeRange_is_set_when_valid_range_and_not_full_video() {
         let item = PlaylistItem(url: makeURL("v.mov"), useFullVideo: false, startTime: 2.0, endTime: 8.0)
         #expect(item.playbackTimeRange != nil)
