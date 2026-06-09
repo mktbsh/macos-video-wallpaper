@@ -1,5 +1,7 @@
 import Foundation
 
+// NOTE: ScheduleConfig is a planned feature (time-based wallpaper scheduling)
+// and is not yet wired into production code.
 struct ScheduleConfig: Codable, Equatable {
     var morningStart: Int    // 0-23
     var afternoonStart: Int

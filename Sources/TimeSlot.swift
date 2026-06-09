@@ -1,5 +1,7 @@
 import Foundation
 
+// NOTE: TimeSlot is a planned feature (time-based wallpaper scheduling)
+// and is not yet wired into production code.
 enum TimeSlot: String, CaseIterable, Codable {
     case morning
     case afternoon
