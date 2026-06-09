@@ -213,13 +213,13 @@ private extension AppDelegate {
         if let url = VideoFileValidator.resolveBookmarkedURL(display: displayId) {
             clearError(for: displayId)
             controller.load(videoURL: url, timeRange: nil, itemID: nil, token: nil)
-        } else if VideoFileValidator.hasBookmark(display: displayId) {
-            Log.persistence.warning(
-                "Bookmark resolve failed for display \(displayId.description, privacy: .public)"
-            )
-            setError(.bookmarkResolveFailed(displayId), for: displayId)
-            controller.clearVideo()
         } else {
+            if VideoFileValidator.hasBookmark(display: displayId) {
+                Log.persistence.warning(
+                    "Bookmark resolve failed for display \(displayId.description, privacy: .public)"
+                )
+                setError(.bookmarkResolveFailed(displayId), for: displayId)
+            }
             controller.clearVideo()
         }
     }
