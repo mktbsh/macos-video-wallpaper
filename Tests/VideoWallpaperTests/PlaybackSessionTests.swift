@@ -172,6 +172,25 @@ import Testing
         #expect(session.currentToken == secondPlayback.token)
     }
 
+    @Test func consume_before_begin_playback_returns_false() throws {
+        var store = makeStore(["first.mov"])
+        var session = PlaybackSession()
+        // Build a completion using a token from a different session
+        var otherStore = makeStore(["first.mov"])
+        var otherSession = PlaybackSession()
+        let maybeOther = otherSession.beginPlayback(using: &otherStore)
+        let otherResult = try #require(maybeOther)
+
+        let result = session.consume(
+            PlaybackCompletion(itemID: otherResult.item.id, token: otherResult.token),
+            using: &store
+        )
+
+        #expect(result == false)
+        #expect(session.currentToken == nil)
+        #expect(store.currentItem?.url.lastPathComponent == "first.mov")
+    }
+
     private func makeStore(_ names: [String]) -> PlaylistStore {
         var store = PlaylistStore()
         store.add(urls: names.map { URL(fileURLWithPath: "/tmp/\($0)") })
