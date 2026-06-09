@@ -203,11 +203,8 @@ struct PlaylistPersistence {
     }
 
     private func resolvedBookmarks(for store: PlaylistStore) throws -> [PersistedPlaylistBookmark] {
-        let cachedBookmarksByID = Dictionary(
-            uniqueKeysWithValues: (decodedBookmarks(
-                from: defaults.data(forKey: Self.bookmarkStorageKey)
-            ) ?? []).map { ($0.id, $0) }
-        )
+        let cached = decodedBookmarks(from: defaults.data(forKey: Self.bookmarkStorageKey)) ?? []
+        let cachedBookmarksByID = Dictionary(uniqueKeysWithValues: cached.map { ($0.id, $0) })
 
         return try store.items.map { item in
             if let cachedBookmark = cachedBookmarksByID[item.id], cachedBookmark.matches(item) {
