@@ -93,6 +93,31 @@ import Testing
         #expect(engine.currentEntryID == entries[0].id)
     }
 
+    @Test func set_current_with_valid_id_updates_current_entry() {
+        let entries = [Entry(id: "a"), Entry(id: "b"), Entry(id: "c")]
+        var engine = RotationEngine(entries: entries, currentEntryID: entries[0].id)
+
+        #expect(engine.setCurrent(id: "c") == true)
+        #expect(engine.currentEntryID == "c")
+    }
+
+    @Test func set_current_then_next_advances_from_new_position() {
+        let entries = [Entry(id: "a"), Entry(id: "b"), Entry(id: "c")]
+        var engine = RotationEngine(entries: entries, currentEntryID: entries[0].id)
+
+        _ = engine.setCurrent(id: "b")
+        #expect(engine.next() == true)
+        #expect(engine.currentEntryID == "c")
+    }
+
+    @Test func single_entry_next_wraps_to_itself() {
+        let entries = [Entry(id: "a")]
+        var engine = RotationEngine(entries: entries, currentEntryID: entries[0].id)
+
+        #expect(engine.next() == true)
+        #expect(engine.currentEntryID == "a")
+    }
+
     @Test func advance_after_completion_returns_false_without_active_playback() {
         let entries = [Entry(id: "a"), Entry(id: "b")]
         var engine = RotationEngine(entries: entries, currentEntryID: entries[0].id)
