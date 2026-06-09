@@ -288,25 +288,28 @@ final class StatusMenuController {
         videoItem.indentationLevel = 1
         menu.addItem(videoItem)
 
-        let selectItem = NSMenuItem(
+        menu.addItem(makeDisplayActionMenuItem(
             title: String(localized: "menu.video.select"),
             action: #selector(selectVideo(_:)),
-            keyEquivalent: ""
-        )
-        selectItem.target = self
-        selectItem.representedObject = state.displayIdentifier
-        selectItem.indentationLevel = 1
-        menu.addItem(selectItem)
-
-        let clearItem = NSMenuItem(
+            displayId: state.displayIdentifier
+        ))
+        menu.addItem(makeDisplayActionMenuItem(
             title: String(localized: "menu.wallpaper.clear"),
             action: #selector(clearWallpaper(_:)),
-            keyEquivalent: ""
-        )
-        clearItem.target = self
-        clearItem.representedObject = state.displayIdentifier
-        clearItem.indentationLevel = 1
-        menu.addItem(clearItem)
+            displayId: state.displayIdentifier
+        ))
+    }
+
+    private func makeDisplayActionMenuItem(
+        title: String,
+        action: Selector,
+        displayId: DisplayIdentifier
+    ) -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
+        item.target = self
+        item.representedObject = displayId
+        item.indentationLevel = 1
+        return item
     }
 
     @objc private func toggleDisplay(_ sender: NSMenuItem) {
