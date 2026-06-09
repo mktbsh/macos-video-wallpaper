@@ -6,7 +6,6 @@ enum VideoFileValidator {
     private static let supportedExtensions: Set<String> = ["mp4", "mov", "m4v"]
     static let bookmarkKey = "videoBookmark"
     static let legacyPathKey = "videoFilePath"
-    static let bookmarkKeyPrefix = "videoBookmark"
     static let displayEnabledKeyPrefix = "displayEnabled"
 
     static let allowedUTTypes: [UTType] = [
@@ -84,7 +83,7 @@ enum VideoFileValidator {
             )
             return false
         }
-        defaults.set(data, forKey: display.userDefaultsKey(for: bookmarkKeyPrefix))
+        defaults.set(data, forKey: display.userDefaultsKey(for: bookmarkKey))
         return true
     }
 
@@ -93,7 +92,7 @@ enum VideoFileValidator {
         display: DisplayIdentifier,
         defaults: UserDefaults = .standard
     ) {
-        defaults.removeObject(forKey: display.userDefaultsKey(for: bookmarkKeyPrefix))
+        defaults.removeObject(forKey: display.userDefaultsKey(for: bookmarkKey))
     }
 
     /// Resolves the stored bookmark for a specific display.
@@ -102,7 +101,7 @@ enum VideoFileValidator {
         display: DisplayIdentifier,
         defaults: UserDefaults = .standard
     ) -> URL? {
-        let key = display.userDefaultsKey(for: bookmarkKeyPrefix)
+        let key = display.userDefaultsKey(for: bookmarkKey)
         guard let data = defaults.data(forKey: key) else { return nil }
         return resolve(from: data, defaults: defaults)
     }
@@ -112,7 +111,7 @@ enum VideoFileValidator {
         display: DisplayIdentifier,
         defaults: UserDefaults = .standard
     ) -> Bool {
-        defaults.data(forKey: display.userDefaultsKey(for: bookmarkKeyPrefix)) != nil
+        defaults.data(forKey: display.userDefaultsKey(for: bookmarkKey)) != nil
     }
 
     // MARK: - Per-display enabled/disabled
