@@ -187,6 +187,7 @@ struct PlaylistPersistence {
     }
 
     private func encodedBookmarks(for store: PlaylistStore) -> Data? {
+        guard !store.items.isEmpty else { return Self.emptyBookmarksPayload }
         let bookmarks: [PersistedPlaylistBookmark]
         do {
             bookmarks = try resolvedBookmarks(for: store)
@@ -194,7 +195,6 @@ struct PlaylistPersistence {
             Log.persistence.error("Failed to resolve bookmarks: \(error.localizedDescription)")
             return nil
         }
-        guard !bookmarks.isEmpty else { return Self.emptyBookmarksPayload }
         do {
             return try JSONEncoder().encode(bookmarks)
         } catch {
