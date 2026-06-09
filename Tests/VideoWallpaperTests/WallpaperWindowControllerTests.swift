@@ -184,6 +184,16 @@ struct WallpaperWindowControllerLoadingTests {
 @Suite @MainActor
 struct WallpaperWindowControllerLifecycleTests {
 
+    @Test func clear_video_before_any_load_is_no_op() throws {
+        let context = try WallpaperWindowControllerTestContext()
+
+        context.controller.clearVideo()
+
+        #expect(context.driver.pauseCallCount == 0)
+        #expect(context.driver.clearCurrentItemCallCount == 0)
+        #expect(context.window.orderOutCallCount == 0)
+    }
+
     @Test func stale_completion_target_is_ignored() throws {
         let context = try WallpaperWindowControllerTestContext()
         var completions: [PlaybackCompletion] = []
