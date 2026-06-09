@@ -29,6 +29,23 @@ struct AppDelegateScreenLifecycleTests {
         #expect(controller.invalidateCallCount == 1)
     }
 
+    @Test func terminate_invalidates_all_screen_controllers() throws {
+        let screen = try #require(NSScreen.screens.first)
+        let controller = FakeWallpaperWindowController()
+        let appDelegate = AppDelegate(
+            screenProvider: { [screen] },
+            controllerFactory: { _ in controller },
+            isOnBatteryProvider: { false }
+        )
+
+        appDelegate.applicationDidFinishLaunching(Notification(name: Notification.Name("test")))
+        #expect(controller.invalidateCallCount == 0)
+
+        appDelegate.applicationWillTerminate(Notification(name: Notification.Name("test")))
+
+        #expect(controller.invalidateCallCount == 1)
+    }
+
     @Test func screen_reconfiguration_keeps_surviving_controller_alive_without_reload() throws {
         let screen = try #require(NSScreen.screens.first)
         let controller = FakeWallpaperWindowController()
