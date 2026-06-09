@@ -358,14 +358,9 @@ private extension WallpaperWindowController {
     }
 
     func timeRangesEqual(_ lhs: CMTimeRange?, _ rhs: CMTimeRange?) -> Bool {
-        switch (lhs, rhs) {
-        case (nil, nil):
-            return true
-        case let (.some(lhs), .some(rhs)):
-            return CMTimeRangeEqual(lhs, rhs)
-        default:
-            return false
-        }
+        guard let lhs else { return rhs == nil }
+        guard let rhs else { return false }
+        return CMTimeRangeEqual(lhs, rhs)
     }
 }
 
