@@ -11,6 +11,48 @@ struct PlaylistEditorWindowControllerTests {
         let end: Double?
     }
 
+    // MARK: - PlaylistEditorWindowController.reload
+
+    @Test func reload_sets_items_and_current_item_id() {
+        let controller = PlaylistEditorWindowController()
+        let item = PlaylistItem(url: URL(fileURLWithPath: "/tmp/clip.mov"))
+
+        controller.reload(items: [item], currentItemID: item.id)
+
+        #expect(controller.state.items == [item])
+        #expect(controller.state.currentItemID == item.id)
+    }
+
+    @Test func reload_preserves_valid_selection_without_resetting_validation() {
+        let controller = PlaylistEditorWindowController()
+        let first = PlaylistItem(url: URL(fileURLWithPath: "/tmp/first.mov"))
+        let second = PlaylistItem(url: URL(fileURLWithPath: "/tmp/second.mov"))
+        controller.reload(items: [first, second], currentItemID: first.id)
+        controller.state.selection = second.id
+        controller.state.validationMessage = "some error"
+
+        controller.reload(items: [first, second], currentItemID: first.id)
+
+        #expect(controller.state.selection == second.id)
+        #expect(controller.state.validationMessage == "some error")
+    }
+
+    @Test func reload_resets_selection_to_current_when_selected_item_is_removed() {
+        let controller = PlaylistEditorWindowController()
+        let first = PlaylistItem(url: URL(fileURLWithPath: "/tmp/first.mov"))
+        let second = PlaylistItem(url: URL(fileURLWithPath: "/tmp/second.mov"))
+        controller.reload(items: [first, second], currentItemID: first.id)
+        controller.state.selection = second.id
+        controller.state.validationMessage = "stale error"
+
+        controller.reload(items: [first], currentItemID: first.id)
+
+        #expect(controller.state.selection == first.id)
+        #expect(controller.state.validationMessage == nil)
+    }
+
+    // MARK: - PlaylistEditorTimeRangeCommitter
+
     @Test func commit_when_use_full_video_applies_nil_range() {
         let item = PlaylistItem(url: URL(fileURLWithPath: "/tmp/sample.mov"))
         var appliedRanges: [AppliedRange] = []
