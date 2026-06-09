@@ -29,6 +29,15 @@ struct WallpaperWindowControllerVisibilityTests {
         #expect(context.window.orderFrontCallCount == 0)
     }
 
+    @Test func pause_playback_before_any_load_is_no_op() throws {
+        let context = try WallpaperWindowControllerTestContext()
+
+        context.controller.pausePlayback()
+
+        #expect(context.driver.pauseCallCount == 0)
+        #expect(context.window.orderOutCallCount == 0)
+    }
+
     @Test func pause_playback_is_idempotent_when_already_hidden() throws {
         let context = try WallpaperWindowControllerTestContext()
         context.controller.load(videoURL: wallpaperWindowTestURL("pause-idempotent.mov"))
