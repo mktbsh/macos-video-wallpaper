@@ -118,6 +118,15 @@ import Testing
         #expect(store.currentItem?.url == second)
     }
 
+    @Test func set_current_returns_false_and_preserves_current_for_missing_id() throws {
+        var store = PlaylistStore()
+        store.add(urls: [makeURL("first.mov"), makeURL("second.mov")])
+        let originalCurrentID = try #require(store.currentItem?.id)
+
+        #expect(store.setCurrent(id: UUID()) == false)
+        #expect(store.currentItem?.id == originalCurrentID)
+    }
+
     @Test func completion_advance_uses_current_playback_token() {
         var store = PlaylistStore()
         let first = makeURL("first.mov")
