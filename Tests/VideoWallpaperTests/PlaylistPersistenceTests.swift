@@ -93,6 +93,20 @@ struct PlaylistPersistenceTests {
         #expect(restored.currentItem?.url == first)
     }
 
+    @Test func save_always_clears_legacy_single_display_bookmark() throws {
+        let context = TestContext()
+        defer { context.cleanup() }
+        let url = try context.makeVideoURL("clip.mov")
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        VideoFileValidator.saveBookmark(for: url, defaults: context.defaults)
+        #expect(context.defaults.data(forKey: bookmarkKey) != nil)
+
+        context.persistence.save(store: PlaylistStore())
+
+        #expect(context.defaults.data(forKey: bookmarkKey) == nil)
+    }
+
     @Test func migrate_legacy_single_bookmark_to_playlist_state() throws {
         let context = TestContext()
         defer { context.cleanup() }
