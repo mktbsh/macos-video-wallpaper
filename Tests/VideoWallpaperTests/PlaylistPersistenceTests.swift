@@ -113,6 +113,22 @@ struct PlaylistPersistenceTests {
         #expect(restored.currentItem?.url == first)
     }
 
+    @Test func save_with_empty_store_removes_bookmark_storage_key() throws {
+        let context = TestContext()
+        defer { context.cleanup() }
+        let url = try context.makeVideoURL("item.mov")
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        // Populate bookmark storage with real data first
+        let store = PlaylistStore(items: [PlaylistItem(url: url)])
+        context.persistence.save(store: store)
+        #expect(context.defaults.data(forKey: playlistBookmarksKey) != nil)
+
+        // Saving empty store should remove bookmark storage
+        context.persistence.save(store: PlaylistStore())
+        #expect(context.defaults.data(forKey: playlistBookmarksKey) == nil)
+    }
+
     @Test func save_always_clears_legacy_single_display_bookmark() throws {
         let context = TestContext()
         defer { context.cleanup() }
