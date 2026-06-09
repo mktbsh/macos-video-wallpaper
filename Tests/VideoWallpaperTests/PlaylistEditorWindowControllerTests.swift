@@ -265,6 +265,47 @@ struct PlaylistEditorWindowControllerTests {
         #expect(appliedRanges.first?.end == 6.0)
     }
 
+    @Test func commit_with_whitespace_padded_text_trims_and_applies_range() {
+        let item = PlaylistItem(url: makeEditorURL("sample.mov"))
+        var appliedRanges: [AppliedRange] = []
+
+        PlaylistEditorTimeRangeCommitter.commit(.init(
+            itemID: item.id,
+            startText: "  2.0  ",
+            endText: "\t6.0\n",
+            useFullVideo: false,
+            validateTimeRange: nil,
+            setValidationMessage: { _ in },
+            applyTimeRange: { itemID, start, end in
+                appliedRanges.append(AppliedRange(itemID: itemID, start: start, end: end))
+            }
+        ))
+
+        #expect(appliedRanges.count == 1)
+        #expect(appliedRanges.first?.start == 2.0)
+        #expect(appliedRanges.first?.end == 6.0)
+    }
+
+    @Test func commit_with_nan_time_does_not_apply() {
+        // "nan" parses as Double.nan; the isFinite check rejects it
+        let item = PlaylistItem(url: makeEditorURL("sample.mov"))
+        var appliedRanges: [AppliedRange] = []
+
+        PlaylistEditorTimeRangeCommitter.commit(.init(
+            itemID: item.id,
+            startText: "nan",
+            endText: "5.0",
+            useFullVideo: false,
+            validateTimeRange: nil,
+            setValidationMessage: { _ in },
+            applyTimeRange: { itemID, start, end in
+                appliedRanges.append(AppliedRange(itemID: itemID, start: start, end: end))
+            }
+        ))
+
+        #expect(appliedRanges.isEmpty)
+    }
+
     @Test func commit_time_range_emits_single_batched_update() {
         let item = PlaylistItem(url: makeEditorURL("sample.mov"))
         var appliedRanges: [AppliedRange] = []
