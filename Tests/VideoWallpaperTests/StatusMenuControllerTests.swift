@@ -127,6 +127,32 @@ struct StatusMenuControllerTests {
         #expect(controller.statusIconNameForTesting == "exclamationmark.triangle.fill")
     }
 
+    @Test func clearing_display_states_restores_empty_menu_item_count() {
+        let controller = StatusMenuController()
+        let emptyCount = controller.menuItemCountForTesting
+
+        controller.displayStates = [
+            DisplayMenuState(
+                displayIdentifier: DisplayIdentifier(vendor: 1, model: 2, serial: 3),
+                screenName: "Built-in Display",
+                isEnabled: true,
+                currentVideoName: "ocean.mp4"
+            )
+        ]
+        #expect(controller.menuItemCountForTesting > emptyCount)
+
+        controller.displayStates = []
+
+        #expect(controller.menuItemCountForTesting == emptyCount)
+    }
+
+    @Test func empty_display_states_uses_normal_icon() {
+        let controller = StatusMenuController()
+
+        // No displays → no errors → normal icon
+        #expect(controller.statusIconNameForTesting == "play.rectangle.fill")
+    }
+
     @Test func icon_reverts_to_normal_after_error_clears() {
         let controller = StatusMenuController()
 
