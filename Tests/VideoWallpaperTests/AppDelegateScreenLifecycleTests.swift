@@ -63,6 +63,21 @@ struct AppDelegateScreenLifecycleTests {
         #expect(controller.resumeCallCount == 0)
     }
 
+    @Test func setup_applies_dim_level_and_video_gravity_on_new_controller() throws {
+        let screen = try #require(NSScreen.screens.first)
+        let controller = FakeWallpaperWindowController()
+        let appDelegate = AppDelegate(
+            screenProvider: { [screen] },
+            controllerFactory: { _ in controller },
+            isOnBatteryProvider: { false }
+        )
+
+        appDelegate.applicationDidFinishLaunching(Notification(name: Notification.Name("test")))
+
+        #expect(controller.applyDimLevelCallCount >= 1)
+        #expect(controller.applyVideoGravityCallCount >= 1)
+    }
+
     @Test func setup_pauses_playback_when_power_saving_mode_is_battery_and_on_battery() throws {
         let screen = try #require(NSScreen.screens.first)
         let controller = FakeWallpaperWindowController()
