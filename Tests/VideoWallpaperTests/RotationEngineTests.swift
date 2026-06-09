@@ -126,6 +126,14 @@ import Testing
         #expect(engine.currentEntryID == "a")
     }
 
+    @Test func advance_after_completion_returns_false_when_engine_is_empty_even_with_active_token() {
+        var engine = RotationEngine<Entry>()
+        let token = engine.beginPlayback()
+
+        #expect(engine.advanceAfterPlaybackCompletion(using: token) == false)
+        #expect(engine.currentEntryID == nil)
+    }
+
     @Test func advance_after_completion_returns_false_without_active_playback() {
         let entries = [Entry(id: "a"), Entry(id: "b")]
         var engine = RotationEngine(entries: entries, currentEntryID: entries[0].id)
