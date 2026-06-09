@@ -20,6 +20,26 @@ struct WallpaperWindowControllerLoadingTests {
         #expect(context.accessController.startCount == 1)
     }
 
+    @Test func ranged_load_sets_forward_playback_end_time() throws {
+        let context = try WallpaperWindowControllerTestContext()
+        let timeRange = makeTimeRange(start: 2, end: 5)
+
+        context.controller.load(
+            videoURL: wallpaperWindowTestURL("ranged-end-time.mov"),
+            timeRange: timeRange
+        )
+
+        #expect(context.driver.replaceCurrentItemCalls[0].forwardPlaybackEndTime == timeRange.end)
+    }
+
+    @Test func full_load_passes_nil_forward_playback_end_time() throws {
+        let context = try WallpaperWindowControllerTestContext()
+
+        context.controller.load(videoURL: wallpaperWindowTestURL("full-load-end-time.mov"))
+
+        #expect(context.driver.replaceCurrentItemCalls[0].forwardPlaybackEndTime == nil)
+    }
+
     @Test func ranged_load_waits_for_current_seek_completion_before_playing() throws {
         let context = try WallpaperWindowControllerTestContext()
         context.controller.load(
