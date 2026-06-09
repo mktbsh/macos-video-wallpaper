@@ -1,4 +1,5 @@
 import Foundation
+import UniformTypeIdentifiers
 
 enum VideoFileValidator {
 
@@ -7,6 +8,12 @@ enum VideoFileValidator {
     static let legacyPathKey = "videoFilePath"
     static let bookmarkKeyPrefix = "videoBookmark"
     static let displayEnabledKeyPrefix = "displayEnabled"
+
+    static let allowedUTTypes: [UTType] = [
+        .mpeg4Movie,
+        .quickTimeMovie,
+        UTType(filenameExtension: "m4v") ?? .movie
+    ]
 
     static func isSupported(extension ext: String) -> Bool {
         supportedExtensions.contains(ext.lowercased())

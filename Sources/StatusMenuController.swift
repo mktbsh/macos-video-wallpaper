@@ -1,6 +1,5 @@
 import Cocoa
 import ServiceManagement
-import UniformTypeIdentifiers
 
 @MainActor
 protocol LoginItemManaging {
@@ -239,10 +238,9 @@ final class StatusMenuController {
 
     private func updateStatusIcon() {
         let hasErrors = displayStates.contains { $0.errorMessage != nil }
-        let iconName = hasErrors ? "exclamationmark.triangle.fill" : "play.rectangle.fill"
-        currentIconName = iconName
+        currentIconName = hasErrors ? "exclamationmark.triangle.fill" : "play.rectangle.fill"
         statusItem.button?.image = NSImage(
-            systemSymbolName: iconName,
+            systemSymbolName: currentIconName,
             accessibilityDescription: "VideoWallpaper"
         )
     }
@@ -329,11 +327,7 @@ final class StatusMenuController {
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
         panel.canChooseFiles = true
-        panel.allowedContentTypes = [
-            .mpeg4Movie,
-            .quickTimeMovie,
-            UTType(filenameExtension: "m4v") ?? .movie
-        ]
+        panel.allowedContentTypes = VideoFileValidator.allowedUTTypes
 
         guard panel.runModal() == .OK, let url = panel.url else { return }
         guard VideoFileValidator.isSupported(extension: url.pathExtension) else {

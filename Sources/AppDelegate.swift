@@ -1,7 +1,6 @@
 import AVFoundation
 import Cocoa
 import IOKit.ps
-import UniformTypeIdentifiers
 
 @MainActor
 protocol WallpaperWindowControlling: AnyObject {
@@ -340,11 +339,7 @@ private extension AppDelegate {
         panel.allowsMultipleSelection = true
         panel.canChooseDirectories = false
         panel.canChooseFiles = true
-        panel.allowedContentTypes = [
-            .mpeg4Movie,
-            .quickTimeMovie,
-            UTType(filenameExtension: "m4v") ?? .movie
-        ]
+        panel.allowedContentTypes = VideoFileValidator.allowedUTTypes
         guard panel.runModal() == .OK else { return }
         let urls = panel.urls.filter { VideoFileValidator.isSupported(extension: $0.pathExtension) }
         guard !urls.isEmpty else { return }
