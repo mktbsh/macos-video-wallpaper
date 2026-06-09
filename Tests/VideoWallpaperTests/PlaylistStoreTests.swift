@@ -265,9 +265,11 @@ import Testing
         store.add(urls: [makeURL("first.mov"), makeURL("second.mov")])
         let originalItems = store.items
         let firstItemID = try #require(store.items.first?.id)
+        let lastItemID = try #require(store.items.last?.id)
 
         #expect(store.move(id: UUID(), by: 1) == false)
         #expect(store.move(id: firstItemID, by: -1) == false)
+        #expect(store.move(id: lastItemID, by: 1) == false)
         #expect(store.items == originalItems)
     }
 
@@ -354,6 +356,19 @@ import Testing
         #expect(store.items.count == 3)
         #expect(store.currentItem?.id == originalCurrentID)
         #expect(store.currentItem?.url == makeURL("first.mov"))
+    }
+
+    @Test func add_urls_preserves_non_first_current_item() {
+        var store = PlaylistStore()
+        store.add(urls: [makeURL("first.mov"), makeURL("second.mov")])
+        _ = store.next()
+        let midCurrentID = store.currentItem?.id
+
+        store.add(urls: [makeURL("third.mov")])
+
+        #expect(store.items.count == 3)
+        #expect(store.currentItem?.id == midCurrentID)
+        #expect(store.currentItem?.url == makeURL("second.mov"))
     }
 
     @Test func summary_is_nil_when_playlist_is_empty() {
