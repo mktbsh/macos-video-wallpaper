@@ -13,6 +13,24 @@ struct PlaylistEditorWindowControllerTests {
 
     // MARK: - PlaylistEditorWindowController.reload
 
+    @Test func selected_item_returns_item_matching_selection() {
+        let first = PlaylistItem(url: URL(fileURLWithPath: "/tmp/first.mov"))
+        let second = PlaylistItem(url: URL(fileURLWithPath: "/tmp/second.mov"))
+        let state = PlaylistEditorState()
+        state.items = [first, second]
+        state.selection = second.id
+
+        #expect(state.selectedItem == second)
+    }
+
+    @Test func selected_item_returns_nil_when_selection_is_nil() {
+        let state = PlaylistEditorState()
+        state.items = [PlaylistItem(url: URL(fileURLWithPath: "/tmp/clip.mov"))]
+        state.selection = nil
+
+        #expect(state.selectedItem == nil)
+    }
+
     @Test func reload_sets_items_and_current_item_id() {
         let controller = PlaylistEditorWindowController()
         let item = PlaylistItem(url: URL(fileURLWithPath: "/tmp/clip.mov"))
