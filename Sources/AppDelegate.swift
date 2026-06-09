@@ -33,7 +33,7 @@ private func defaultIsOnBattery() -> Bool {
 final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private struct ScreenController {
-        let id: CGDirectDisplayID
+        let id: DisplayIdentifier
         let controller: any WallpaperWindowControlling
     }
 
@@ -130,11 +130,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Private
 
     private func setupWallpaperWindows() {
-        let targetScreens: [(id: CGDirectDisplayID, screen: NSScreen)] = screenProvider()
+        let targetScreens: [(id: DisplayIdentifier, screen: NSScreen)] = screenProvider()
             .compactMap { screen in
-                guard let id = displayID(for: screen),
-                      let displayIdentifier = screen.displayIdentifier,
-                      VideoFileValidator.isDisplayEnabled(displayIdentifier)
+                guard let id = screen.displayIdentifier,
+                      VideoFileValidator.isDisplayEnabled(id)
                 else { return nil }
                 return (id, screen)
             }
@@ -173,8 +172,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             (orderByID[lhs.id] ?? .max) < (orderByID[rhs.id] ?? .max)
         }
         for slot in newScreenControllers {
-            let displayId = DisplayIdentifier(displayID: slot.id)
-            loadVideoForDisplay(displayId, on: slot.controller)
+            loadVideoForDisplay(slot.id, on: slot.controller)
         }
         applyBatteryPolicy(to: newScreenControllers.map(\.controller))
         updateDisplayStates()
@@ -204,9 +202,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func displayID(for screen: NSScreen) -> CGDirectDisplayID? {
-        screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID
-    }
 }
 
 @MainActor
@@ -230,9 +225,7 @@ private extension AppDelegate {
     }
 
     func reloadVideoForDisplay(_ displayId: DisplayIdentifier) {
-        guard let slot = screenControllers.first(where: {
-            DisplayIdentifier(displayID: $0.id) == displayId
-        }) else { return }
+        guard let slot = screenControllers.first(where: { $0.id == displayId }) else { return }
         loadVideoForDisplay(displayId, on: slot.controller)
     }
 
