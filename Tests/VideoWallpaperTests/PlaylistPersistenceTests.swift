@@ -191,6 +191,20 @@ struct PlaylistPersistenceTests {
         #expect(context.defaults.data(forKey: PlaylistPersistence.storageKey) == nil)
     }
 
+    @Test func corrupt_playlist_state_with_existing_bookmark_store_clears_both_keys() throws {
+        let context = TestContext()
+        defer { context.cleanup() }
+        // Simulate: bookmark store exists (new format) but state data is corrupt
+        context.defaults.set(Data("corrupt_state".utf8), forKey: PlaylistPersistence.storageKey)
+        context.defaults.set(Data("[]".utf8), forKey: PlaylistPersistence.bookmarkStorageKey)
+
+        let restored = context.persistence.load()
+
+        #expect(restored.items.isEmpty)
+        #expect(context.defaults.data(forKey: PlaylistPersistence.storageKey) == nil)
+        #expect(context.defaults.data(forKey: PlaylistPersistence.bookmarkStorageKey) == nil)
+    }
+
     @Test func clear_removes_playlist_state_and_legacy_bookmark() throws {
         let context = TestContext()
         defer { context.cleanup() }
