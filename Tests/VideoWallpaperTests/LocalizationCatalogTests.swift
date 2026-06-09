@@ -29,6 +29,35 @@ struct LocalizationCatalogTests {
         #expect(try localizedString("playlist_editor.use_full_video", locale: "ja") == "動画全体を使う")
     }
 
+    @Test func playlist_summary_keys_are_translated_for_both_locales() throws {
+        #expect(try localizedString("menu.playlist.summary.single", locale: "en") == "Wallpaper: 1 Video")
+        #expect(try localizedString("menu.playlist.summary.single", locale: "ja") == "壁紙: 1 本の動画")
+        #expect(try localizedString("menu.playlist.summary.multiple", locale: "en") == "Wallpaper: %lld Videos")
+        #expect(try localizedString("menu.playlist.summary.multiple", locale: "ja") == "壁紙: %lld 本の動画")
+    }
+
+    @Test func playlist_editor_validation_message_is_translated_for_both_locales() throws {
+        #expect(
+            try localizedString("playlist_editor.validation.invalid_range", locale: "en")
+                == "End time must be greater than start time."
+        )
+        #expect(
+            try localizedString("playlist_editor.validation.invalid_range", locale: "ja")
+                == "終了時間は開始時間より後である必要があります。"
+        )
+    }
+
+    @Test func alert_login_item_failed_title_is_translated_for_both_locales() throws {
+        #expect(
+            try localizedString("alert.login_item_failed.title", locale: "en")
+                == "Failed to Update Launch-at-Login Setting"
+        )
+        #expect(
+            try localizedString("alert.login_item_failed.title", locale: "ja")
+                == "ログイン起動の設定に失敗しました"
+        )
+    }
+
     @Test func error_messages_are_translated_for_both_locales() throws {
         #expect(
             try localizedString("error.bookmark_save_failed", locale: "en")
