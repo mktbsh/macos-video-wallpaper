@@ -165,11 +165,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         screenControllers.append(contentsOf: newScreenControllers)
 
-        let orderedIDs = targetScreens.map(\.0)
+        let orderByID = Dictionary(
+            uniqueKeysWithValues: targetScreens.enumerated().map { ($1.id, $0) }
+        )
         screenControllers.sort { lhs, rhs in
-            let lhsIndex = orderedIDs.firstIndex(of: lhs.id) ?? .max
-            let rhsIndex = orderedIDs.firstIndex(of: rhs.id) ?? .max
-            return lhsIndex < rhsIndex
+            (orderByID[lhs.id] ?? .max) < (orderByID[rhs.id] ?? .max)
         }
         for slot in newScreenControllers {
             let displayId = DisplayIdentifier(displayID: slot.id)
