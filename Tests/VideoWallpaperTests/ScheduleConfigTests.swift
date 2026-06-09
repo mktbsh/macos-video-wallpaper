@@ -60,8 +60,13 @@ import Testing
         #expect(!negative.isValid)
     }
 
-    @Test func equal_boundaries_are_invalid() {
+    @Test func equal_morning_afternoon_boundaries_are_invalid() {
         let equal = ScheduleConfig(morningStart: 6, afternoonStart: 6, nightStart: 18)
+        #expect(!equal.isValid)
+    }
+
+    @Test func equal_afternoon_night_boundaries_are_invalid() {
+        let equal = ScheduleConfig(morningStart: 6, afternoonStart: 12, nightStart: 12)
         #expect(!equal.isValid)
     }
 
