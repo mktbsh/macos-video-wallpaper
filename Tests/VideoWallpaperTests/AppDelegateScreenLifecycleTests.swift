@@ -7,6 +7,28 @@ import Testing
 @Suite(.serialized) @MainActor
 struct AppDelegateScreenLifecycleTests {
 
+    @Test func screen_removed_invalidates_its_controller() throws {
+        let screen = try #require(NSScreen.screens.first)
+        let controller = FakeWallpaperWindowController()
+        var screens: [NSScreen] = [screen]
+        let appDelegate = AppDelegate(
+            screenProvider: { screens },
+            controllerFactory: { _ in controller },
+            isOnBatteryProvider: { false }
+        )
+
+        appDelegate.applicationDidFinishLaunching(Notification(name: Notification.Name("test")))
+        #expect(controller.invalidateCallCount == 0)
+
+        screens = []
+        NotificationCenter.default.post(
+            name: NSApplication.didChangeScreenParametersNotification,
+            object: nil
+        )
+
+        #expect(controller.invalidateCallCount == 1)
+    }
+
     @Test func screen_reconfiguration_keeps_surviving_controller_alive_without_reload() throws {
         let screen = try #require(NSScreen.screens.first)
         let controller = FakeWallpaperWindowController()
