@@ -53,6 +53,22 @@ import Testing
         #expect(engine.currentEntryID == entries[0].id)
     }
 
+    @Test func manual_next_advances_without_wrapping() {
+        let entries = [Entry(id: "a"), Entry(id: "b"), Entry(id: "c")]
+        var engine = RotationEngine(entries: entries, currentEntryID: entries[0].id)
+
+        #expect(engine.next() == true)
+        #expect(engine.currentEntryID == entries[1].id)
+    }
+
+    @Test func manual_previous_moves_back_without_wrapping() {
+        let entries = [Entry(id: "a"), Entry(id: "b"), Entry(id: "c")]
+        var engine = RotationEngine(entries: entries, currentEntryID: entries[2].id)
+
+        #expect(engine.previous() == true)
+        #expect(engine.currentEntryID == entries[1].id)
+    }
+
     @Test func manual_previous_wraps_to_last_entry() {
         let entries = [Entry(id: "a"), Entry(id: "b"), Entry(id: "c")]
         var engine = RotationEngine(entries: entries, currentEntryID: entries[0].id)
