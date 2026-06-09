@@ -292,14 +292,11 @@ struct WallpaperWindowControllerLifecycleTests {
 }
 
 @MainActor
-private func makePlaybackRequest(
-    url: URL
-) throws -> (item: PlaylistItem, token: RotationEngine<PlaylistItem>.PlaybackToken) {
+private func makePlaybackRequest(url: URL) throws -> PlaybackSession.PlaybackRequest {
     var store = PlaylistStore(items: [PlaylistItem(url: url)])
     var session = PlaybackSession()
-    let playbackResult = session.beginPlayback(using: &store)
-    let playback = try #require(playbackResult)
-    return (playback.item, playback.token)
+    let result = session.beginPlayback(using: &store)
+    return try #require(result)
 }
 
 private func makeTimeRange(start: Double, end: Double) -> CMTimeRange {
