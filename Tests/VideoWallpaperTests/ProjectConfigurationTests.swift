@@ -23,6 +23,37 @@ struct ProjectConfigurationTests {
         #expect(projectContents.contains("entitlements:\n      path: Sources/VideoWallpaper.entitlements"))
         #expect(projectContents.contains("CODE_SIGN_ENTITLEMENTS: Sources/VideoWallpaper.entitlements"))
     }
+
+    @Test func all_xcstrings_keys_have_non_empty_english_and_japanese_translations() throws {
+        let xcstringsURL = try #require(
+            repositoryRootURL()?.appending(path: "Sources/Localizable.xcstrings")
+        )
+        let data = try Data(contentsOf: xcstringsURL)
+        let plist = try #require(
+            try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        )
+        let strings = try #require(plist["strings"] as? [String: Any])
+
+        var missingKeys: [String] = []
+        for (key, value) in strings {
+            guard let entry = value as? [String: Any],
+                  let localizations = entry["localizations"] as? [String: Any] else {
+                missingKeys.append("\(key) (no localizations)")
+                continue
+            }
+            let enValue = (localizations["en"] as? [String: Any]).flatMap {
+                $0["stringUnit"] as? [String: Any]
+            }.flatMap { $0["value"] as? String } ?? ""
+            let jaValue = (localizations["ja"] as? [String: Any]).flatMap {
+                $0["stringUnit"] as? [String: Any]
+            }.flatMap { $0["value"] as? String } ?? ""
+
+            if enValue.isEmpty { missingKeys.append("\(key) (missing en)") }
+            if jaValue.isEmpty { missingKeys.append("\(key) (missing ja)") }
+        }
+
+        #expect(missingKeys.isEmpty, "Keys with missing translations: \(missingKeys)")
+    }
 }
 
 private func repositoryRootURL(filePath: StaticString = #filePath) -> URL? {
