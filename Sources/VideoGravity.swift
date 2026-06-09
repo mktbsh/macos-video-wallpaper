@@ -21,11 +21,13 @@ enum VideoGravity: String, CaseIterable {
         }
     }
 
+    static let storageKey = "videoGravity"
+
     static var saved: VideoGravity {
-        VideoGravity(rawValue: UserDefaults.standard.string(forKey: "videoGravity") ?? "") ?? .fill
+        VideoGravity(rawValue: UserDefaults.standard.string(forKey: storageKey) ?? "") ?? .fill
     }
 
     func save() {
-        UserDefaults.standard.set(rawValue, forKey: "videoGravity")
+        UserDefaults.standard.set(rawValue, forKey: Self.storageKey)
     }
 }

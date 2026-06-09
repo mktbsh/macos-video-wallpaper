@@ -59,12 +59,12 @@ import Testing
     // MARK: - saved / save()
 
     @Test func saved_defaults_to_fill_when_no_value_stored() {
-        UserDefaults.standard.removeObject(forKey: "videoGravity")
+        UserDefaults.standard.removeObject(forKey: VideoGravity.storageKey)
         #expect(VideoGravity.saved == .fill)
     }
 
     @Test func save_and_restore_roundtrip() {
-        defer { UserDefaults.standard.removeObject(forKey: "videoGravity") }
+        defer { UserDefaults.standard.removeObject(forKey: VideoGravity.storageKey) }
         VideoGravity.fit.save()
         #expect(VideoGravity.saved == .fit)
     }

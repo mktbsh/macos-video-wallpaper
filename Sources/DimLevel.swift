@@ -21,11 +21,13 @@ enum DimLevel: String, CaseIterable {
         }
     }
 
+    static let storageKey = "wallpaperDimLevel"
+
     static var saved: DimLevel {
-        DimLevel(rawValue: UserDefaults.standard.string(forKey: "wallpaperDimLevel") ?? "") ?? .none
+        DimLevel(rawValue: UserDefaults.standard.string(forKey: storageKey) ?? "") ?? .none
     }
 
     func save() {
-        UserDefaults.standard.set(rawValue, forKey: "wallpaperDimLevel")
+        UserDefaults.standard.set(rawValue, forKey: Self.storageKey)
     }
 }

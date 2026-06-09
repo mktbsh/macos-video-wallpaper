@@ -43,12 +43,12 @@ import Testing
     // MARK: - saved / save()
 
     @Test func saved_defaults_to_none_when_no_value_stored() {
-        UserDefaults.standard.removeObject(forKey: "wallpaperDimLevel")
+        UserDefaults.standard.removeObject(forKey: DimLevel.storageKey)
         #expect(DimLevel.saved == .none)
     }
 
     @Test func save_and_restore_roundtrip() {
-        defer { UserDefaults.standard.removeObject(forKey: "wallpaperDimLevel") }
+        defer { UserDefaults.standard.removeObject(forKey: DimLevel.storageKey) }
         DimLevel.dark.save()
         #expect(DimLevel.saved == .dark)
     }

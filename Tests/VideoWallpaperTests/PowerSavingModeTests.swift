@@ -46,12 +46,12 @@ import Testing
     // MARK: - saved / save()
 
     @Test func saved_defaults_to_never_when_no_value_stored() {
-        UserDefaults.standard.removeObject(forKey: "powerSavingMode")
+        UserDefaults.standard.removeObject(forKey: PowerSavingMode.storageKey)
         #expect(PowerSavingMode.saved == .never)
     }
 
     @Test func save_and_restore_roundtrip() {
-        defer { UserDefaults.standard.removeObject(forKey: "powerSavingMode") }
+        defer { UserDefaults.standard.removeObject(forKey: PowerSavingMode.storageKey) }
         PowerSavingMode.always.save()
         #expect(PowerSavingMode.saved == .always)
     }

@@ -13,12 +13,14 @@ enum PowerSavingMode: String, CaseIterable {
         }
     }
 
+    static let storageKey = "powerSavingMode"
+
     static var saved: PowerSavingMode {
-        PowerSavingMode(rawValue: UserDefaults.standard.string(forKey: "powerSavingMode") ?? "") ?? .never
+        PowerSavingMode(rawValue: UserDefaults.standard.string(forKey: storageKey) ?? "") ?? .never
     }
 
     func save() {
-        UserDefaults.standard.set(rawValue, forKey: "powerSavingMode")
+        UserDefaults.standard.set(rawValue, forKey: Self.storageKey)
     }
 
     /// Returns true if playback should be paused given the current power source state.
