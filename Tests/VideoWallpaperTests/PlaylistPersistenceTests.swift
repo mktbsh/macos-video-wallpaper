@@ -180,6 +180,17 @@ struct PlaylistPersistenceTests {
         #expect(context.defaults.data(forKey: bookmarkKey) == nil)
     }
 
+    @Test func corrupt_playlist_state_with_no_fallback_returns_empty_store() throws {
+        let context = TestContext()
+        defer { context.cleanup() }
+        context.defaults.set(Data("corrupt".utf8), forKey: PlaylistPersistence.storageKey)
+
+        let restored = context.persistence.load()
+
+        #expect(restored.items.isEmpty)
+        #expect(context.defaults.data(forKey: PlaylistPersistence.storageKey) == nil)
+    }
+
     @Test func clear_removes_playlist_state_and_legacy_bookmark() throws {
         let context = TestContext()
         defer { context.cleanup() }
