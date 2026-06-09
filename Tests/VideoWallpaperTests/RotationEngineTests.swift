@@ -7,6 +7,20 @@ import Testing
         let id: String
     }
 
+    @Test func init_with_invalid_current_id_falls_back_to_first_entry() {
+        let entries = [Entry(id: "a"), Entry(id: "b"), Entry(id: "c")]
+        let engine = RotationEngine(entries: entries, currentEntryID: "missing")
+
+        #expect(engine.currentEntryID == entries[0].id)
+    }
+
+    @Test func init_with_nil_current_id_uses_first_entry() {
+        let entries = [Entry(id: "a"), Entry(id: "b")]
+        let engine = RotationEngine(entries: entries, currentEntryID: nil)
+
+        #expect(engine.currentEntryID == entries[0].id)
+    }
+
     @Test func stale_token_is_rejected_for_playback_completion() {
         let entries = [Entry(id: "a"), Entry(id: "b")]
         var engine = RotationEngine(entries: entries, currentEntryID: entries[0].id)
