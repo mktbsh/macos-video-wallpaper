@@ -101,7 +101,7 @@ import Testing
         defer { context.defaults.removePersistentDomain(forName: context.suiteName) }
 
         let display = DisplayIdentifier(vendor: 1552, model: 16418, serial: 0)
-        let key = display.userDefaultsKey(for: "videoBookmark")
+        let key = display.userDefaultsKey(for: VideoFileValidator.bookmarkKey)
 
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("test_\(UUID().uuidString).mp4")
@@ -137,7 +137,7 @@ import Testing
         defer { context.defaults.removePersistentDomain(forName: context.suiteName) }
 
         let display = DisplayIdentifier(vendor: 10, model: 20, serial: 30)
-        let key = display.userDefaultsKey(for: "videoBookmark")
+        let key = display.userDefaultsKey(for: VideoFileValidator.bookmarkKey)
 
         context.defaults.set(Data([0x01, 0x02]), forKey: key)
 
@@ -152,8 +152,8 @@ import Testing
 
         let display1 = DisplayIdentifier(vendor: 1, model: 2, serial: 3)
         let display2 = DisplayIdentifier(vendor: 4, model: 5, serial: 6)
-        let key1 = display1.userDefaultsKey(for: "videoBookmark")
-        let key2 = display2.userDefaultsKey(for: "videoBookmark")
+        let key1 = display1.userDefaultsKey(for: VideoFileValidator.bookmarkKey)
+        let key2 = display2.userDefaultsKey(for: VideoFileValidator.bookmarkKey)
 
         context.defaults.set(Data([0x01]), forKey: key1)
         context.defaults.set(Data([0x02]), forKey: key2)
@@ -173,7 +173,7 @@ import Testing
         // Should not crash
         VideoFileValidator.clearBookmark(display: display, defaults: context.defaults)
 
-        let key = display.userDefaultsKey(for: "videoBookmark")
+        let key = display.userDefaultsKey(for: VideoFileValidator.bookmarkKey)
         #expect(context.defaults.data(forKey: key) == nil)
     }
 
@@ -205,7 +205,7 @@ import Testing
         defer { context.defaults.removePersistentDomain(forName: context.suiteName) }
 
         let display = DisplayIdentifier(vendor: 1, model: 2, serial: 3)
-        let key = display.userDefaultsKey(for: "videoBookmark")
+        let key = display.userDefaultsKey(for: VideoFileValidator.bookmarkKey)
         context.defaults.set(Data([0x01]), forKey: key)
 
         #expect(VideoFileValidator.hasBookmark(display: display, defaults: context.defaults))
@@ -216,7 +216,7 @@ import Testing
         defer { context.defaults.removePersistentDomain(forName: context.suiteName) }
 
         let display = DisplayIdentifier(vendor: 1, model: 2, serial: 3)
-        let key = display.userDefaultsKey(for: "videoBookmark")
+        let key = display.userDefaultsKey(for: VideoFileValidator.bookmarkKey)
         context.defaults.set(Data([0x01]), forKey: key)
 
         VideoFileValidator.clearBookmark(display: display, defaults: context.defaults)
@@ -270,8 +270,8 @@ import Testing
 
     // MARK: - Helpers
 
-    private let bookmarkKey = "videoBookmark"
-    private let legacyPathKey = "videoFilePath"
+    private let bookmarkKey = VideoFileValidator.bookmarkKey
+    private let legacyPathKey = VideoFileValidator.legacyPathKey
 
     private func makeIsolatedDefaults() -> (defaults: UserDefaults, suiteName: String) {
         let suiteName = "VideoFileValidatorTests.\(UUID().uuidString)"
