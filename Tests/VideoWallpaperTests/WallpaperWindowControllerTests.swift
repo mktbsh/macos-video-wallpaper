@@ -133,6 +133,38 @@ struct WallpaperWindowControllerLoadingTests {
         #expect(context.driver.playCallCount == 2)
     }
 
+    @Test func same_media_target_with_time_range_and_new_token_seeks_to_range_start() throws {
+        let context = try WallpaperWindowControllerTestContext()
+        let timeRange = makeTimeRange(start: 3, end: 8)
+        var store = PlaylistStore(items: [PlaylistItem(url: wallpaperWindowTestURL("range-reuse.mov"))])
+        var session = PlaybackSession()
+        let firstPlaybackResult = session.beginPlayback(using: &store)
+        let firstPlayback = try #require(firstPlaybackResult)
+        let secondPlaybackResult = session.beginPlayback(using: &store)
+        let secondPlayback = try #require(secondPlaybackResult)
+
+        context.controller.load(
+            videoURL: firstPlayback.item.url,
+            timeRange: timeRange,
+            itemID: firstPlayback.item.id,
+            token: firstPlayback.token
+        )
+        context.driver.completeSeek(at: 0, finished: true)
+
+        context.controller.load(
+            videoURL: secondPlayback.item.url,
+            timeRange: timeRange,
+            itemID: secondPlayback.item.id,
+            token: secondPlayback.token
+        )
+
+        // AVPlayerItem is reused — only one replaceCurrentItem call
+        #expect(context.driver.replaceCurrentItemCallCount == 1)
+        // On reuse with a time range, should seek to timeRange.start
+        #expect(context.driver.seekCalls.count == 2)
+        #expect(context.driver.seekCalls[1].time == timeRange.start)
+    }
+
     @Test func old_completion_observation_is_canceled_before_new_one_is_installed() throws {
         let context = try WallpaperWindowControllerTestContext()
         context.controller.load(videoURL: wallpaperWindowTestURL("first-observed.mov"))
