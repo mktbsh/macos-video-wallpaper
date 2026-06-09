@@ -231,6 +231,25 @@ import Testing
         #expect(store.items.map(\.displayName) == ["first.mov", "second.mov"])
     }
 
+    @Test func delete_middle_current_moves_to_item_at_same_index() throws {
+        var store = PlaylistStore()
+        let first = makeURL("first.mov")
+        let second = makeURL("second.mov")
+        let third = makeURL("third.mov")
+        store.add(urls: [first, second, third])
+        // Navigate to middle item
+        #expect(store.next() == true)
+        let middleID = try #require(store.currentItem?.id)
+        #expect(store.currentItem?.url == second)
+
+        #expect(store.delete(id: middleID) == true)
+
+        // After deleting index 1 from [first, second, third] → [first, third],
+        // min(1, 1) = 1, so the new current is third (slides into index 1)
+        #expect(store.items.map(\.displayName) == ["first.mov", "third.mov"])
+        #expect(store.currentItem?.url == third)
+    }
+
     @Test func delete_invalid_id_is_no_op() {
         var store = PlaylistStore()
         store.add(urls: [makeURL("first.mov"), makeURL("second.mov")])
