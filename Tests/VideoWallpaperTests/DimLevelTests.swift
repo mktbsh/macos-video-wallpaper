@@ -4,6 +4,28 @@ import Testing
 
 @Suite(.serialized) struct DimLevelTests {
 
+    // MARK: - CaseIterable
+
+    @Test func allCases_has_three_elements() {
+        #expect(DimLevel.allCases.count == 3)
+    }
+
+    // MARK: - rawValue (stability guards for UserDefaults persistence)
+
+    @Test func rawValues_are_stable() {
+        #expect(DimLevel.none.rawValue == "none")
+        #expect(DimLevel.slight.rawValue == "slight")
+        #expect(DimLevel.dark.rawValue == "dark")
+    }
+
+    // MARK: - label
+
+    @Test func all_labels_are_non_empty() {
+        for level in DimLevel.allCases {
+            #expect(!level.label.isEmpty)
+        }
+    }
+
     // MARK: - opacity
 
     @Test func none_opacity_is_zero() {

@@ -4,6 +4,28 @@ import Testing
 
 @Suite(.serialized) struct PowerSavingModeTests {
 
+    // MARK: - CaseIterable
+
+    @Test func allCases_has_three_elements() {
+        #expect(PowerSavingMode.allCases.count == 3)
+    }
+
+    // MARK: - rawValue (stability guards for UserDefaults persistence)
+
+    @Test func rawValues_are_stable() {
+        #expect(PowerSavingMode.never.rawValue == "never")
+        #expect(PowerSavingMode.always.rawValue == "always")
+        #expect(PowerSavingMode.battery.rawValue == "battery")
+    }
+
+    // MARK: - label
+
+    @Test func all_labels_are_non_empty() {
+        for mode in PowerSavingMode.allCases {
+            #expect(!mode.label.isEmpty)
+        }
+    }
+
     // MARK: - shouldPause
 
     @Test func never_never_pauses() {
