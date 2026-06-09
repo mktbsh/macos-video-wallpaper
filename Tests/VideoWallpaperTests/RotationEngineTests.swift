@@ -116,6 +116,15 @@ import Testing
         #expect(engine.currentEntryID == replacementEntries[2].id)
     }
 
+    @Test func replace_with_explicit_current_id_overrides_existing_current_when_both_present() {
+        let entries = [Entry(id: "a"), Entry(id: "b"), Entry(id: "c")]
+        var engine = RotationEngine(entries: entries, currentEntryID: entriesID("a"))
+
+        engine.replace(entries: entries, currentEntryID: "c")
+
+        #expect(engine.currentEntryID == "c")
+    }
+
     @Test func replace_keeps_existing_current_when_requested_current_is_missing() {
         let originalEntries = [Entry(id: "a"), Entry(id: "b"), Entry(id: "c")]
         var engine = RotationEngine(entries: originalEntries, currentEntryID: entriesID("b"))
