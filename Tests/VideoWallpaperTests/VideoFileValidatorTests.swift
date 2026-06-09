@@ -4,6 +4,12 @@ import Testing
 
 @Suite(.serialized) struct VideoFileValidatorTests {
 
+    // MARK: - allowedUTTypes
+
+    @Test func allowedUTTypes_contains_three_entries() {
+        #expect(VideoFileValidator.allowedUTTypes.count == 3)
+    }
+
     // MARK: - isSupported(extension:)
 
     @Test func mp4_extension_is_supported() {
