@@ -55,4 +55,10 @@ import Testing
         PowerSavingMode.always.save()
         #expect(PowerSavingMode.saved == .always)
     }
+
+    @Test func saved_defaults_to_never_when_unknown_value_stored() {
+        defer { UserDefaults.standard.removeObject(forKey: PowerSavingMode.storageKey) }
+        UserDefaults.standard.set("unknown_mode", forKey: PowerSavingMode.storageKey)
+        #expect(PowerSavingMode.saved == .never)
+    }
 }

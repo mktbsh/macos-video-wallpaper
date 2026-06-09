@@ -52,4 +52,10 @@ import Testing
         DimLevel.dark.save()
         #expect(DimLevel.saved == .dark)
     }
+
+    @Test func saved_defaults_to_none_when_unknown_value_stored() {
+        defer { UserDefaults.standard.removeObject(forKey: DimLevel.storageKey) }
+        UserDefaults.standard.set("unknown_level", forKey: DimLevel.storageKey)
+        #expect(DimLevel.saved == .none)
+    }
 }
