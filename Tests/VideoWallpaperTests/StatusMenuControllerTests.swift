@@ -217,6 +217,24 @@ struct StatusMenuControllerTests {
             ]
         )
     }
+
+    @Test func unregister_error_preserves_on_state_and_presents_alert() {
+        let manager = FakeLoginItemManager(
+            isEnabled: true,
+            unregisterError: FakeLoginItemManager.SampleError.registrationFailed
+        )
+        let presenter = FakeStatusMenuErrorPresenter()
+        let controller = StatusMenuController(
+            loginItemManager: manager,
+            errorPresenter: presenter
+        )
+
+        controller.toggleLoginItemForTesting()
+
+        #expect(manager.unregisterCallCount == 1)
+        #expect(controller.loginItemStateForTesting == .on)
+        #expect(presenter.presentedMessages.count == 1)
+    }
 }
 
 @MainActor

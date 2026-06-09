@@ -73,6 +73,16 @@ import Testing
         #expect(store.summary?.currentDisplayName == "second.mov")
     }
 
+    @Test func replace_with_nil_current_item_id_preserves_existing_current() throws {
+        let first = PlaylistItem(url: makeURL("first.mov"))
+        let second = PlaylistItem(url: makeURL("second.mov"))
+        var store = PlaylistStore(items: [first, second], currentItemID: second.id)
+
+        store.replace(items: [first, second], currentItemID: nil)
+
+        #expect(store.currentItem?.id == second.id)
+    }
+
     @Test func next_and_previous_wrap_current_item() {
         var store = PlaylistStore()
         let first = makeURL("first.mov")
