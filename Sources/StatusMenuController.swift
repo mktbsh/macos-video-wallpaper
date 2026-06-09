@@ -268,14 +268,7 @@ final class StatusMenuController {
         guard state.isEnabled else { return }
 
         if let errorMessage = state.errorMessage {
-            let errorItem = NSMenuItem(
-                title: "⚠ " + errorMessage,
-                action: nil,
-                keyEquivalent: ""
-            )
-            errorItem.isEnabled = false
-            errorItem.indentationLevel = 1
-            menu.addItem(errorItem)
+            menu.addItem(makeDisplayInfoMenuItem(title: "⚠ " + errorMessage))
         }
 
         let videoTitle = if let videoName = state.currentVideoName {
@@ -283,10 +276,7 @@ final class StatusMenuController {
         } else {
             String(localized: "menu.wallpaper.unset")
         }
-        let videoItem = NSMenuItem(title: videoTitle, action: nil, keyEquivalent: "")
-        videoItem.isEnabled = false
-        videoItem.indentationLevel = 1
-        menu.addItem(videoItem)
+        menu.addItem(makeDisplayInfoMenuItem(title: videoTitle))
 
         menu.addItem(makeDisplayActionMenuItem(
             title: String(localized: "menu.video.select"),
@@ -308,6 +298,13 @@ final class StatusMenuController {
         let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
         item.target = self
         item.representedObject = displayId
+        item.indentationLevel = 1
+        return item
+    }
+
+    private func makeDisplayInfoMenuItem(title: String) -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+        item.isEnabled = false
         item.indentationLevel = 1
         return item
     }
