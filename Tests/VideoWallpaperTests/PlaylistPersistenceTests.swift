@@ -60,6 +60,26 @@ struct PlaylistPersistenceTests {
         #expect(restored.currentItem?.url == first)
     }
 
+    @Test func restore_returns_empty_store_when_all_bookmarks_are_invalid() throws {
+        let context = TestContext()
+        defer { context.cleanup() }
+        let first = try context.makeVideoURL("first.mov")
+        let second = try context.makeVideoURL("second.mov")
+        let store = PlaylistStore(
+            items: [PlaylistItem(url: first), PlaylistItem(url: second)],
+            currentItemID: nil
+        )
+
+        context.persistence.save(store: store)
+        try FileManager.default.removeItem(at: first)
+        try FileManager.default.removeItem(at: second)
+
+        let restored = context.persistence.load()
+
+        #expect(restored.items.isEmpty)
+        #expect(restored.currentItem == nil)
+    }
+
     @Test func restore_falls_back_to_first_item_when_current_id_is_missing() throws {
         let context = TestContext()
         defer { context.cleanup() }
