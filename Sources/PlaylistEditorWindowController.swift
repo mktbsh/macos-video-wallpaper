@@ -319,12 +319,16 @@ private struct PlaylistDetailView: View {
         }
     }
 
+    private var itemIndex: Int? {
+        state.items.firstIndex(where: { $0.id == item.id })
+    }
+
     private var isFirstItem: Bool {
-        state.items.firstIndex(where: { $0.id == item.id }) == 0
+        itemIndex == 0
     }
 
     private var isLastItem: Bool {
-        guard let index = state.items.firstIndex(where: { $0.id == item.id }) else { return true }
+        guard let index = itemIndex else { return true }
         return index == state.items.count - 1
     }
 
