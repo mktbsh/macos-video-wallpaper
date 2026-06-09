@@ -284,3 +284,19 @@ enum Xxx: String, CaseIterable {
 **対策:** 配列リテラル `[...]` の最終要素にはカンマを付けない。関数呼び出しの末尾引数のカンマとは無関係で、配列・辞書リテラルの `]` / `}` 直前のカンマだけが対象。
 
 ---
+
+## `replace_all` は constant 定義行まで書き換えてしまう
+
+**症状:** `private static let emptyBookmarksPayload = Data("[]".utf8)` を導入した直後に `replace_all` で `Data("[]".utf8)` → `Self.emptyBookmarksPayload` を全置換したら、constant の定義行まで `Self.emptyBookmarksPayload = Self.emptyBookmarksPayload` になって循環参照でビルドエラーになった。
+**原因:** `replace_all` はファイル内の全マッチを無条件に置換する。定義行を含む場合は自己参照になる。
+**対策:** constant 定義行を含む置換では `replace_all` を使わず、定義行以外の箇所のみターゲットを絞って個別に Edit する。
+
+---
+
+## SwiftLint type_body_length: テストスイートが 300 行を超えたら struct を分割する
+
+**症状:** `PlaylistStoreTests` に `PlaylistItem` 専用テストを追加したところ、型ボディが 300 行を超えて SwiftLint `type_body_length` エラーで pre-commit がブロックされた。
+**原因:** SwiftLint はコメント・空行を除いた struct 本体が 300 行を超えると違反とする。
+**対策:** 関心ごとが異なるテストは `@Suite` struct を分割する。`PlaylistItemTests` / `PlaylistStoreTests` のように、依存関係のない単位に切り出す。共有 helper は struct 外のファイルレベル `private func` に移動する。
+
+---
