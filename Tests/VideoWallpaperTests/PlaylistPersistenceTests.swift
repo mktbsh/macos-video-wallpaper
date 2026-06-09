@@ -205,6 +205,26 @@ struct PlaylistPersistenceTests {
         #expect(context.defaults.data(forKey: PlaylistPersistence.bookmarkStorageKey) == nil)
     }
 
+    @Test func new_format_state_without_bookmark_store_returns_empty_store() throws {
+        // Simulates data loss: storageKey has new-format state but bookmarkStorageKey is absent.
+        // Since bookmark data cannot be resolved, items are dropped and an empty store is returned.
+        let context = TestContext()
+        defer { context.cleanup() }
+
+        let item = PlaylistItem(url: URL(fileURLWithPath: "/tmp/orphan.mov"))
+        let state = PersistedPlaylistState(
+            entries: [PersistedPlaylistEntry(item: item)],
+            currentItemID: item.id
+        )
+        let data = try JSONEncoder().encode(state)
+        context.defaults.set(data, forKey: PlaylistPersistence.storageKey)
+        // bookmarkStorageKey is intentionally absent
+
+        let restored = context.persistence.load()
+
+        #expect(restored.items.isEmpty)
+    }
+
     @Test func clear_removes_playlist_state_and_legacy_bookmark() throws {
         let context = TestContext()
         defer { context.cleanup() }
