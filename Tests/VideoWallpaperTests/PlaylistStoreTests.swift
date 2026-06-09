@@ -2,9 +2,7 @@ import Foundation
 import Testing
 @testable import VideoWallpaper
 
-@Suite(.serialized) struct PlaylistStoreTests {
-
-    // MARK: - PlaylistItem init
+@Suite struct PlaylistItemTests {
 
     @Test func init_with_empty_display_name_normalizes_to_filename() {
         let item = PlaylistItem(url: makeURL("intro.mov"), displayName: "")
@@ -14,6 +12,18 @@ import Testing
     @Test func init_with_non_empty_display_name_preserves_it() {
         let item = PlaylistItem(url: makeURL("clip.mov"), displayName: "Intro Sequence")
         #expect(item.displayName == "Intro Sequence")
+    }
+
+    @Test func set_display_name_with_empty_string_normalizes_to_filename() {
+        var item = PlaylistItem(url: makeURL("scene.mov"), displayName: "Old Name")
+        item.setDisplayName("")
+        #expect(item.displayName == "scene.mov")
+    }
+
+    @Test func set_display_name_with_non_empty_string_preserves_it() {
+        var item = PlaylistItem(url: makeURL("scene.mov"), displayName: "Old Name")
+        item.setDisplayName("New Name")
+        #expect(item.displayName == "New Name")
     }
 
     @Test func playbackTimeRange_is_nil_when_use_full_video_is_true() {
@@ -35,6 +45,9 @@ import Testing
         let item = PlaylistItem(url: makeURL("v.mov"), useFullVideo: false, startTime: 2.0, endTime: 8.0)
         #expect(item.playbackTimeRange != nil)
     }
+}
+
+@Suite(.serialized) struct PlaylistStoreTests {
 
     // MARK: - PlaylistStore
 
@@ -376,7 +389,8 @@ import Testing
         #expect(store.summary == nil)
     }
 
-    private func makeURL(_ name: String) -> URL {
-        URL(fileURLWithPath: "/tmp/\(name)")
-    }
+}
+
+private func makeURL(_ name: String) -> URL {
+    URL(fileURLWithPath: "/tmp/\(name)")
 }
