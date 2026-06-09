@@ -178,22 +178,8 @@ final class WallpaperWindowController {
     /// ビデオ再生を停止し、ウィンドウを非表示にする。
     /// セキュリティスコープアクセスを解放する。
     func clearVideo() {
-        guard currentPlaybackContext != nil
-            || currentObservationTarget != nil
-            || isWindowOrderedFront
-            || isPlaybackStartPending
-            || !isPlaybackPaused
-        else {
-            return
-        }
-        currentPlaybackContext = nil
-        currentObservationTarget = nil
-        isPlaybackStartPending = false
-        pausePlaybackIfNeeded()
-        driver.clearCurrentItem()
-        stopObservingPlaybackCompletion()
-        stopScopedAccessIfNeeded()
-        hideWindowIfNeeded()
+        guard isActive else { return }
+        performClearVideo()
     }
 
     func resumePlayback() {
@@ -213,6 +199,19 @@ final class WallpaperWindowController {
             NotificationCenter.default.removeObserver(obs)
             occlusionObserver = nil
         }
+        performClearVideo()
+        window.close()
+    }
+
+    private var isActive: Bool {
+        currentPlaybackContext != nil
+            || currentObservationTarget != nil
+            || isWindowOrderedFront
+            || isPlaybackStartPending
+            || !isPlaybackPaused
+    }
+
+    private func performClearVideo() {
         currentPlaybackContext = nil
         currentObservationTarget = nil
         isPlaybackStartPending = false
@@ -221,7 +220,6 @@ final class WallpaperWindowController {
         stopObservingPlaybackCompletion()
         stopScopedAccessIfNeeded()
         hideWindowIfNeeded()
-        window.close()
     }
 
     private func showWindowIfNeeded() {
