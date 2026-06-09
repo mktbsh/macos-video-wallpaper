@@ -194,6 +194,23 @@ struct PlaylistPersistenceTests {
         #expect(context.defaults.data(forKey: bookmarkKey) == nil)
     }
 
+    @Test func clear_also_removes_playlist_bookmark_store() throws {
+        let context = TestContext()
+        defer { context.cleanup() }
+        let url = try context.makeVideoURL("bookmark.mov")
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let item = PlaylistItem(url: url)
+        let store = PlaylistStore(items: [item], currentItemID: item.id)
+        context.persistence.save(store: store)
+        // Verify the bookmark store was written before clearing
+        try #require(context.defaults.data(forKey: playlistBookmarksKey) != nil)
+
+        context.persistence.clear()
+
+        #expect(context.defaults.data(forKey: playlistBookmarksKey) == nil)
+    }
+
     @Test func save_reuses_bookmark_payload_when_only_current_item_changes() throws {
         let context = TestContext()
         defer { context.cleanup() }
