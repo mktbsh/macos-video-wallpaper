@@ -142,10 +142,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let targetIDs = Set(targetScreens.map(\.0))
         var newScreenControllers: [ScreenController] = []
 
-        for slot in screenControllers where !targetIDs.contains(slot.id) {
+        screenControllers.removeAll { slot in
+            guard !targetIDs.contains(slot.id) else { return false }
             slot.controller.invalidate()
+            return true
         }
-        screenControllers.removeAll { !targetIDs.contains($0.id) }
 
         let existingIDs = Set(screenControllers.map(\.id))
         for (id, screen) in targetScreens where !existingIDs.contains(id) {

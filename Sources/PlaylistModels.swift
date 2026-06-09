@@ -61,8 +61,8 @@ struct PlaylistStore {
     }
 
     var currentItem: PlaylistItem? {
-        guard let currentEntryID = engine.currentEntryID else { return nil }
-        return items.first(where: { $0.id == currentEntryID })
+        guard let id = engine.currentEntryID else { return nil }
+        return items.first(where: { $0.id == id })
     }
 
     var summary: PlaylistSummary? {
