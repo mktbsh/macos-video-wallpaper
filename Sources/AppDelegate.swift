@@ -256,14 +256,12 @@ private extension AppDelegate {
     }
 
     func handleVideoSelected(_ url: URL, for displayId: DisplayIdentifier) {
-        let saved = VideoFileValidator.saveBookmark(for: url, display: displayId)
-        if saved {
+        if VideoFileValidator.saveBookmark(for: url, display: displayId) {
             clearError(for: displayId)
         } else {
             let file = url.lastPathComponent
-            let display = displayId.description
             Log.persistence.error(
-                "Bookmark save failed for \(file, privacy: .public) on display \(display, privacy: .public)"
+                "Bookmark save failed for \(file, privacy: .public) on \(displayId.description, privacy: .public)"
             )
             setError(.bookmarkSaveFailed(displayId), for: displayId)
         }
