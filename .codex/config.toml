@@ -1,0 +1,14 @@
+[mcp_servers.serena]
+command = "uvx"
+args = [
+    "--from",
+    "git+https://github.com/oraios/serena",
+    "serena",
+    "start-mcp-server",
+    "--enable-web-dashboard",
+    "False",
+    "--context",
+    "ide-assistant",
+    "--project",
+    "/Users/takumi-hasebe/workspace/VideoWallpaper",
+]
