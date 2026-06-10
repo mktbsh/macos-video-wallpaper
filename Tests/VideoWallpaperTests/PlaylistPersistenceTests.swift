@@ -225,6 +225,40 @@ struct PlaylistPersistenceTests {
         #expect(restored.items.isEmpty)
     }
 
+    @Test func load_with_duplicate_bookmark_ids_does_not_crash_and_resolves_item() throws {
+        // Persisted bookmark data lives in mutable UserDefaults and could contain
+        // duplicate IDs (corruption / manipulation). Loading must not trap.
+        let context = TestContext()
+        defer { context.cleanup() }
+        let url = try context.makeVideoURL("dup.mov")
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let item = PlaylistItem(url: url)
+        let state = PersistedPlaylistState(
+            entries: [PersistedPlaylistEntry(item: item)],
+            currentItemID: item.id
+        )
+        context.defaults.set(try JSONEncoder().encode(state), forKey: PlaylistPersistence.storageKey)
+
+        let bookmarkData = try VideoFileValidator.bookmarkData(for: url)
+        let payload = PersistedBookmarkPayload(
+            id: item.id,
+            filePath: url.path,
+            bookmarkData: bookmarkData
+        )
+        // Same ID intentionally duplicated.
+        let duplicated = [payload, payload]
+        context.defaults.set(
+            try JSONEncoder().encode(duplicated),
+            forKey: PlaylistPersistence.bookmarkStorageKey
+        )
+
+        let restored = context.persistence.load()
+
+        #expect(restored.items.count == 1)
+        #expect(restored.currentItem?.id == item.id)
+    }
+
     @Test func clear_removes_playlist_state_and_legacy_bookmark() throws {
         let context = TestContext()
         defer { context.cleanup() }

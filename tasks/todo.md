@@ -26,7 +26,7 @@
 ### P2: パフォーマンス・永続化
 
 - [ ] `PlaylistPersistence.save(store:)` を metadata 保存と bookmark sync に分離し、current item / display name 変更で bookmark payload decode / encode を走らせない
-- [ ] bookmark payload の duplicate ID を検出し、`Dictionary(uniqueKeysWithValues:)` の trap ではなく fallback / clear / warning にする
+- [x] bookmark payload の duplicate ID を検出し、`Dictionary(uniqueKeysWithValues:)` の trap ではなく fallback / clear / warning にする（`uniquingKeysWith` で先勝ちに変更）
 - [x] `PlaylistStore` / `RotationEngine` の mutator は値が変わらない場合 `false` を返し、no-op save / reload を抑制する
 - [x] `StatusMenuController.displayStates` は unchanged assignment を skip する
 - [ ] dynamic display menu item を `DisplayIdentifier` ごとに保持し、表示状態の更新は `title` / `state` / `isEnabled` / `isHidden` の差分適用にする

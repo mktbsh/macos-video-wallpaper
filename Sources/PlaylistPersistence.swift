@@ -168,7 +168,10 @@ struct PlaylistPersistence {
         from state: PersistedPlaylistState,
         bookmarks: [PersistedPlaylistBookmark]
     ) -> PlaylistStore {
-        let bookmarksByID = Dictionary(uniqueKeysWithValues: bookmarks.map { ($0.id, $0) })
+        let bookmarksByID = Dictionary(
+            bookmarks.map { ($0.id, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
         let items = state.entries.compactMap { entry -> PlaylistItem? in
             guard let bookmark = bookmarksByID[entry.id],
                   let url = bookmark.resolvedURL else { return nil }
@@ -205,7 +208,10 @@ struct PlaylistPersistence {
 
     private func resolvedBookmarks(for store: PlaylistStore) throws -> [PersistedPlaylistBookmark] {
         let cached = decodedBookmarks(from: defaults.data(forKey: Self.bookmarkStorageKey)) ?? []
-        let cachedBookmarksByID = Dictionary(uniqueKeysWithValues: cached.map { ($0.id, $0) })
+        let cachedBookmarksByID = Dictionary(
+            cached.map { ($0.id, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
 
         return try store.items.map { item in
             if let cachedBookmark = cachedBookmarksByID[item.id], cachedBookmark.matches(item) {
