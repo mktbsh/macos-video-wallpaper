@@ -135,7 +135,7 @@ struct PlaylistPersistenceTests {
         let url = try context.makeVideoURL("clip.mov")
         defer { try? FileManager.default.removeItem(at: url) }
 
-        VideoFileValidator.saveBookmark(for: url, defaults: context.defaults)
+        context.defaults.set(try SecurityScopedBookmark.data(for: url), forKey: bookmarkKey)
         #expect(context.defaults.data(forKey: bookmarkKey) != nil)
 
         context.persistence.save(store: PlaylistStore())
@@ -148,7 +148,7 @@ struct PlaylistPersistenceTests {
         defer { context.cleanup() }
         let url = try context.makeVideoURL("legacy.mov")
         defer { try? FileManager.default.removeItem(at: url) }
-        VideoFileValidator.saveBookmark(for: url, defaults: context.defaults)
+        context.defaults.set(try SecurityScopedBookmark.data(for: url), forKey: bookmarkKey)
 
         let restored = context.persistence.load()
         let restoredAgain = context.persistence.load()
@@ -167,7 +167,7 @@ struct PlaylistPersistenceTests {
         let url = try context.makeVideoURL("legacy.mov")
         defer { try? FileManager.default.removeItem(at: url) }
         context.defaults.set(Data("bad".utf8), forKey: PlaylistPersistence.storageKey)
-        VideoFileValidator.saveBookmark(for: url, defaults: context.defaults)
+        context.defaults.set(try SecurityScopedBookmark.data(for: url), forKey: bookmarkKey)
 
         let restored = context.persistence.load()
         let restoredAgain = context.persistence.load()
@@ -240,7 +240,7 @@ struct PlaylistPersistenceTests {
         )
         context.defaults.set(try JSONEncoder().encode(state), forKey: PlaylistPersistence.storageKey)
 
-        let bookmarkData = try VideoFileValidator.bookmarkData(for: url)
+        let bookmarkData = try SecurityScopedBookmark.data(for: url)
         let payload = PersistedBookmarkPayload(
             id: item.id,
             filePath: url.path,
@@ -265,7 +265,7 @@ struct PlaylistPersistenceTests {
         let url = try context.makeVideoURL("legacy.mov")
         defer { try? FileManager.default.removeItem(at: url) }
         context.defaults.set(Data("playlist".utf8), forKey: PlaylistPersistence.storageKey)
-        VideoFileValidator.saveBookmark(for: url, defaults: context.defaults)
+        context.defaults.set(try SecurityScopedBookmark.data(for: url), forKey: bookmarkKey)
 
         context.persistence.clear()
 
@@ -342,7 +342,7 @@ struct PlaylistPersistenceTests {
         #expect(context.defaults.data(forKey: playlistBookmarksKey) != nil)
     }
 
-    private let bookmarkKey = VideoFileValidator.bookmarkKey
+    private let bookmarkKey = "videoBookmark"
     private let playlistBookmarksKey = PlaylistPersistence.bookmarkStorageKey
 
     private func decodeBookmarks(_ data: Data) -> [PersistedBookmarkPayload]? {
@@ -384,7 +384,7 @@ private struct LegacyPersistedPlaylistEntry: Codable {
 
     init(item: PlaylistItem) throws {
         id = item.id
-        bookmarkData = try VideoFileValidator.bookmarkData(for: item.url)
+        bookmarkData = try SecurityScopedBookmark.data(for: item.url)
         displayName = item.displayName
         useFullVideo = item.useFullVideo
         startTime = item.startTime
