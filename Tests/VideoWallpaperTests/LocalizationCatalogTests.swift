@@ -147,6 +147,19 @@ struct LocalizationCatalogTests {
         #expect(try localizedString("menu.launch_at_login", locale: "ja") == "ログイン時に起動")
     }
 
+    @Test func status_item_accessibility_keys_are_translated_for_both_locales() throws {
+        #expect(try localizedString("status.accessibility.label", locale: "en") == "VideoWallpaper status")
+        #expect(try localizedString("status.accessibility.label", locale: "ja") == "VideoWallpaper の状態")
+        #expect(try localizedString("status.accessibility.value.normal", locale: "en") == "No wallpaper errors")
+        #expect(try localizedString("status.accessibility.value.normal", locale: "ja") == "壁紙エラーなし")
+        #expect(try localizedString("status.accessibility.value.error", locale: "en") == "Wallpaper error")
+        #expect(try localizedString("status.accessibility.value.error", locale: "ja") == "壁紙エラーあり")
+        #expect(try localizedString("status.tooltip.normal", locale: "en") == "VideoWallpaper is running")
+        #expect(try localizedString("status.tooltip.normal", locale: "ja") == "VideoWallpaper は動作中です")
+        #expect(try localizedString("status.tooltip.error", locale: "en") == "VideoWallpaper needs attention")
+        #expect(try localizedString("status.tooltip.error", locale: "ja") == "VideoWallpaper に確認が必要です")
+    }
+
     @Test func menu_wallpaper_action_keys_are_translated_for_both_locales() throws {
         #expect(try localizedString("menu.wallpaper.current", locale: "en") == "Wallpaper: %@")
         #expect(try localizedString("menu.wallpaper.current", locale: "ja") == "壁紙: %@")

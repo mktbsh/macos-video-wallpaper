@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Testing
 @testable import VideoWallpaper
@@ -12,6 +13,14 @@ struct PlaylistEditorWindowControllerTests {
     }
 
     // MARK: - PlaylistEditorWindowController.reload
+
+    @Test func window_uses_minimum_size_and_frame_autosave_name() throws {
+        let controller = PlaylistEditorWindowController()
+        let window = try #require(controller.window)
+
+        #expect(window.minSize == NSSize(width: 720, height: 480))
+        #expect(window.frameAutosaveName == "PlaylistEditorWindow")
+    }
 
     @Test func selected_item_returns_item_matching_selection() {
         let first = PlaylistItem(url: makeEditorURL("first.mov"))

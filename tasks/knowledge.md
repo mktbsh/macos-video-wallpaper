@@ -12,7 +12,7 @@
 
 **症状:** `Sources/VideoWallpaper.entitlements` を直接編集しても `xcodegen generate` 後に内容が消える、または build 中に `Entitlements file ... was modified during the build` で失敗する。
 **原因:** このリポジトリでは entitlements が `project.yml` から生成される。さらに `ENABLE_APP_SANDBOX = YES` の build setting を併用すると、Xcode 側の自動生成と hand-authored entitlements が衝突する。
-**対策:** sandbox 関連キーは `project.yml` の `entitlements.properties` に定義し、`Sources/VideoWallpaper.entitlements` は生成物として扱う。`ENABLE_APP_SANDBOX` は追加しない。
+**対策:** sandbox 関連キーは `project.yml` の `entitlements.properties` に定義し、`Sources/VideoWallpaper.entitlements` は生成物として扱う。`ENABLE_APP_SANDBOX` は追加しない。設定テストでは生成済み plist だけでなく `project.yml` 側の entitlement properties も見る。
 
 ---
 
@@ -216,6 +216,22 @@ enum Xxx: String, CaseIterable {
 **症状:** screen / playlist state の再通知で同じ `DisplayMenuState` 配列を入れ直すだけでも、`NSMenu` 全体が rebuild されて dynamic item と separator が作り直される。
 **原因:** `displayStates` の `didSet` が `oldValue` を見ずに常に `rebuildMenu()` / `updateStatusIcon()` を呼んでいた。
 **対策:** `displayStates != oldValue` のときだけ menu と status icon を更新する。同値再代入のテストでは dynamic item も含めた `NSMenuItem` identity を保持できることを確認する。
+
+---
+
+## status item の状態はアイコンだけでなく accessibility value / tooltip にも反映する
+
+**症状:** warning icon に変わっても、VoiceOver や tooltip から normal/error の状態が分からない。
+**原因:** `NSImage` の `accessibilityDescription` だけを設定しており、`NSStatusBarButton` 自体の label / value / tooltip を更新していなかった。
+**対策:** `updateStatusIcon()` で icon name と同時に status button の accessibility label / value / tooltip を更新する。文言は `Localizable.xcstrings` に置き、normal/error の両方をテストする。
+
+---
+
+## NSWindowController の window autosave は `super.init(window:)` 後に設定する
+
+**症状:** `PlaylistEditorWindowController.init()` で `super.init(window:)` 前に `setFrameAutosaveName(...)` を呼ぶと、テストで `window.frameAutosaveName` が空のままになる。
+**原因:** `NSWindowController` へ window を渡す前の autosave 設定が controller 初期化後に保持されないケースがある。
+**対策:** `super.init(window: window)` の後に `window.minSize` と `window.setFrameAutosaveName(...)` を設定する。
 
 ---
 

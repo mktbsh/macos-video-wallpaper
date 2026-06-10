@@ -63,6 +63,8 @@ final class PlaylistEditorWindowController: NSWindowController {
         window.title = String(localized: "playlist_editor.title")
         window.isReleasedWhenClosed = false
         super.init(window: window)
+        window.minSize = NSSize(width: 720, height: 480)
+        window.setFrameAutosaveName("PlaylistEditorWindow")
     }
 
     @available(*, unavailable)

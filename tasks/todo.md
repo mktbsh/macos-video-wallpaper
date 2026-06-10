@@ -38,8 +38,8 @@
 - [ ] Playlist editor の range 入力は keystroke ごとではなく submit / focus loss / debounce で commit する
 - [ ] Playlist editor の秒数 parse は表示と同じ `NumberFormatter` に寄せ、ローカライズされた小数区切りと invalid input の validation message を扱う
 - [ ] Playlist editor sidebar に drag reorder / Finder drop import / row context menu / Delete shortcut を追加する
-- [ ] Playlist editor window に `minSize` と `setFrameAutosaveName(...)` を設定する
-- [ ] status item の normal / error state に応じた accessibility label / value / tooltip を追加する
+- [x] Playlist editor window に `minSize` と `setFrameAutosaveName(...)` を設定する
+- [x] status item の normal / error state に応じた accessibility label / value / tooltip を追加する
 - [ ] playlist current item の play icon は row accessibility label に状態を含めるか、装飾として hidden にする
 - [ ] よく使う playlist 操作に menu command / keyboard shortcut を追加する
 
@@ -47,7 +47,7 @@
 
 - [ ] `make test` の test host bootstrapping 前 SIGKILL を切り分ける
 - [ ] isolated DerivedData 実行で落ちた `AppDelegateScreenLifecycleTests/setup_pauses_playback_when_power_saving_mode_is_always` の状態漏れを調査する
-- [ ] `ProjectConfigurationTests` は生成済み entitlements だけでなく source of truth の `project.yml` を検証する
+- [x] `ProjectConfigurationTests` は生成済み entitlements だけでなく source of truth の `project.yml` を検証する
 - [ ] UserDefaults を触る lifecycle / settings tests は suite-scoped defaults へ寄せられるか確認する
 
 ---

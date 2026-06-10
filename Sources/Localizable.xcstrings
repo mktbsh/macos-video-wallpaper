@@ -97,6 +97,86 @@
         }
       }
     },
+    "status.accessibility.label" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VideoWallpaper status"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VideoWallpaper の状態"
+          }
+        }
+      }
+    },
+    "status.accessibility.value.error" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wallpaper error"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "壁紙エラーあり"
+          }
+        }
+      }
+    },
+    "status.accessibility.value.normal" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No wallpaper errors"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "壁紙エラーなし"
+          }
+        }
+      }
+    },
+    "status.tooltip.error" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VideoWallpaper needs attention"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VideoWallpaper に確認が必要です"
+          }
+        }
+      }
+    },
+    "status.tooltip.normal" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VideoWallpaper is running"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VideoWallpaper は動作中です"
+          }
+        }
+      }
+    },
     "menu.dim_level" : {
       "localizations" : {
         "en" : {

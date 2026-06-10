@@ -138,13 +138,6 @@ final class StatusMenuController {
             keyEquivalent: "q"
         )
 
-        if let button = statusItem.button {
-            button.image = NSImage(
-                systemSymbolName: "play.rectangle.fill",
-                accessibilityDescription: "VideoWallpaper"
-            )
-        }
-
         loginItemEnabled = loginItemManager.isEnabled
 
         configureMenuItems()
@@ -152,6 +145,7 @@ final class StatusMenuController {
         rebuildMenu()
         refreshSelectionStates()
         refreshLoginState()
+        updateStatusIcon()
         statusItem.menu = menu
     }
 
@@ -240,10 +234,20 @@ final class StatusMenuController {
     private func updateStatusIcon() {
         let hasErrors = displayStates.contains { $0.errorMessage != nil }
         currentIconName = hasErrors ? "exclamationmark.triangle.fill" : "play.rectangle.fill"
-        statusItem.button?.image = NSImage(
+        let accessibilityLabel = String(localized: "status.accessibility.label")
+        let accessibilityValue = String(localized: hasErrors
+            ? "status.accessibility.value.error"
+            : "status.accessibility.value.normal")
+        let toolTip = String(localized: hasErrors ? "status.tooltip.error" : "status.tooltip.normal")
+
+        guard let button = statusItem.button else { return }
+        button.image = NSImage(
             systemSymbolName: currentIconName,
-            accessibilityDescription: "VideoWallpaper"
+            accessibilityDescription: accessibilityLabel
         )
+        button.setAccessibilityLabel(accessibilityLabel)
+        button.setAccessibilityValue(accessibilityValue)
+        button.toolTip = toolTip
     }
 
     private func addDisplaySection(for state: DisplayMenuState) {
@@ -427,6 +431,18 @@ extension StatusMenuController {
 
     var statusIconNameForTesting: String {
         currentIconName
+    }
+
+    var statusButtonAccessibilityLabelForTesting: String? {
+        statusItem.button?.accessibilityLabel()
+    }
+
+    var statusButtonAccessibilityValueForTesting: String? {
+        statusItem.button?.accessibilityValue() as? String
+    }
+
+    var statusButtonToolTipForTesting: String? {
+        statusItem.button?.toolTip
     }
 
     var loginItemStateForTesting: NSControl.StateValue {

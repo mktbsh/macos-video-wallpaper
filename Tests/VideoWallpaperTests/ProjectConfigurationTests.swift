@@ -15,6 +15,17 @@ struct ProjectConfigurationTests {
         #expect(plist["com.apple.security.files.bookmarks.app-scope"] as? Bool == true)
     }
 
+    @Test func project_yml_declares_required_sandbox_entitlement_properties() throws {
+        let projectURL = try #require(repositoryRootURL()?.appending(path: "project.yml"))
+        let projectContents = try String(contentsOf: projectURL, encoding: .utf8)
+        let entitlements = projectYMLEntitlementValues(in: projectContents)
+
+        #expect(entitlements["com.apple.security.app-sandbox"] == true)
+        #expect(entitlements["com.apple.security.files.user-selected.read-only"] == true)
+        #expect(entitlements["com.apple.security.files.bookmarks.app-scope"] == true)
+        #expect(projectContents.contains("ENABLE_APP_SANDBOX") == false)
+    }
+
     @Test func project_configuration_enables_hardened_runtime_and_codesign_entitlements() throws {
         let projectURL = try #require(repositoryRootURL()?.appending(path: "project.yml"))
         let projectContents = try String(contentsOf: projectURL, encoding: .utf8)
@@ -68,4 +79,18 @@ private func repositoryRootURL(filePath: StaticString = #filePath) -> URL? {
     }
 
     return nil
+}
+
+private func projectYMLEntitlementValues(in contents: String) -> [String: Bool] {
+    var values: [String: Bool] = [:]
+
+    for line in contents.split(separator: "\n") {
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        let parts = trimmed.split(separator: ":", maxSplits: 1).map(String.init)
+        guard parts.count == 2,
+              parts[0].hasPrefix("com.apple.security.") else { continue }
+        values[parts[0]] = parts[1].trimmingCharacters(in: .whitespaces) == "true"
+    }
+
+    return values
 }

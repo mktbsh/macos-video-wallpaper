@@ -127,6 +127,26 @@ struct StatusMenuControllerTests {
         #expect(controller.statusIconNameForTesting == "play.rectangle.fill")
     }
 
+    @Test func normal_status_item_exposes_accessibility_state() {
+        let controller = StatusMenuController()
+
+        controller.displayStates = [
+            DisplayMenuState(
+                displayIdentifier: DisplayIdentifier(vendor: 1, model: 2, serial: 3),
+                screenName: "Built-in Display",
+                isEnabled: true,
+                currentVideoName: "ocean.mp4"
+            )
+        ]
+
+        #expect(controller.statusButtonAccessibilityLabelForTesting == String(localized: "status.accessibility.label"))
+        #expect(
+            controller.statusButtonAccessibilityValueForTesting
+                == String(localized: "status.accessibility.value.normal")
+        )
+        #expect(controller.statusButtonToolTipForTesting == String(localized: "status.tooltip.normal"))
+    }
+
     @Test func error_state_uses_warning_icon() {
         let controller = StatusMenuController()
 
@@ -141,6 +161,27 @@ struct StatusMenuControllerTests {
         ]
 
         #expect(controller.statusIconNameForTesting == "exclamationmark.triangle.fill")
+    }
+
+    @Test func error_status_item_exposes_accessibility_state() {
+        let controller = StatusMenuController()
+
+        controller.displayStates = [
+            DisplayMenuState(
+                displayIdentifier: DisplayIdentifier(vendor: 1, model: 2, serial: 3),
+                screenName: "Built-in Display",
+                isEnabled: true,
+                currentVideoName: nil,
+                errorMessage: "Video file not found"
+            )
+        ]
+
+        #expect(controller.statusButtonAccessibilityLabelForTesting == String(localized: "status.accessibility.label"))
+        #expect(
+            controller.statusButtonAccessibilityValueForTesting
+                == String(localized: "status.accessibility.value.error")
+        )
+        #expect(controller.statusButtonToolTipForTesting == String(localized: "status.tooltip.error"))
     }
 
     @Test func clearing_display_states_restores_empty_menu_item_count() {
