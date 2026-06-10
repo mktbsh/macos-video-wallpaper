@@ -307,6 +307,14 @@ enum Xxx: String, CaseIterable {
 
 ---
 
+## 永続値や外部入力から作る Dictionary は `uniquingKeysWith` を使う
+
+**症状:** `Dictionary(uniqueKeysWithValues:)` に重複キーが入ると `Fatal error: Duplicate values for key` でアプリがクラッシュする。`PlaylistPersistence` の bookmark store（可変な UserDefaults 由来）に重複 ID が入ると起動時に、`AppDelegate` の display 並び順 dictionary は同型 monitor（serial 0 など）を 2 枚挿すと落ちた。
+**原因:** `uniqueKeysWithValues:` はキー一意性を前提にした trap 付き初期化。キーの一意性を保証できない入力（永続化データ・物理 display 構成）に使うと、重複で確実に trap する。
+**対策:** 一意性を保証できない入力から作る Dictionary は `Dictionary(_:uniquingKeysWith: { first, _ in first })` を使い、重複は先勝ちで握りつぶす。テストでは重複キーを意図的に注入し、trap せず妥当な結果を返すことを確認する（重複 ID の bookmark / 同一 DisplayIdentifier を返す screenProvider）。
+
+---
+
 ## macOS 固有の注意点
 
 - `NSWindow` は必ず `isReleasedWhenClosed = false` を設定する（デフォルト true は ARC と二重解放を起こす）

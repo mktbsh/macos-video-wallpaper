@@ -165,8 +165,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         screenControllers.append(contentsOf: newScreenControllers)
 
+        // Two displays can resolve to the same DisplayIdentifier (e.g. identical
+        // monitors with serial 0); keep the first occurrence to avoid trapping.
         let orderByID = Dictionary(
-            uniqueKeysWithValues: targetScreens.enumerated().map { ($1.id, $0) }
+            targetScreens.enumerated().map { ($1.id, $0) },
+            uniquingKeysWith: { first, _ in first }
         )
         screenControllers.sort { lhs, rhs in
             (orderByID[lhs.id] ?? .max) < (orderByID[rhs.id] ?? .max)

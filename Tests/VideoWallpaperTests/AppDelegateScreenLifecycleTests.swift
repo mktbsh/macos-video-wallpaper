@@ -116,6 +116,24 @@ struct AppDelegateScreenLifecycleTests {
         #expect(controller.pauseCallCount == 0)
     }
 
+    @Test func duplicate_display_identifiers_do_not_crash_setup() throws {
+        // Two physical displays can resolve to the same DisplayIdentifier
+        // (e.g. identical external monitors with serial 0). Building the
+        // sort-order dictionary must not trap on the duplicate key.
+        let screen = try #require(NSScreen.screens.first)
+        let controller = FakeWallpaperWindowController()
+        let appDelegate = AppDelegate(
+            screenProvider: { [screen, screen] },
+            controllerFactory: { _ in controller },
+            isOnBatteryProvider: { false }
+        )
+
+        appDelegate.applicationDidFinishLaunching(Notification(name: Notification.Name("test")))
+
+        // Reaching here means setup completed without trapping.
+        #expect(controller.applyVideoGravityCallCount >= 1)
+    }
+
     @Test func terminate_invalidates_all_screen_controllers() throws {
         let screen = try #require(NSScreen.screens.first)
         let controller = FakeWallpaperWindowController()
