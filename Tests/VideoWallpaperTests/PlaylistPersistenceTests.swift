@@ -342,7 +342,35 @@ struct PlaylistPersistenceTests {
         #expect(context.defaults.data(forKey: playlistBookmarksKey) != nil)
     }
 
+    // MARK: - Legacy path string migration
+
+    @Test func migrate_legacy_path_string_to_playlist_state() throws {
+        let context = TestContext()
+        defer { context.cleanup() }
+        let url = try context.makeVideoURL("legacy-path.mov")
+        defer { try? FileManager.default.removeItem(at: url) }
+        context.defaults.set(url.path, forKey: legacyPathKey)
+
+        let restored = context.persistence.load()
+
+        #expect(restored.items.count == 1)
+        #expect(restored.currentItem?.url == url)
+        #expect(context.defaults.data(forKey: PlaylistPersistence.storageKey) != nil)
+        #expect(context.defaults.string(forKey: legacyPathKey) == nil)
+    }
+
+    @Test func legacy_path_to_missing_file_loads_empty_store() {
+        let context = TestContext()
+        defer { context.cleanup() }
+        context.defaults.set("/nonexistent/path/video.mp4", forKey: legacyPathKey)
+
+        let restored = context.persistence.load()
+
+        #expect(restored.items.isEmpty)
+    }
+
     private let bookmarkKey = "videoBookmark"
+    private let legacyPathKey = "videoFilePath"
     private let playlistBookmarksKey = PlaylistPersistence.bookmarkStorageKey
 
     private func decodeBookmarks(_ data: Data) -> [PersistedBookmarkPayload]? {

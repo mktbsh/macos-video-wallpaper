@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VideoWallpaper アーキテクチャレビュー 2026-06-10</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true, theme: 'neutral', flowchart: { curve: 'basis' } });</script>
+<style>
+  body { font-family: -apple-system, "Hiragino Sans", sans-serif; }
+  .badge-strong { background:#dcfce7; color:#166534; border:1px solid #86efac; }
+  .badge-explore { background:#fef9c3; color:#854d0e; border:1px solid #fde047; }
+  .badge-spec { background:#f3e8ff; color:#6b21a8; border:1px solid #d8b4fe; }
+  .iface-bar { height:14px; border-radius:3px; }
+  .mermaid { display:flex; justify-content:center; }
+  code { background:#f1f5f9; padding:1px 5px; border-radius:4px; font-size:0.85em; }
+</style>
+</head>
+<body class="bg-slate-100 text-slate-800">
+<div class="max-w-5xl mx-auto px-6 py-10">
+
+<header class="mb-10">
+  <h1 class="text-3xl font-bold text-slate-900">VideoWallpaper アーキテクチャレビュー</h1>
+  <p class="mt-2 text-slate-600">2026-06-10 ・ Sources/ 約 2,900 行 ・ 浅いモジュールを深くする（deepening）機会の調査</p>
+  <p class="mt-1 text-sm text-slate-500">語彙: <b>モジュール</b>=interface+implementation を持つもの / <b>深い</b>=小さい interface の裏に多くの挙動 / <b>浅い</b>=interface が implementation と同じくらい複雑 / <b>seam</b>=挙動を編集なしで差し替えられる場所 / <b>locality</b>=変更・バグ・知識の一点集中</p>
+</header>
+
+<!-- 全体マップ -->
+<section class="bg-white rounded-xl shadow p-6 mb-10">
+  <h2 class="text-xl font-bold mb-4">現状の依存マップ</h2>
+  <div class="mermaid">
+flowchart TD
+  AD[AppDelegate<br/>387行・唯一のオーケストレータ]
+  SMC[StatusMenuController<br/>callback ×6 + ForTesting ×10]
+  PE[PlaylistEditorWindowController<br/>callback ×8]
+  BR[PlaylistEditorActionBridge<br/>同じ8 callbackの再宣言]
+  WWC[WallpaperWindowController<br/>×画面数]
+  PS[PlaylistStore]
+  RE[RotationEngine]
+  SESS[PlaybackSession<br/>⚠ production未使用]
+  PP[PlaylistPersistence ×2インスタンス]
+  VFV[VideoFileValidator<br/>static ×12メソッド]
+  UD[(UserDefaults.standard)]
+  ENUM[DimLevel / VideoGravity /<br/>PowerSavingMode]
+
+  SMC -- "onXxx ×6" --> AD
+  PE --> BR
+  BR -- "onXxx ×8" --> AD
+  AD --> WWC
+  AD --> PS
+  PS --> RE
+  AD --> PP
+  PP --> VFV
+  AD --> VFV
+  WWC -. "DropDestinationView" .-> VFV
+  VFV --> UD
+  ENUM --> UD
+  SMC --> ENUM
+  AD --> ENUM
+  SESS -. "テストからのみ参照" .-> PS
+
+  style SESS fill:#fee2e2,stroke:#ef4444
+  style VFV fill:#fef9c3,stroke:#ca8a04
+  style UD fill:#e2e8f0,stroke:#64748b
+  style BR fill:#fee2e2,stroke:#ef4444
+  </div>
+  <p class="text-sm text-slate-600 mt-3">赤 = deletion test で複雑さが消える（pass-through / dead）疑い。黄 = seam が無く AppDelegate のテストを阻んでいる static モジュール。</p>
+</section>
+
+<h2 class="text-xl font-bold mb-4">候補一覧</h2>
+
+<!-- ============ 候補 1 ============ -->
+<section class="bg-white rounded-xl shadow p-6 mb-8 border-l-4 border-green-500">
+  <div class="flex items-start justify-between">
+    <h3 class="text-lg font-bold">1. ブックマーク永続化モジュールに seam を切り、AppDelegate オーケストレーションをテスト可能にする</h3>
+    <span class="badge-strong text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap ml-4">Strong</span>
+  </div>
+  <dl class="mt-4 space-y-3 text-sm">
+    <div><dt class="font-semibold text-slate-500">Files</dt><dd><code>Sources/VideoFileValidator.swift</code>（181行・public static ×12）, <code>Sources/AppDelegate.swift</code>, <code>Sources/PlaylistPersistence.swift</code></dd></div>
+    <div><dt class="font-semibold text-slate-500">Problem</dt><dd><code>VideoFileValidator</code> は static enum で、interface（12 メソッド）が implementation（各 3〜10 行の UserDefaults / bookmark ラッパー）とほぼ同じ複雑さの<b>浅い</b> namespace。seam が無いため、これを直接呼ぶ <code>handleVideoSelected</code> / <code>handleVideoCleared</code> / <code>handleDisplayToggled</code> / <code>buildDisplayStates</code> という AppDelegate の 4 つのオーケストレーション経路が実 FS と <code>UserDefaults.standard</code> に縛られ、<b>全て未テスト</b>。さらに stale bookmark の再保存が <code>load()</code> の中で暗黙に走る（interface に現れない副作用）。</dd></div>
+    <div><dt class="font-semibold text-slate-500">Solution</dt><dd>12 個の static メソッドを「画面ごとのブックマーク台帳」という 1 概念に再設計する。<code>DisplayBookmarkStore</code> のような protocol（save / resolve / clear / isDisplayEnabled 程度の 4〜5 メソッド）を seam とし、URL 正規化・stale 再保存・キー管理を implementation 側に沈める。AppDelegate と PlaylistPersistence には init で注入する。2 つ目の adapter（in-memory fake）がテストで成立した時点で seam が real になる。</dd></div>
+    <div><dt class="font-semibold text-slate-500">Benefits</dt><dd><b>Leverage:</b> 呼び手は「URL を渡せば永続化される」だけ知ればよく、bookmark data・<code>/private/</code> 正規化・stale 処理を知らなくてよい。<b>Locality:</b> bookmark 関連バグ（knowledge.md に 3 件記録あり）の修正先が 1 ファイルに集中する。<b>Tests:</b> AppDelegate の動画選択→保存→reload→menu 更新という連鎖が fake store で初めて検証可能になる。interface が test surface になる。</dd></div>
+  </dl>
+  <div class="grid grid-cols-2 gap-4 mt-5">
+    <div class="bg-slate-50 rounded-lg p-4">
+      <p class="text-xs font-bold text-slate-500 mb-2">BEFORE — 浅い: interface ≒ implementation</p>
+      <div class="space-y-1">
+        <div class="flex items-center gap-2"><span class="text-xs w-28">interface (12メソッド)</span><div class="iface-bar bg-red-400" style="width:78%"></div></div>
+        <div class="flex items-center gap-2"><span class="text-xs w-28">implementation</span><div class="iface-bar bg-slate-400" style="width:85%"></div></div>
+      </div>
+      <p class="text-xs text-slate-500 mt-3">static 呼び出しが AppDelegate / PlaylistPersistence / DropDestinationView の 3 箇所に散在。fake 差し替え不可。</p>
+    </div>
+    <div class="bg-green-50 rounded-lg p-4">
+      <p class="text-xs font-bold text-green-700 mb-2">AFTER — 深い: 小さい interface の裏に挙動を集約</p>
+      <div class="space-y-1">
+        <div class="flex items-center gap-2"><span class="text-xs w-28">interface (4〜5メソッド)</span><div class="iface-bar bg-green-500" style="width:25%"></div></div>
+        <div class="flex items-center gap-2"><span class="text-xs w-28">implementation</span><div class="iface-bar bg-slate-400" style="width:85%"></div></div>
+      </div>
+      <p class="text-xs text-slate-500 mt-3">adapter ×2（URL/UserDefaults 実装 + テスト用 in-memory）で real seam に。stale 再保存も implementation 内の不変条件として文書化。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 候補 2 ============ -->
+<section class="bg-white rounded-xl shadow p-6 mb-8 border-l-4 border-green-500">
+  <div class="flex items-start justify-between">
+    <h3 class="text-lg font-bold">2. PlaybackSession を production に統合する — テスト済みの dead module を生かす</h3>
+    <span class="badge-strong text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap ml-4">Strong</span>
+  </div>
+  <div class="mt-3 bg-amber-50 border border-amber-300 rounded-lg px-4 py-2 text-sm text-amber-800">⚠ <code>tasks/todo.md</code> の P1 項目（PlaybackSession の AppDelegate 統合）と同一スコープ。レビューとして再確認した結果、friction は実在し優先度は妥当。</div>
+  <dl class="mt-4 space-y-3 text-sm">
+    <div><dt class="font-semibold text-slate-500">Files</dt><dd><code>Sources/PlaybackSession.swift</code>（31行）, <code>Sources/AppDelegate.swift</code>, <code>Sources/WallpaperWindowController.swift</code>, <code>Sources/RotationEngine.swift</code></dd></div>
+    <div><dt class="font-semibold text-slate-500">Problem</dt><dd><code>PlaybackSession</code> は token 発行と playlist 前進を司る純粋値型で、14 個の単体テストを持つが、<b>production からの参照ゼロ</b>。「テストのために抽出された純粋関数」の典型で、実際のバグが潜む場所——AppDelegate が完了通知を受けて全 controller に次 item を配る配線——は存在すらしない。locality が無く、テストは将来機能の正しさを検証して false confidence を生んでいる。<code>showPlaylistEditor()</code> も call site ゼロ。</dd></div>
+    <div><dt class="font-semibold text-slate-500">Solution</dt><dd>AppDelegate に <code>PlaybackSession</code> を持たせ、playlist 変更→<code>beginPlayback()</code>→全 controller へ load、完了通知→<code>consume()</code>→advance→persist→UI 更新、という 1 本のオーケストレーション経路を作る。knowledge.md に既に蓄積された token 設計知見（screen 再構成では token 再発行しない、等）をこの経路の不変条件として実装する。</dd></div>
+    <div><dt class="font-semibold text-slate-500">Benefits</dt><dd><b>Locality:</b> 「再生ライフサイクル」を理解するのに今は 6 ファイルを往復するが、配線後は AppDelegate の 1 経路 + PlaybackSession の不変条件に集約される。<b>Tests:</b> 既存の 14 テストが初めて実挙動の保証になる。fake controller での AppDelegate 統合テスト（todo P1 記載）が書ける。</dd></div>
+  </dl>
+  <div class="grid grid-cols-2 gap-4 mt-5">
+    <div class="bg-slate-50 rounded-lg p-4">
+      <p class="text-xs font-bold text-slate-500 mb-2">BEFORE — 配線なし</p>
+      <div class="mermaid">
+flowchart LR
+  T[Tests ×14] --> S[PlaybackSession]
+  AD2[AppDelegate] -. 参照なし .- S
+  C[完了通知] --> X["{ _ in } 破棄"]
+  style S fill:#fee2e2,stroke:#ef4444
+      </div>
+    </div>
+    <div class="bg-green-50 rounded-lg p-4">
+      <p class="text-xs font-bold text-green-700 mb-2">AFTER — 1 本の lifecycle 経路</p>
+      <div class="mermaid">
+flowchart LR
+  C2[完了通知+token] --> AD3[AppDelegate]
+  AD3 --> S2[PlaybackSession<br/>consume→advance]
+  S2 --> P[persist + 全controller load + menu更新]
+  style S2 fill:#dcfce7,stroke:#16a34a
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 候補 3 ============ -->
+<section class="bg-white rounded-xl shadow p-6 mb-8 border-l-4 border-yellow-400">
+  <div class="flex items-start justify-between">
+    <h3 class="text-lg font-bold">3. 表示設定（Dim / Gravity / PowerSaving）を 1 つの設定モジュールに深める</h3>
+    <span class="badge-explore text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap ml-4">Worth exploring</span>
+  </div>
+  <dl class="mt-4 space-y-3 text-sm">
+    <div><dt class="font-semibold text-slate-500">Files</dt><dd><code>Sources/DimLevel.swift</code>, <code>Sources/VideoGravity.swift</code>, <code>Sources/PowerSavingMode.swift</code>, <code>Sources/StatusMenuController.swift</code>, <code>Sources/AppDelegate.swift</code></dd></div>
+    <div><dt class="font-semibold text-slate-500">Problem</dt><dd>各 enum が自分の永続化層を兼ね、<code>UserDefaults.standard</code>・callback で飛ぶ一時値・新画面追加時の再読込という<b>3 つの source of truth</b> が並走する。象徴的なのが <code>onPowerSavingModeChanged</code>: callback は値を運ばず（<code>() -&gt; Void</code>）、AppDelegate が <code>PowerSavingMode.saved</code> を<b>もう一度 UserDefaults から読む</b>。seam が無いため lifecycle テストは <code>UserDefaults.standard</code> を手動 defer 掃除しており（knowledge.md にも競合の学びが複数）、menu の選択状態は init 時 snapshot のまま stale になり得る。</dd></div>
+    <div><dt class="font-semibold text-slate-500">Solution</dt><dd>「壁紙設定」という 1 モジュール（例: <code>WallpaperSettings</code>）に深める。in-memory の現在値を単一の所有者が持ち、永続化は implementation 内の関心事に沈める。StatusMenuController は値を変更要求として流すだけ、AppDelegate（または settings 自身）が controller 群へ伝播。enum の <code>saved</code>/<code>save()</code> パターンは廃止。knowledge.md の「設定値 enum パターン」の更新が必要。</dd></div>
+    <div><dt class="font-semibold text-slate-500">Benefits</dt><dd><b>Locality:</b> 「今の設定は何か」に答える場所が 1 つになり、stale snapshot / 再読込クラスのバグが構造的に消える。<b>Tests:</b> suite-scoped defaults の手動掃除が不要になり、settings を fake にして AppDelegate / menu のテストが決定的になる。ADR の schedule 機能（clockProvider 注入方針）とも親和。</dd></div>
+  </dl>
+  <div class="grid grid-cols-2 gap-4 mt-5">
+    <div class="bg-slate-50 rounded-lg p-4">
+      <p class="text-xs font-bold text-slate-500 mb-2">BEFORE — source of truth ×3</p>
+      <div class="flex justify-around items-center h-28">
+        <div class="text-center"><div class="w-16 h-16 rounded-full bg-red-200 border-2 border-red-400 flex items-center justify-center text-xs">UserDefaults</div></div>
+        <div class="text-center"><div class="w-16 h-16 rounded-full bg-red-200 border-2 border-red-400 flex items-center justify-center text-xs">callback<br/>一時値</div></div>
+        <div class="text-center"><div class="w-16 h-16 rounded-full bg-red-200 border-2 border-red-400 flex items-center justify-center text-xs">init時<br/>snapshot</div></div>
+      </div>
+    </div>
+    <div class="bg-green-50 rounded-lg p-4">
+      <p class="text-xs font-bold text-green-700 mb-2">AFTER — 所有者 1 + 永続化は内部の関心事</p>
+      <div class="flex justify-center items-center h-28">
+        <div class="text-center">
+          <div class="w-40 h-16 rounded-lg bg-green-200 border-2 border-green-500 flex items-center justify-center text-xs font-semibold">WallpaperSettings<br/>(現在値の単一所有)</div>
+          <div class="text-xs text-slate-500 mt-1">↓ persist は implementation 内</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 候補 4 ============ -->
+<section class="bg-white rounded-xl shadow p-6 mb-8 border-l-4 border-yellow-400">
+  <div class="flex items-start justify-between">
+    <h3 class="text-lg font-bold">4. RotationEngine の token 型を壁紙ウィンドウの interface から追い出す</h3>
+    <span class="badge-explore text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap ml-4">Worth exploring</span>
+  </div>
+  <dl class="mt-4 space-y-3 text-sm">
+    <div><dt class="font-semibold text-slate-500">Files</dt><dd><code>Sources/AppDelegate.swift</code>（<code>WallpaperWindowControlling</code> protocol, L15付近）, <code>Sources/WallpaperWindowController.swift</code>, <code>Sources/RotationEngine.swift</code></dd></div>
+    <div><dt class="font-semibold text-slate-500">Problem</dt><dd><code>WallpaperWindowControlling.load(...)</code> の引数に <code>RotationEngine&lt;PlaylistItem&gt;.PlaybackToken</code> が現れ、ウィンドウ controller の seam が rotation 実装の内部型に依存している。controller は playlist を知らないはずなのに、interface が「caller が知るべきこと」として rotation の generation 概念を要求する典型的な seam 越え leak。現 production では常に nil。</dd></div>
+    <div><dt class="font-semibold text-slate-500">Solution</dt><dd>controller 側の interface には generic でない不透明な再生識別子（例: <code>PlaybackContextID</code> — Equatable のみ）を置き、RotationEngine の token からの変換は AppDelegate（playlist を知る側）で行う。候補 2 の配線と同時に実施するのが自然。</dd></div>
+    <div><dt class="font-semibold text-slate-500">Benefits</dt><dd><b>Leverage:</b> controller の caller は「同一性比較できる ID」だけ知ればよい。<b>Locality:</b> rotation の token 設計変更（knowledge.md に学び多数）が controller protocol に波及しなくなる。fake controller のテスト記述も単純化する。</dd></div>
+  </dl>
+  <div class="grid grid-cols-2 gap-4 mt-5">
+    <div class="bg-slate-50 rounded-lg p-4">
+      <p class="text-xs font-bold text-slate-500 mb-2">BEFORE</p>
+      <div class="mermaid">
+flowchart LR
+  P1[WallpaperWindowControlling] -- "引数型が依存" --> R1["RotationEngine&lt;PlaylistItem&gt;<br/>.PlaybackToken"]
+  style R1 fill:#fee2e2,stroke:#ef4444
+      </div>
+    </div>
+    <div class="bg-green-50 rounded-lg p-4">
+      <p class="text-xs font-bold text-green-700 mb-2">AFTER</p>
+      <div class="mermaid">
+flowchart LR
+  P2[WallpaperWindowControlling] --> O[不透明な PlaybackContextID]
+  AD4[AppDelegate] -- "token→ID 変換" --> O
+  style O fill:#dcfce7,stroke:#16a34a
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 候補 5 ============ -->
+<section class="bg-white rounded-xl shadow p-6 mb-8 border-l-4 border-yellow-400">
+  <div class="flex items-start justify-between">
+    <h3 class="text-lg font-bold">5. PlaylistEditorActionBridge（pass-through adapter）を畳む</h3>
+    <span class="badge-explore text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap ml-4">Worth exploring</span>
+  </div>
+  <dl class="mt-4 space-y-3 text-sm">
+    <div><dt class="font-semibold text-slate-500">Files</dt><dd><code>Sources/PlaylistEditorWindowController.swift</code>（413行）, <code>Sources/AppDelegate.swift</code>（configure(editor:) L302–330）</dd></div>
+    <div><dt class="font-semibold text-slate-500">Problem</dt><dd>8 つの編集 callback が <b>3 回</b>宣言されている: controller の computed property、<code>PlaylistEditorActionBridge</code> の stored closure、AppDelegate での代入。bridge は deletion test で複雑さが完全に消える純粋 pass-through——挙動を一切足さない hypothetical seam。callback を 1 本足すたびに 3 ファイル 3 箇所の編集が要る（locality 欠如）。</dd></div>
+    <div><dt class="font-semibold text-slate-500">Solution</dt><dd>個々の closure ×8 ではなく、「playlist 編集操作」を 1 つの interface（例: <code>PlaylistEditing</code> protocol — delete / move / setCurrent / update 系をメソッドとして持つ）に深め、AppDelegate を adapter としてエディタに渡す。bridge は削除。editor 側の test double は protocol 実装 1 つで済む。</dd></div>
+    <div><dt class="font-semibold text-slate-500">Benefits</dt><dd><b>Locality:</b> 操作追加が「protocol に 1 メソッド + AppDelegate に 1 実装」で完結。<b>Tests:</b> 8 closure の個別差し込みではなく spy 1 個でエディタ→操作の検証ができる。ADR の schedule 機能で予定されている callback 追加（onScheduleConfigChanged 等）もこの interface に乗せられる。</dd></div>
+  </dl>
+  <div class="grid grid-cols-2 gap-4 mt-5">
+    <div class="bg-slate-50 rounded-lg p-4">
+      <p class="text-xs font-bold text-slate-500 mb-2">BEFORE — 8 callback × 3 重宣言 = 24 定義点</p>
+      <div class="grid grid-cols-3 gap-1">
+        <div class="text-center text-xs font-semibold text-slate-500">Controller</div>
+        <div class="text-center text-xs font-semibold text-slate-500">Bridge</div>
+        <div class="text-center text-xs font-semibold text-slate-500">AppDelegate</div>
+        <!-- 8 rows of 3 dots -->
+        <div class="col-span-3 grid grid-cols-3 gap-1">
+          <div class="space-y-1">​<div class="h-2 bg-red-300 rounded"></div><div class="h-2 bg-red-300 rounded"></div><div class="h-2 bg-red-300 rounded"></div><div class="h-2 bg-red-300 rounded"></div><div class="h-2 bg-red-300 rounded"></div><div class="h-2 bg-red-300 rounded"></div><div class="h-2 bg-red-300 rounded"></div><div class="h-2 bg-red-300 rounded"></div></div>
+          <div class="space-y-1"><div class="h-2 bg-red-300 rounded"></div><div class="h-2 bg-red-300 rounded"></div><div class="h-2 bg-red-300 rounded"></div><div class="h-2 bg-red-300 rounded"></div><div class="h-2 bg-red-300 rounded"></div><div class="h-2 bg-red-300 rounded"></div><div class="h-2 bg-red-300 rounded"></div><div class="h-2 bg-red-300 rounded"></div></div>
+          <div class="space-y-1"><div class="h-2 bg-red-300 rounded"></div><div class="h-2 bg-red-300 rounded"></div><div class="h-2 bg-red-300 rounded"></div><div class="h-2 bg-red-300 rounded"></div><div class="h-2 bg-red-300 rounded"></div><div class="h-2 bg-red-300 rounded"></div><div class="h-2 bg-red-300 rounded"></div><div class="h-2 bg-red-300 rounded"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="bg-green-50 rounded-lg p-4">
+      <p class="text-xs font-bold text-green-700 mb-2">AFTER — protocol 1 つ + adapter 1 つ</p>
+      <div class="flex justify-center items-center h-32">
+        <div class="text-center">
+          <div class="w-44 rounded-lg bg-green-200 border-2 border-green-500 px-3 py-2 text-xs font-semibold">PlaylistEditing protocol<br/>(操作 ×8 メソッド)</div>
+          <div class="text-xs text-slate-500 my-1">↑ 実装</div>
+          <div class="w-44 rounded-lg bg-white border border-green-400 px-3 py-1 text-xs">AppDelegate (production)<br/>Spy (test) — adapter ×2 = real seam</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 候補 6 ============ -->
+<section class="bg-white rounded-xl shadow p-6 mb-8 border-l-4 border-purple-400">
+  <div class="flex items-start justify-between">
+    <h3 class="text-lg font-bold">6. StatusMenuController の test surface を ForTesting backdoor から interface に移す</h3>
+    <span class="badge-spec text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap ml-4">Speculative</span>
+  </div>
+  <dl class="mt-4 space-y-3 text-sm">
+    <div><dt class="font-semibold text-slate-500">Files</dt><dd><code>Sources/StatusMenuController.swift</code>（455行・ForTesting ×10, L413–455）, <code>Tests/.../StatusMenuControllerTests.swift</code></dd></div>
+    <div><dt class="font-semibold text-slate-500">Problem</dt><dd>10 個の <code>ForTesting</code> プロパティ/メソッドは「interface が test surface になっていない」ことの直接的な兆候。テストは <code>NSMenuItem</code> の個数・identity という implementation 詳細を検証しており、メニューの見た目を変えるだけで壊れる。一方、ユーザー操作→callback 発火という<b>本来の挙動</b>（selectDimLevel → save + onDimLevelChanged の連鎖など）は未テスト。</dd></div>
+    <div><dt class="font-semibold text-slate-500">Solution</dt><dd>メニューを「menu state（何が表示・選択・有効か）→ NSMenu への描画」の 2 層に分け、state を interface として公開する。テストは state を検証し、ForTesting backdoor を段階的に削除。候補 3（設定モジュール）が先にあると state の定義が自然になる。</dd></div>
+    <div><dt class="font-semibold text-slate-500">Benefits</dt><dd><b>Tests:</b> 実装替えに耐えるテストになり、未テストの action→callback 連鎖が state 遷移として検証できる。<b>Locality:</b> 差分更新ロジック（knowledge.md の NSMenu 差分更新の学び）が描画層 1 箇所に集中。ただし NSMenu 周りの作り直しコストが大きく、candidates 1–3 より優先度は低い。</dd></div>
+  </dl>
+</section>
+
+<!-- ============ Top recommendation ============ -->
+<section class="bg-slate-900 text-slate-100 rounded-xl shadow-lg p-8 mt-12">
+  <h2 class="text-xl font-bold mb-3">🏁 Top recommendation: 候補 1（ブックマーク永続化の seam）から着手</h2>
+  <p class="text-sm leading-relaxed text-slate-300">
+    候補 2（PlaybackSession 統合）が機能的には最重要だが、その AppDelegate 統合テストを書くには
+    bookmark resolve が fake にできることが前提になる。<b>候補 1 は候補 2・3 の test surface を先に作る土台</b>であり、
+    interface は今より小さくなる方向（12 → 4〜5 メソッド）なので回帰リスクも低い。
+    順序としては <b>1 → 2（+4 を同時に）→ 3 → 5 → 6</b> を推奨。
+    候補 4 と 5 は候補 2 の配線作業と同じファイルを触るため、同一ブランチでまとめると差分が読みやすい。
+  </p>
+  <div class="mt-4 flex gap-2 text-xs">
+    <span class="bg-green-600 px-3 py-1 rounded-full">1. seam 構築</span><span class="self-center">→</span>
+    <span class="bg-green-600 px-3 py-1 rounded-full">2+4. lifecycle 配線</span><span class="self-center">→</span>
+    <span class="bg-yellow-600 px-3 py-1 rounded-full">3. 設定モジュール</span><span class="self-center">→</span>
+    <span class="bg-yellow-600 px-3 py-1 rounded-full">5. bridge 畳み</span><span class="self-center">→</span>
+    <span class="bg-purple-600 px-3 py-1 rounded-full">6. menu state 層</span>
+  </div>
+</section>
+
+<footer class="text-xs text-slate-400 mt-8 text-center">VideoWallpaper architecture review ・ generated 2026-06-10 ・ Claude Fable 5</footer>
+</div>
+</body>
+</html>

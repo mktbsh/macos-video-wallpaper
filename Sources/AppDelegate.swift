@@ -57,6 +57,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let screenProvider: () -> [NSScreen]
     private let controllerFactory: (NSScreen) -> any WallpaperWindowControlling
     private let isOnBatteryProvider: () -> Bool
+    private let displayWallpaperStore: any DisplayWallpaperStoring
     private var displayErrors: [DisplayIdentifier: WallpaperError] = [:]
 
     init(
@@ -65,13 +66,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             WallpaperWindowController(screen: screen, videoURL: nil)
         },
         playlistStore: PlaylistStore = PlaylistPersistence().load(),
-        isOnBatteryProvider: @escaping () -> Bool = defaultIsOnBattery
+        isOnBatteryProvider: @escaping () -> Bool = defaultIsOnBattery,
+        displayWallpaperStore: any DisplayWallpaperStoring = DisplayWallpaperStore()
     ) {
         self.screenControllers = []
         self.playlistStore = playlistStore
         self.screenProvider = screenProvider
         self.controllerFactory = controllerFactory
         self.isOnBatteryProvider = isOnBatteryProvider
+        self.displayWallpaperStore = displayWallpaperStore
     }
 
     private var isOnBattery: Bool {
@@ -133,7 +136,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let targetScreens: [(id: DisplayIdentifier, screen: NSScreen)] = screenProvider()
             .compactMap { screen in
                 guard let id = screen.displayIdentifier,
-                      VideoFileValidator.isDisplayEnabled(id)
+                      displayWallpaperStore.isEnabled(id)
                 else { return nil }
                 return (id, screen)
             }
@@ -207,53 +210,50 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 }
 
+// 壁紙構成のオーケストレーション。台帳（DisplayWallpaperStore）seam を経由し、
+// テストから @testable で直接検証できるよう internal に置く。
 @MainActor
-private extension AppDelegate {
+extension AppDelegate {
     func loadVideoForDisplay(
         _ displayId: DisplayIdentifier,
         on controller: any WallpaperWindowControlling
     ) {
-        if let url = VideoFileValidator.resolveBookmarkedURL(display: displayId) {
+        switch displayWallpaperStore.resolveVideo(for: displayId) {
+        case .resolved(let url):
             clearError(for: displayId)
             controller.load(videoURL: url, timeRange: nil, itemID: nil, token: nil)
-        } else {
-            if VideoFileValidator.hasBookmark(display: displayId) {
-                Log.persistence.warning(
-                    "Bookmark resolve failed for display \(displayId.description, privacy: .public)"
-                )
-                setError(.bookmarkResolveFailed(displayId), for: displayId)
-            }
+        case .resolveFailed:
+            Log.persistence.warning(
+                "Bookmark resolve failed for display \(displayId.description, privacy: .public)"
+            )
+            setError(.bookmarkResolveFailed(displayId), for: displayId)
+            controller.clearVideo()
+        case .noVideo:
             controller.clearVideo()
         }
-    }
-
-    func reloadVideoForDisplay(_ displayId: DisplayIdentifier) {
-        guard let slot = screenControllers.first(where: { $0.id == displayId }) else { return }
-        loadVideoForDisplay(displayId, on: slot.controller)
-    }
-
-    func updateDisplayStates() {
-        statusMenuController?.displayStates = buildDisplayStates()
     }
 
     func buildDisplayStates() -> [DisplayMenuState] {
         screenProvider().compactMap { screen -> DisplayMenuState? in
             guard let displayId = screen.displayIdentifier else { return nil }
-            let isEnabled = VideoFileValidator.isDisplayEnabled(displayId)
-            let url = VideoFileValidator.resolveBookmarkedURL(display: displayId)
+            let isEnabled = displayWallpaperStore.isEnabled(displayId)
+            var currentVideoName: String?
+            if case .resolved(let url) = displayWallpaperStore.resolveVideo(for: displayId) {
+                currentVideoName = url.lastPathComponent
+            }
             let errorMessage = displayErrors[displayId]?.localizedMessage
             return DisplayMenuState(
                 displayIdentifier: displayId,
                 screenName: screen.localizedName,
                 isEnabled: isEnabled,
-                currentVideoName: url?.lastPathComponent,
+                currentVideoName: currentVideoName,
                 errorMessage: errorMessage
             )
         }
     }
 
     func handleVideoSelected(_ url: URL, for displayId: DisplayIdentifier) {
-        if VideoFileValidator.saveBookmark(for: url, display: displayId) {
+        if displayWallpaperStore.saveVideo(url, for: displayId) {
             clearError(for: displayId)
         } else {
             let file = url.lastPathComponent
@@ -268,15 +268,27 @@ private extension AppDelegate {
     }
 
     func handleVideoCleared(for displayId: DisplayIdentifier) {
-        VideoFileValidator.clearBookmark(display: displayId)
+        displayWallpaperStore.clearVideo(for: displayId)
         clearError(for: displayId)
         reloadVideoForDisplay(displayId)
         updateDisplayStates()
     }
 
     func handleDisplayToggled(_ displayId: DisplayIdentifier, enabled: Bool) {
-        VideoFileValidator.setDisplayEnabled(enabled, display: displayId)
+        displayWallpaperStore.setEnabled(enabled, for: displayId)
         setupWallpaperWindows()
+    }
+}
+
+@MainActor
+private extension AppDelegate {
+    func reloadVideoForDisplay(_ displayId: DisplayIdentifier) {
+        guard let slot = screenControllers.first(where: { $0.id == displayId }) else { return }
+        loadVideoForDisplay(displayId, on: slot.controller)
+    }
+
+    func updateDisplayStates() {
+        statusMenuController?.displayStates = buildDisplayStates()
     }
 
     func showPlaylistEditor() {
