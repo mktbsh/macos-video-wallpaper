@@ -171,7 +171,9 @@ struct PlaylistStore {
         guard let index = items.firstIndex(where: { $0.id == id }) else { return false }
 
         var newEntries = items
+        let originalItem = newEntries[index]
         transform(&newEntries[index])
+        guard newEntries[index] != originalItem else { return false }
         engine.replace(entries: newEntries, currentEntryID: engine.currentEntryID)
         return true
     }

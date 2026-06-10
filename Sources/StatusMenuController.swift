@@ -78,6 +78,7 @@ final class StatusMenuController {
 
     var displayStates: [DisplayMenuState] = [] {
         didSet {
+            guard displayStates != oldValue else { return }
             rebuildMenu()
             updateStatusIcon()
         }
@@ -418,6 +419,10 @@ extension StatusMenuController {
 
     var menuItemCountForTesting: Int {
         menu.items.count
+    }
+
+    var menuItemIdentifiersForTesting: [ObjectIdentifier] {
+        menu.items.map(ObjectIdentifier.init)
     }
 
     var statusIconNameForTesting: String {

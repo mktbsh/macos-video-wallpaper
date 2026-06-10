@@ -179,6 +179,14 @@ enum Xxx: String, CaseIterable {
 
 ---
 
+## PlaylistStore / RotationEngine の戻り値は状態変化の有無に揃える
+
+**症状:** current item の再選択や同じ displayName / timeRange の再保存でも mutator が `true` を返すと、AppDelegate 側の save / reload / UI refresh が no-op でも走る。
+**原因:** 「対象 ID が存在した」ことと「状態が変わった」ことを同じ `true` として扱っていた。
+**対策:** `setCurrent` は同じ ID なら `false` を返す。`PlaylistItem` 更新は transform 後に元の item と比較し、差分がない場合は `engine.replace(...)` まで進めない。
+
+---
+
 ## 同じ再生 target への `load()` は no-op にする
 
 **症状:** 画面再構成や occlusion 復帰で同じ URL を再読み込みすると、`AVPlayerItem` / `AVPlayerLooper` が無駄に再生成される。
@@ -200,6 +208,14 @@ enum Xxx: String, CaseIterable {
 **症状:** summary 更新ごとに `buildMenu()` で全項目を作り直すと UI churn が増え、項目参照を使うテストも不安定になる。
 **原因:** 軽いタイトル変更までメニュー全 rebuild に乗せていた。
 **対策:** `NSMenuItem` を一度生成して保持し、`title` / `state` / `isEnabled` / `isHidden` だけ更新する。
+
+---
+
+## StatusMenuController.displayStates の同値再代入は skip する
+
+**症状:** screen / playlist state の再通知で同じ `DisplayMenuState` 配列を入れ直すだけでも、`NSMenu` 全体が rebuild されて dynamic item と separator が作り直される。
+**原因:** `displayStates` の `didSet` が `oldValue` を見ずに常に `rebuildMenu()` / `updateStatusIcon()` を呼んでいた。
+**対策:** `displayStates != oldValue` のときだけ menu と status icon を更新する。同値再代入のテストでは dynamic item も含めた `NSMenuItem` identity を保持できることを確認する。
 
 ---
 
@@ -248,6 +264,14 @@ enum Xxx: String, CaseIterable {
 **症状:** `AVPlayer.seek` の完了後に毎回 `Task { @MainActor in ... }` を作ると、すでに main thread 上で戻ってきた完了通知まで余計な task churn が発生する。
 **原因:** completion を常に新規 task に投げていたため、同期的に処理できるケースでも一段余計な hop が入っていた。
 **対策:** まず main thread ならその場で `@MainActor` completion を実行し、background callback のときだけ main queue へ handoff する。これで MainActor 正しさを保ちながら、seek completion の hot path を軽くできる。
+
+---
+
+## seek が unfinished でも playback pending state は解除する
+
+**症状:** `AVPlayer.seek` の completion が `finished == false` で戻ると `isPlaybackStartPending` が true のまま残り、後続の `resumePlayback()` が no-op になって再生へ復帰できない。
+**原因:** seek completion の guard が `finished` と current context の確認をまとめていたため、cancelled / unfinished seek では pending state を解除する処理まで到達しなかった。
+**対策:** current context が一致する場合はまず `isPlaybackStartPending = false` にし、その後 `finished == false` なら `play()` せず return する。stale context の completion は従来どおり無視する。
 
 ---
 

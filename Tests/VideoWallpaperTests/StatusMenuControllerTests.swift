@@ -21,6 +21,22 @@ struct StatusMenuControllerTests {
         #expect(controller.fixedMenuItemIdentifiersForTesting == initialIdentifiers)
     }
 
+    @Test func assigning_same_display_states_does_not_rebuild_menu() {
+        let controller = StatusMenuController()
+        let state = DisplayMenuState(
+            displayIdentifier: DisplayIdentifier(vendor: 1, model: 2, serial: 3),
+            screenName: "Built-in Display",
+            isEnabled: true,
+            currentVideoName: "ocean.mp4"
+        )
+        controller.displayStates = [state]
+        let initialIdentifiers = controller.menuItemIdentifiersForTesting
+
+        controller.displayStates = [state]
+
+        #expect(controller.menuItemIdentifiersForTesting == initialIdentifiers)
+    }
+
     @Test func display_section_adds_items_for_enabled_display() {
         let controller = StatusMenuController()
         let emptyCount = controller.menuItemCountForTesting

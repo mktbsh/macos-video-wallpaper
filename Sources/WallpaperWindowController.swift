@@ -322,10 +322,11 @@ final class WallpaperWindowController {
             toleranceBefore: .zero,
             toleranceAfter: .zero
         ) { [weak self] finished in
-            guard finished, let self, self.isCurrentPlaybackContext(context) else {
+            guard let self, self.isCurrentPlaybackContext(context) else {
                 return
             }
             self.isPlaybackStartPending = false
+            guard finished else { return }
             self.isPlaybackPaused = false
             self.driver.play()
         }

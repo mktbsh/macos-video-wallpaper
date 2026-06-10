@@ -12,6 +12,7 @@
 		09C29C68E09C3E97A02DFA61 /* PlaybackDriver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 395BC54125AE19AF2356B520 /* PlaybackDriver.swift */; };
 		0B21D7B61324DF2E0401E986 /* AppDelegateScreenLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0E7A8E045D5576F1253FE02 /* AppDelegateScreenLifecycleTests.swift */; };
 		10DED1FC5A3DC7DE1A065B7C /* PlaybackSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BA1143665560974CEE877FB /* PlaybackSessionTests.swift */; };
+		11F2FF9759D7B379C09FBBB2 /* PlaylistStoreMutationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5C2B3BD20200BA5CAF1361F /* PlaylistStoreMutationTests.swift */; };
 		16F185CEFBCBF2CFBDEEEF29 /* WallpaperWindowControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8E5E4442A30B7688CFF59AB /* WallpaperWindowControllerTests.swift */; };
 		227A093B41F5031755381BF6 /* PlaylistModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F91543E3DFC2C460339F675B /* PlaylistModels.swift */; };
 		24DE1AE620FBA10AD275A2A6 /* PlaylistPersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09CFD949B8A13D34A1B517F8 /* PlaylistPersistenceTests.swift */; };
@@ -118,6 +119,7 @@
 		EDCF3F86D82447BB6CC21368 /* BuildInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildInfo.swift; sourceTree = "<group>"; };
 		EE4D5ED82BBDA9018A387420 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		F135F18C35E8B9077CC9FAB2 /* PlaybackDriverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackDriverTests.swift; sourceTree = "<group>"; };
+		F5C2B3BD20200BA5CAF1361F /* PlaylistStoreMutationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistStoreMutationTests.swift; sourceTree = "<group>"; };
 		F8F4164F4705E34B48F6E7C4 /* VideoWallpaper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VideoWallpaper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F91543E3DFC2C460339F675B /* PlaylistModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistModels.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -206,6 +208,7 @@
 				2BA1143665560974CEE877FB /* PlaybackSessionTests.swift */,
 				B5B2CCD4F02D25D8195FD571 /* PlaylistEditorWindowControllerTests.swift */,
 				09CFD949B8A13D34A1B517F8 /* PlaylistPersistenceTests.swift */,
+				F5C2B3BD20200BA5CAF1361F /* PlaylistStoreMutationTests.swift */,
 				733A86058A8A9C9A5061D3CD /* PlaylistStoreTests.swift */,
 				21B0CD7735C2B69E85D9BA2C /* PowerSavingModeTests.swift */,
 				4ACB2103041D4A070CC65238 /* ProjectConfigurationTests.swift */,
@@ -359,6 +362,7 @@
 				10DED1FC5A3DC7DE1A065B7C /* PlaybackSessionTests.swift in Sources */,
 				3B94D8EB77C8F9C6DE951472 /* PlaylistEditorWindowControllerTests.swift in Sources */,
 				24DE1AE620FBA10AD275A2A6 /* PlaylistPersistenceTests.swift in Sources */,
+				11F2FF9759D7B379C09FBBB2 /* PlaylistStoreMutationTests.swift in Sources */,
 				E98B5F118852E36FAE0BF6C6 /* PlaylistStoreTests.swift in Sources */,
 				6345BF7D451C3D1BC6C92019 /* PowerSavingModeTests.swift in Sources */,
 				E78A2AFB2F9D58201B7514C6 /* ProjectConfigurationTests.swift in Sources */,

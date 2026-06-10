@@ -42,7 +42,7 @@ import Testing
         #expect(store.currentItem?.playbackTimeRange == nil)
     }
 
-    @Test func update_use_full_video_to_false_preserves_existing_time_range() throws {
+    @Test func update_use_full_video_to_false_returns_false_and_preserves_existing_time_range() throws {
         let item = PlaylistItem(
             url: makeMutURL("clip.mov"),
             useFullVideo: false,
@@ -51,7 +51,7 @@ import Testing
         )
         var store = PlaylistStore(items: [item], currentItemID: item.id)
 
-        #expect(store.updateUseFullVideo(id: item.id, useFullVideo: false) == true)
+        #expect(store.updateUseFullVideo(id: item.id, useFullVideo: false) == false)
         #expect(store.currentItem?.startTime == 2.0)
         #expect(store.currentItem?.endTime == 7.0)
     }
@@ -102,6 +102,31 @@ import Testing
         #expect(store.updateUseFullVideo(id: UUID(), useFullVideo: false) == false)
         #expect(store.updateTimeRange(id: UUID(), startTime: 1, endTime: 2) == false)
         #expect(store.items == originalItems)
+    }
+
+    @Test func update_methods_return_false_when_values_do_not_change() throws {
+        let item = PlaylistItem(
+            url: makeMutURL("clip.mov"),
+            displayName: "Clip",
+            useFullVideo: false,
+            startTime: 1,
+            endTime: 5
+        )
+        var store = PlaylistStore(items: [item], currentItemID: item.id)
+
+        #expect(store.updateDisplayName(id: item.id, displayName: "Clip") == false)
+        #expect(store.updateUseFullVideo(id: item.id, useFullVideo: false) == false)
+        #expect(store.updateTimeRange(id: item.id, startTime: 1, endTime: 5) == false)
+        #expect(store.items == [item])
+    }
+
+    @Test func set_current_returns_false_when_item_is_already_current() throws {
+        var store = PlaylistStore()
+        store.add(urls: [makeMutURL("first.mov"), makeMutURL("second.mov")])
+        let currentID = try #require(store.currentItem?.id)
+
+        #expect(store.setCurrent(id: currentID) == false)
+        #expect(store.currentItem?.id == currentID)
     }
 
     @Test func add_urls_to_non_empty_store_preserves_current_item() {

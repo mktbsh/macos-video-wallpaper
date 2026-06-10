@@ -18,7 +18,7 @@
 - [ ] 再生完了 callback で `PlaybackSession.consume(...)` を呼び、playlist advance / persist / UI reload / 次 item 適用までつなぐ
 - [ ] playlist menu action と自動ローテーションの AppDelegate integration test を追加する
 - [ ] pending seek completion が pause / hide / battery policy を破って `play()` しないよう、desired playback state と seek pending state を分離する
-- [ ] `seek` が `finished == false` で戻ったときも `isPlaybackStartPending` を解除し、次の `resumePlayback()` で復帰できるようにする
+- [x] `seek` が `finished == false` で戻ったときも `isPlaybackStartPending` を解除し、次の `resumePlayback()` で復帰できるようにする
 - [ ] occlusion notification では `isWindowOrderedFront` だけでなく `window.occlusionState.contains(.visible)` を見て、非表示なら pause する
 - [ ] screen reconfiguration で surviving controller の window frame / content bounds / layer bounds を更新する API を追加する
 - [ ] runtime 用 display identity を `CGDirectDisplayID` または display UUID ベースにし、同型 display / serial 0 の重複で trap しないようにする
@@ -27,8 +27,8 @@
 
 - [ ] `PlaylistPersistence.save(store:)` を metadata 保存と bookmark sync に分離し、current item / display name 変更で bookmark payload decode / encode を走らせない
 - [ ] bookmark payload の duplicate ID を検出し、`Dictionary(uniqueKeysWithValues:)` の trap ではなく fallback / clear / warning にする
-- [ ] `PlaylistStore` / `RotationEngine` の mutator は値が変わらない場合 `false` を返し、no-op save / reload を抑制する
-- [ ] `StatusMenuController.displayStates` は unchanged assignment を skip する
+- [x] `PlaylistStore` / `RotationEngine` の mutator は値が変わらない場合 `false` を返し、no-op save / reload を抑制する
+- [x] `StatusMenuController.displayStates` は unchanged assignment を skip する
 - [ ] dynamic display menu item を `DisplayIdentifier` ごとに保持し、表示状態の更新は `title` / `state` / `isEnabled` / `isHidden` の差分適用にする
 - [ ] `updateDisplayStates()` で毎回 bookmark resolve しないよう、表示用 state の更新契機と bookmark 解決を分ける
 - [ ] clean checkout の `make build` が CI と同じ `BuildInfo.swift` stub / generation 前提で通るようにする

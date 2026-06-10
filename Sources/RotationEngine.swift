@@ -40,6 +40,7 @@ struct RotationEngine<Entry: Identifiable> {
     }
 
     mutating func setCurrent(id: Entry.ID) -> Bool {
+        guard currentEntryID != id else { return false }
         guard entries.contains(where: { $0.id == id }) else { return false }
         currentEntryID = id
         return true

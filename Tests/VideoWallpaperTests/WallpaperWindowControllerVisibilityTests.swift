@@ -107,6 +107,23 @@ struct WallpaperWindowControllerVisibilityTests {
         #expect(context.driver.playCallCount == 1)
     }
 
+    @Test func resume_playback_after_cancelled_seek_recovers_from_pending_state() throws {
+        let context = try WallpaperWindowControllerTestContext()
+        let timeRange = CMTimeRange(
+            start: CMTime(seconds: 3, preferredTimescale: 600),
+            end: CMTime(seconds: 8, preferredTimescale: 600)
+        )
+        context.controller.load(
+            videoURL: wallpaperWindowTestURL("cancelled-seek-resume.mov"),
+            timeRange: timeRange
+        )
+
+        context.driver.completeSeek(at: 0, finished: false)
+        context.controller.resumePlayback()
+
+        #expect(context.driver.playCallCount == 1)
+    }
+
     @Test func clear_video_is_idempotent_after_first_clear() throws {
         let context = try WallpaperWindowControllerTestContext()
         context.controller.load(videoURL: wallpaperWindowTestURL("clear-idempotent.mov"))
