@@ -9,3 +9,4 @@ Sources/BuildInfo.swift
 DerivedData/
 default.profraw
 *.profraw
+.context/
