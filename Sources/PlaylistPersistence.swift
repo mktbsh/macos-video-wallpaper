@@ -36,11 +36,11 @@ private struct PersistedPlaylistBookmark: Codable, Equatable {
         let normalizedURL = normalizedFileURL(item.url)
         id = item.id
         filePath = normalizedURL.path
-        bookmarkData = try VideoFileValidator.bookmarkData(for: normalizedURL)
+        bookmarkData = try SecurityScopedBookmark.data(for: normalizedURL)
     }
 
     var resolvedURL: URL? {
-        VideoFileValidator.resolveBookmarkData(bookmarkData).map(normalizedFileURL)
+        SecurityScopedBookmark.resolve(bookmarkData).map { normalizedFileURL($0.url) }
     }
 
     func matches(_ item: PlaylistItem) -> Bool {
@@ -57,11 +57,11 @@ private struct LegacyPersistedPlaylistEntry: Codable {
     let endTime: Double?
 
     var playlistItem: PlaylistItem? {
-        guard let url = VideoFileValidator.resolveBookmarkData(bookmarkData) else { return nil }
+        guard let resolution = SecurityScopedBookmark.resolve(bookmarkData) else { return nil }
 
         return PlaylistItem(
             id: id,
-            url: normalizedFileURL(url),
+            url: normalizedFileURL(resolution.url),
             displayName: displayName,
             useFullVideo: useFullVideo,
             startTime: startTime,
