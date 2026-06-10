@@ -315,6 +315,21 @@ enum Xxx: String, CaseIterable {
 
 ---
 
+## 永続化 adapter の resolve は結果 enum で error mode を interface に出す
+
+**症状:** `resolveBookmarkedURL() -> URL?` + `hasBookmark() -> Bool` の 2 呼び出しで「未登録」と「解決失敗」を caller が組み立てていた。
+**原因:** error mode が interface に現れていないと、状態の区別が caller 側の呼び出し順序に依存する。
+**対策:** `ResolvedVideo`（noVideo / resolved / resolveFailed）のように 1 メソッドの戻り値で状態を尽くす。stale 再保存のような副作用は implementation の不変条件として閉じ込め、テストは codec 注入（internal init）で deterministic にする。設計の経緯は `docs/adr/2026-06-10-display-wallpaper-store-seam.md`、用語は `CONTEXT.md` を参照。
+
+---
+
+## 同じ文字列の UserDefaults key でも概念が違えば定数を共有しない
+
+**症状:** legacy 単一壁紙の global key と per-display key prefix が同じ `videoBookmark` で、定数を共有すると legacy 経路が台帳モジュールに依存してしまう。
+**対策:** 概念ごとに定数を持つ（`DisplayWallpaperStore.bookmarkKey` と `PlaylistPersistence.legacyBookmarkKey`）。重複文字列は許容し、キー互換テストで形式を固定する。
+
+---
+
 ## macOS 固有の注意点
 
 - `NSWindow` は必ず `isReleasedWhenClosed = false` を設定する（デフォルト true は ARC と二重解放を起こす）

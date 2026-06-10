@@ -36,11 +36,11 @@ private struct PersistedPlaylistBookmark: Codable, Equatable {
         let normalizedURL = normalizedFileURL(item.url)
         id = item.id
         filePath = normalizedURL.path
-        bookmarkData = try VideoFileValidator.bookmarkData(for: normalizedURL)
+        bookmarkData = try SecurityScopedBookmark.data(for: normalizedURL)
     }
 
     var resolvedURL: URL? {
-        VideoFileValidator.resolveBookmarkData(bookmarkData).map(normalizedFileURL)
+        SecurityScopedBookmark.resolve(bookmarkData).map { normalizedFileURL($0.url) }
     }
 
     func matches(_ item: PlaylistItem) -> Bool {
@@ -57,11 +57,11 @@ private struct LegacyPersistedPlaylistEntry: Codable {
     let endTime: Double?
 
     var playlistItem: PlaylistItem? {
-        guard let url = VideoFileValidator.resolveBookmarkData(bookmarkData) else { return nil }
+        guard let resolution = SecurityScopedBookmark.resolve(bookmarkData) else { return nil }
 
         return PlaylistItem(
             id: id,
-            url: normalizedFileURL(url),
+            url: normalizedFileURL(resolution.url),
             displayName: displayName,
             useFullVideo: useFullVideo,
             startTime: startTime,
@@ -98,6 +98,10 @@ struct PersistedPlaylistState: Codable {
 struct PlaylistPersistence {
     static let storageKey = "playlistState"
     static let bookmarkStorageKey = "playlistBookmarks"
+    // Legacy 単一壁紙時代のグローバル key。per-display key と同じ文字列だが別概念
+    // （こちらは prefix なしの素の key）。migrate / clear の唯一の消費者として保持する。
+    private static let legacyBookmarkKey = "videoBookmark"
+    private static let legacyPathKey = "videoFilePath"
     private static let emptyBookmarksPayload = Data("[]".utf8)
 
     private let defaults: UserDefaults
@@ -130,13 +134,13 @@ struct PlaylistPersistence {
 
         defaults.set(stateData, forKey: Self.storageKey)
         persistBookmarksIfNeeded(bookmarkData)
-        VideoFileValidator.clearBookmark(defaults: defaults)
+        clearLegacyBookmark()
     }
 
     func clear() {
         defaults.removeObject(forKey: Self.storageKey)
         defaults.removeObject(forKey: Self.bookmarkStorageKey)
-        VideoFileValidator.clearBookmark(defaults: defaults)
+        clearLegacyBookmark()
     }
 
     private func loadPersistedState(from data: Data) -> PlaylistStore {
@@ -182,11 +186,30 @@ struct PlaylistPersistence {
     }
 
     private func loadLegacyStore() -> PlaylistStore? {
-        guard let url = VideoFileValidator.resolveBookmarkedURL(defaults: defaults) else { return nil }
+        guard let url = resolveLegacyBookmarkedURL() else { return nil }
 
         let store = PlaylistStore(items: [PlaylistItem(url: normalizedFileURL(url))])
         save(store: store)
         return store
+    }
+
+    /// Legacy 単一壁紙の bookmark / path を解決する。
+    /// 解決後は save(store:) が legacy key を削除するため、ここでは書き込まない。
+    private func resolveLegacyBookmarkedURL() -> URL? {
+        if let data = defaults.data(forKey: Self.legacyBookmarkKey) {
+            return SecurityScopedBookmark.resolve(data)?.url
+        }
+        if let path = defaults.string(forKey: Self.legacyPathKey) {
+            let url = URL(fileURLWithPath: path)
+            guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+            return url
+        }
+        return nil
+    }
+
+    private func clearLegacyBookmark() {
+        defaults.removeObject(forKey: Self.legacyBookmarkKey)
+        defaults.removeObject(forKey: Self.legacyPathKey)
     }
 
     private func encodedBookmarks(for store: PlaylistStore) -> Data? {
