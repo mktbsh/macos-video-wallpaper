@@ -16,7 +16,7 @@
 - [ ] `StatusMenuController` に playlist 操作用の production menu を接続する（Add Videos / Edit Playlist / Next / Previous / Clear / summary）
 - [ ] `AppDelegate` に `PlaybackSession` を持たせ、`playlistStore.currentItem` を `itemID` / `token` 付きで全 controller へ適用する
 - [ ] 再生完了 callback で `PlaybackSession.consume(...)` を呼び、playlist advance / persist / UI reload / 次 item 適用までつなぐ
-- [ ] playlist menu action と自動ローテーションの AppDelegate integration test を追加する
+- [ ] playlist menu action と自動ローテーションの AppDelegate integration test を追加する（`Support/InMemoryDisplayWallpaperStore` / `Support/FakeWallpaperWindowController` が利用可能になった）
 - [ ] pending seek completion が pause / hide / battery policy を破って `play()` しないよう、desired playback state と seek pending state を分離する
 - [x] `seek` が `finished == false` で戻ったときも `isPlaybackStartPending` を解除し、次の `resumePlayback()` で復帰できるようにする
 - [ ] occlusion notification では `isWindowOrderedFront` だけでなく `window.occlusionState.contains(.visible)` を見て、非表示なら pause する

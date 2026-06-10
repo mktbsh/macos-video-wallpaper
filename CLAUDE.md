@@ -68,6 +68,8 @@ AppDelegate
 | `Sources/DimLevel.swift` | 明るさ調整 enum |
 | `Sources/PowerSavingMode.swift` | 低電力モード enum |
 | `Sources/VideoGravity.swift` | 表示方法 enum (Cover/Contain/Fill) |
-| `Sources/VideoFileValidator.swift` | ファイル検証・セキュリティスコープブックマーク |
+| `Sources/VideoFileType.swift` | 対応動画形式の判定（純粋 enum） |
+| `Sources/DisplayWallpaperStore.swift` | 画面ごとの壁紙構成の台帳（seam: `DisplayWallpaperStoring`、用語は `CONTEXT.md`） |
+| `Sources/SecurityScopedBookmark.swift` | security-scoped bookmark の生成・解決・パス正規化 codec |
 | `Sources/BuildInfo.swift` | ビルド日時（preBuildScript で自動生成、gitignore済み） |
 | `project.yml` | XcodeGen 設定（変更後は `xcodegen generate` を実行） |
