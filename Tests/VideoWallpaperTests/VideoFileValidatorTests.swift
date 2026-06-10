@@ -4,38 +4,6 @@ import Testing
 
 @Suite(.serialized) struct VideoFileValidatorTests {
 
-    // MARK: - allowedUTTypes
-
-    @Test func allowedUTTypes_contains_three_entries() {
-        #expect(VideoFileValidator.allowedUTTypes.count == 3)
-    }
-
-    // MARK: - isSupported(extension:)
-
-    @Test func mp4_extension_is_supported() {
-        #expect(VideoFileValidator.isSupported(extension: "mp4"))
-    }
-
-    @Test func MOV_extension_is_supported_case_insensitive() {
-        #expect(VideoFileValidator.isSupported(extension: "MOV"))
-    }
-
-    @Test func m4v_extension_is_supported() {
-        #expect(VideoFileValidator.isSupported(extension: "m4v"))
-    }
-
-    @Test func gif_extension_is_not_supported() {
-        #expect(!VideoFileValidator.isSupported(extension: "gif"))
-    }
-
-    @Test func png_extension_is_not_supported() {
-        #expect(!VideoFileValidator.isSupported(extension: "png"))
-    }
-
-    @Test func empty_extension_is_not_supported() {
-        #expect(!VideoFileValidator.isSupported(extension: ""))
-    }
-
     // MARK: - resolveBookmarkedURL()
 
     @Test func returns_nil_when_no_bookmark_stored() {

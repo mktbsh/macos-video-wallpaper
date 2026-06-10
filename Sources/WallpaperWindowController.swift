@@ -380,14 +380,14 @@ private final class DropDestinationView: NSView {
 
     override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
         guard let url = fileURL(from: sender),
-              VideoFileValidator.isSupported(extension: url.pathExtension) else { return [] }
+              VideoFileType.isSupported(extension: url.pathExtension) else { return [] }
         return .copy
     }
 
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
         guard let url = fileURL(from: sender) else { return false }
 
-        guard VideoFileValidator.isSupported(extension: url.pathExtension) else {
+        guard VideoFileType.isSupported(extension: url.pathExtension) else {
             let alert = NSAlert()
             alert.messageText = String(localized: "alert.unsupported_file.title")
             alert.informativeText = String(localized: "alert.unsupported_file.message")
