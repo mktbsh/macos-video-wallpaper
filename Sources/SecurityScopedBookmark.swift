@@ -1,7 +1,7 @@
 import Foundation
 
 /// Security-scoped bookmark の生成・解決・パス正規化を担う codec。
-/// 解決時の stale 再保存は行わない——それは台帳（DisplayWallpaperStore）の不変条件。
+/// 解決時の stale 再保存は行わない——それは動画ストア（WallpaperVideoStore）の不変条件。
 enum SecurityScopedBookmark {
 
     struct Resolution {
@@ -10,7 +10,10 @@ enum SecurityScopedBookmark {
     }
 
     static func data(for url: URL) throws -> Data {
-        try url.bookmarkData(options: .withSecurityScope)
+        // アプリの sandbox 権限は user-selected.read-only のため、read-only スコープで
+        // bookmark を生成する。`.withSecurityScope` 単体は read-write スコープを取りに行き、
+        // 書き込み open が拒否されて NSFileReadUnknownError(256) になる。
+        try url.bookmarkData(options: [.withSecurityScope, .securityScopeAllowOnlyReadAccess])
     }
 
     /// Resolves bookmark data to a normalized URL.

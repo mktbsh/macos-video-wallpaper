@@ -11,8 +11,6 @@ final class WallpaperWindowController {
         let token: RotationEngine<PlaylistItem>.PlaybackToken?
     }
 
-    let displayIdentifier: DisplayIdentifier
-
     private let window: NSWindow
     private var isWindowOrderedFront = false
     private let driver: PlayerDriver
@@ -28,23 +26,23 @@ final class WallpaperWindowController {
     private var isPlaybackPaused = true
     private var occlusionObserver: NSObjectProtocol?
 
-    var onVideoDropped: ((URL, DisplayIdentifier) -> Void)?
+    var onVideoDropped: ((URL) -> Void)?
     var onPlaybackFinished: ((PlaybackCompletion) -> Void)?
-    var onPlaybackFailed: ((DisplayIdentifier) -> Void)?
+    var onPlaybackFailed: (() -> Void)?
 
     convenience init(screen: NSScreen, videoURL url: URL?) {
+        // `screen:` を渡すと contentRect がそのスクリーン原点からの相対座標として
+        // 解釈され、グローバル座標 origin が二重適用されて外部ディスプレイで画面外に
+        // 飛ぶ。`screen:` は省略し、グローバル frame を明示設定する。
         let window = NSWindow(
             contentRect: screen.frame,
             styleMask: .borderless,
             backing: .buffered,
-            defer: false,
-            screen: screen
+            defer: false
         )
-        let displayIdentifier = screen.displayIdentifier
-            ?? DisplayIdentifier(vendor: 0, model: 0, serial: 0)
+        window.setFrame(screen.frame, display: false)
         self.init(
             window: window,
-            displayIdentifier: displayIdentifier,
             videoURL: url,
             driverFactory: AVPlayerDriverFactory(),
             playbackCompletionObserver: NotificationPlaybackCompletionObserver(),
@@ -54,13 +52,11 @@ final class WallpaperWindowController {
 
     init(
         window: NSWindow,
-        displayIdentifier: DisplayIdentifier,
         videoURL url: URL?,
         driverFactory: PlayerDriverFactory,
         playbackCompletionObserver: PlaybackCompletionObserver,
         securityScopedAccessController: SecurityScopedAccessController
     ) {
-        self.displayIdentifier = displayIdentifier
         self.window = window
         driver = driverFactory.makeDriver()
         self.playbackCompletionObserver = playbackCompletionObserver
@@ -95,8 +91,7 @@ final class WallpaperWindowController {
         dropView.layer?.addSublayer(dimLayer)
         applyDimLevel(DimLevel.saved.opacity)
         dropView.onVideoDropped = { [weak self] url in
-            guard let self else { return }
-            self.onVideoDropped?(url, self.displayIdentifier)
+            self?.onVideoDropped?(url)
         }
 
         if let url = url {
@@ -284,10 +279,8 @@ final class WallpaperWindowController {
             for: target
         ) { [weak self] in
             guard let self, self.isCurrentPlaybackContext(context) else { return }
-            Log.playback.error(
-                "Playback failed for display \(self.displayIdentifier.description, privacy: .public)"
-            )
-            self.onPlaybackFailed?(self.displayIdentifier)
+            Log.playback.error("Wallpaper playback failed")
+            self.onPlaybackFailed?()
         }
     }
 

@@ -24,7 +24,6 @@ struct WallpaperWindowControllerTestContext {
         self.accessController = accessController
         controller = WallpaperWindowController(
             window: window,
-            displayIdentifier: DisplayIdentifier(vendor: 0, model: 0, serial: 0),
             videoURL: nil,
             driverFactory: FakePlayerDriverFactory(driver: driver),
             playbackCompletionObserver: observer,

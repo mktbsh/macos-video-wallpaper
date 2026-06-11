@@ -1,21 +1,10 @@
 import Foundation
 
 enum WallpaperError: Hashable {
-    case bookmarkSaveFailed(DisplayIdentifier)
-    case bookmarkResolveFailed(DisplayIdentifier)
-    case playbackFailed(DisplayIdentifier)
+    case bookmarkSaveFailed
+    case bookmarkResolveFailed
+    case playbackFailed
     case unsupportedFileType(String)
-
-    var displayIdentifier: DisplayIdentifier? {
-        switch self {
-        case .bookmarkSaveFailed(let id),
-             .bookmarkResolveFailed(let id),
-             .playbackFailed(let id):
-            return id
-        case .unsupportedFileType:
-            return nil
-        }
-    }
 
     var localizedMessage: String {
         switch self {
