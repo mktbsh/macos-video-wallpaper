@@ -5,124 +5,79 @@ import Testing
 @MainActor
 struct StatusMenuControllerTests {
 
-    @Test func rebuild_menu_preserves_fixed_menu_items() {
+    // MARK: - 固定メニュー構成（per-display セクションはない）
+
+    @Test func menu_structure_is_static_across_state_changes() {
         let controller = StatusMenuController()
-        let initialIdentifiers = controller.fixedMenuItemIdentifiersForTesting
-
-        controller.displayStates = [
-            DisplayMenuState(
-                displayIdentifier: DisplayIdentifier(vendor: 1, model: 2, serial: 3),
-                screenName: "Built-in Display",
-                isEnabled: true,
-                currentVideoName: "ocean.mp4"
-            )
-        ]
-
-        #expect(controller.fixedMenuItemIdentifiersForTesting == initialIdentifiers)
-    }
-
-    @Test func assigning_same_display_states_does_not_rebuild_menu() {
-        let controller = StatusMenuController()
-        let state = DisplayMenuState(
-            displayIdentifier: DisplayIdentifier(vendor: 1, model: 2, serial: 3),
-            screenName: "Built-in Display",
-            isEnabled: true,
-            currentVideoName: "ocean.mp4"
-        )
-        controller.displayStates = [state]
         let initialIdentifiers = controller.menuItemIdentifiersForTesting
 
-        controller.displayStates = [state]
+        controller.wallpaperState = WallpaperMenuState(
+            currentVideoName: "ocean.mp4",
+            errorMessage: "Video file not found"
+        )
+
+        // 状態変化でメニュー項目の構成・identity は変わらない（title/isHidden のみ差分更新）
+        #expect(controller.menuItemIdentifiersForTesting == initialIdentifiers)
+        #expect(controller.fixedMenuItemIdentifiersForTesting.allSatisfy { id in
+            controller.menuItemIdentifiersForTesting.contains(id)
+        })
+    }
+
+    @Test func assigning_same_state_does_not_rebuild_menu() {
+        let controller = StatusMenuController()
+        let state = WallpaperMenuState(currentVideoName: "ocean.mp4")
+        controller.wallpaperState = state
+        let initialIdentifiers = controller.menuItemIdentifiersForTesting
+
+        controller.wallpaperState = state
 
         #expect(controller.menuItemIdentifiersForTesting == initialIdentifiers)
     }
 
-    @Test func display_section_adds_items_for_enabled_display() {
+    // MARK: - current video / error 項目
+
+    @Test func current_video_title_reflects_state() {
         let controller = StatusMenuController()
-        let emptyCount = controller.menuItemCountForTesting
 
-        controller.displayStates = [
-            DisplayMenuState(
-                displayIdentifier: DisplayIdentifier(vendor: 1, model: 2, serial: 3),
-                screenName: "Built-in Display",
-                isEnabled: true,
-                currentVideoName: "ocean.mp4"
-            )
-        ]
+        controller.wallpaperState = WallpaperMenuState(currentVideoName: "ocean.mp4")
 
-        // Enabled display adds: separator, header, toggle, current, select, clear = 6
-        #expect(controller.menuItemCountForTesting == emptyCount + 6)
+        #expect(
+            controller.currentVideoTitleForTesting
+                == String(format: String(localized: "menu.wallpaper.current"), locale: .current, "ocean.mp4")
+        )
     }
 
-    @Test func disabled_display_shows_only_header_and_toggle() {
+    @Test func current_video_title_shows_unset_when_no_video() {
         let controller = StatusMenuController()
-        let emptyCount = controller.menuItemCountForTesting
 
-        controller.displayStates = [
-            DisplayMenuState(
-                displayIdentifier: DisplayIdentifier(vendor: 1, model: 2, serial: 3),
-                screenName: "External Display",
-                isEnabled: false,
-                currentVideoName: nil
-            )
-        ]
+        controller.wallpaperState = WallpaperMenuState(currentVideoName: nil)
 
-        // Disabled display adds: separator, header, toggle = 3
-        #expect(controller.menuItemCountForTesting == emptyCount + 3)
+        #expect(controller.currentVideoTitleForTesting == String(localized: "menu.wallpaper.unset"))
     }
 
-    @Test func multiple_displays_each_add_section() {
+    @Test func error_item_hidden_without_error() {
         let controller = StatusMenuController()
-        let emptyCount = controller.menuItemCountForTesting
 
-        controller.displayStates = [
-            DisplayMenuState(
-                displayIdentifier: DisplayIdentifier(vendor: 1, model: 2, serial: 3),
-                screenName: "Built-in Display",
-                isEnabled: true,
-                currentVideoName: nil
-            ),
-            DisplayMenuState(
-                displayIdentifier: DisplayIdentifier(vendor: 4, model: 5, serial: 6),
-                screenName: "External Display",
-                isEnabled: true,
-                currentVideoName: "city.mp4"
-            )
-        ]
+        controller.wallpaperState = WallpaperMenuState(currentVideoName: "ocean.mp4")
 
-        // Two enabled displays: 2 × (separator + header + toggle + current + select + clear) = 12
-        #expect(controller.menuItemCountForTesting == emptyCount + 12)
+        #expect(controller.errorItemIsHiddenForTesting)
     }
 
-    @Test func error_message_adds_extra_menu_item() {
+    @Test func error_item_shown_with_message() {
         let controller = StatusMenuController()
-        let emptyCount = controller.menuItemCountForTesting
 
-        controller.displayStates = [
-            DisplayMenuState(
-                displayIdentifier: DisplayIdentifier(vendor: 1, model: 2, serial: 3),
-                screenName: "Built-in Display",
-                isEnabled: true,
-                currentVideoName: "ocean.mp4",
-                errorMessage: "Video file not found"
-            )
-        ]
+        controller.wallpaperState = WallpaperMenuState(errorMessage: "Video file not found")
 
-        // Enabled display with error adds: separator, header, toggle, error, current, select, clear = 7
-        #expect(controller.menuItemCountForTesting == emptyCount + 7)
+        #expect(!controller.errorItemIsHiddenForTesting)
+        #expect(controller.errorItemTitleForTesting == "⚠ Video file not found")
     }
+
+    // MARK: - status icon / accessibility
 
     @Test func no_error_uses_normal_icon() {
         let controller = StatusMenuController()
 
-        controller.displayStates = [
-            DisplayMenuState(
-                displayIdentifier: DisplayIdentifier(vendor: 1, model: 2, serial: 3),
-                screenName: "Built-in Display",
-                isEnabled: true,
-                currentVideoName: "ocean.mp4"
-            )
-        ]
+        controller.wallpaperState = WallpaperMenuState(currentVideoName: "ocean.mp4")
 
         #expect(controller.statusIconNameForTesting == "play.rectangle.fill")
     }
@@ -130,14 +85,7 @@ struct StatusMenuControllerTests {
     @Test func normal_status_item_exposes_accessibility_state() {
         let controller = StatusMenuController()
 
-        controller.displayStates = [
-            DisplayMenuState(
-                displayIdentifier: DisplayIdentifier(vendor: 1, model: 2, serial: 3),
-                screenName: "Built-in Display",
-                isEnabled: true,
-                currentVideoName: "ocean.mp4"
-            )
-        ]
+        controller.wallpaperState = WallpaperMenuState(currentVideoName: "ocean.mp4")
 
         #expect(controller.statusButtonAccessibilityLabelForTesting == String(localized: "status.accessibility.label"))
         #expect(
@@ -150,15 +98,7 @@ struct StatusMenuControllerTests {
     @Test func error_state_uses_warning_icon() {
         let controller = StatusMenuController()
 
-        controller.displayStates = [
-            DisplayMenuState(
-                displayIdentifier: DisplayIdentifier(vendor: 1, model: 2, serial: 3),
-                screenName: "Built-in Display",
-                isEnabled: true,
-                currentVideoName: nil,
-                errorMessage: "Video file not found"
-            )
-        ]
+        controller.wallpaperState = WallpaperMenuState(errorMessage: "Video file not found")
 
         #expect(controller.statusIconNameForTesting == "exclamationmark.triangle.fill")
     }
@@ -166,15 +106,7 @@ struct StatusMenuControllerTests {
     @Test func error_status_item_exposes_accessibility_state() {
         let controller = StatusMenuController()
 
-        controller.displayStates = [
-            DisplayMenuState(
-                displayIdentifier: DisplayIdentifier(vendor: 1, model: 2, serial: 3),
-                screenName: "Built-in Display",
-                isEnabled: true,
-                currentVideoName: nil,
-                errorMessage: "Video file not found"
-            )
-        ]
+        controller.wallpaperState = WallpaperMenuState(errorMessage: "Video file not found")
 
         #expect(controller.statusButtonAccessibilityLabelForTesting == String(localized: "status.accessibility.label"))
         #expect(
@@ -184,58 +116,23 @@ struct StatusMenuControllerTests {
         #expect(controller.statusButtonToolTipForTesting == String(localized: "status.tooltip.error"))
     }
 
-    @Test func clearing_display_states_restores_empty_menu_item_count() {
-        let controller = StatusMenuController()
-        let emptyCount = controller.menuItemCountForTesting
-
-        controller.displayStates = [
-            DisplayMenuState(
-                displayIdentifier: DisplayIdentifier(vendor: 1, model: 2, serial: 3),
-                screenName: "Built-in Display",
-                isEnabled: true,
-                currentVideoName: "ocean.mp4"
-            )
-        ]
-        #expect(controller.menuItemCountForTesting > emptyCount)
-
-        controller.displayStates = []
-
-        #expect(controller.menuItemCountForTesting == emptyCount)
-    }
-
-    @Test func empty_display_states_uses_normal_icon() {
+    @Test func empty_state_uses_normal_icon() {
         let controller = StatusMenuController()
 
-        // No displays → no errors → normal icon
         #expect(controller.statusIconNameForTesting == "play.rectangle.fill")
     }
 
     @Test func icon_reverts_to_normal_after_error_clears() {
         let controller = StatusMenuController()
 
-        controller.displayStates = [
-            DisplayMenuState(
-                displayIdentifier: DisplayIdentifier(vendor: 1, model: 2, serial: 3),
-                screenName: "Built-in Display",
-                isEnabled: true,
-                currentVideoName: nil,
-                errorMessage: "Video file not found"
-            )
-        ]
-
+        controller.wallpaperState = WallpaperMenuState(errorMessage: "Video file not found")
         #expect(controller.statusIconNameForTesting == "exclamationmark.triangle.fill")
 
-        controller.displayStates = [
-            DisplayMenuState(
-                displayIdentifier: DisplayIdentifier(vendor: 1, model: 2, serial: 3),
-                screenName: "Built-in Display",
-                isEnabled: true,
-                currentVideoName: "ocean.mp4"
-            )
-        ]
-
+        controller.wallpaperState = WallpaperMenuState(currentVideoName: "ocean.mp4")
         #expect(controller.statusIconNameForTesting == "play.rectangle.fill")
     }
+
+    // MARK: - login item
 
     @Test func login_item_state_reflects_injected_manager_on_init() {
         let manager = FakeLoginItemManager(isEnabled: true)

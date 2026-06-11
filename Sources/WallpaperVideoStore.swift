@@ -1,5 +1,13 @@
 import Foundation
 
+/// ストアに問い合わせた動画解決の 3 状態。
+/// 「未登録」と「登録はあるが解決失敗」を 1 回の呼び出しで区別できる。
+enum ResolvedVideo: Equatable {
+    case noVideo
+    case resolved(URL)
+    case resolveFailed
+}
+
 /// 全ディスプレイ共通の単一壁紙動画を永続化するグローバルストア。
 /// bookmark の生成・解決・stale 再保存・パス正規化は implementation 内の関心事であり、
 /// caller には `ResolvedVideo` / `Bool` だけを見せる。

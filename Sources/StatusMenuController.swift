@@ -38,23 +38,12 @@ struct AlertStatusMenuErrorPresenter: StatusMenuErrorPresenting {
     }
 }
 
-struct DisplayMenuState: Equatable {
-    let displayIdentifier: DisplayIdentifier
-    let screenName: String
-    let isEnabled: Bool
+/// 全ディスプレイ共通の壁紙状態（現在の動画名・エラー）。
+struct WallpaperMenuState: Equatable {
     let currentVideoName: String?
     let errorMessage: String?
 
-    init(
-        displayIdentifier: DisplayIdentifier,
-        screenName: String,
-        isEnabled: Bool,
-        currentVideoName: String?,
-        errorMessage: String? = nil
-    ) {
-        self.displayIdentifier = displayIdentifier
-        self.screenName = screenName
-        self.isEnabled = isEnabled
+    init(currentVideoName: String? = nil, errorMessage: String? = nil) {
         self.currentVideoName = currentVideoName
         self.errorMessage = errorMessage
     }
@@ -69,17 +58,16 @@ private struct SelectionMenuEntry {
 @MainActor
 final class StatusMenuController {
 
-    var onVideoURLChanged: ((URL, DisplayIdentifier) -> Void)?
-    var onVideoCleared: ((DisplayIdentifier) -> Void)?
-    var onDisplayToggled: ((DisplayIdentifier, Bool) -> Void)?
+    var onVideoURLChanged: ((URL) -> Void)?
+    var onVideoCleared: (() -> Void)?
     var onDimLevelChanged: ((CGFloat) -> Void)?
     var onPowerSavingModeChanged: (() -> Void)?
     var onVideoGravityChanged: ((VideoGravity) -> Void)?
 
-    var displayStates: [DisplayMenuState] = [] {
+    var wallpaperState: WallpaperMenuState = WallpaperMenuState() {
         didSet {
-            guard displayStates != oldValue else { return }
-            rebuildMenu()
+            guard wallpaperState != oldValue else { return }
+            refreshWallpaperItems()
             updateStatusIcon()
         }
     }
@@ -92,6 +80,10 @@ final class StatusMenuController {
     private let powerItem: NSMenuItem
     private let gravityMenu: NSMenu
     private let gravityItem: NSMenuItem
+    private let errorItem: NSMenuItem
+    private let currentVideoItem: NSMenuItem
+    private let selectVideoItem: NSMenuItem
+    private let clearWallpaperItem: NSMenuItem
     private let loginItem: NSMenuItem
     private let versionItem: NSMenuItem
     private let quitItem: NSMenuItem
@@ -126,6 +118,18 @@ final class StatusMenuController {
             action: nil,
             keyEquivalent: ""
         )
+        errorItem = NSMenuItem()
+        currentVideoItem = NSMenuItem()
+        selectVideoItem = NSMenuItem(
+            title: String(localized: "menu.video.select"),
+            action: #selector(selectVideo),
+            keyEquivalent: ""
+        )
+        clearWallpaperItem = NSMenuItem(
+            title: String(localized: "menu.wallpaper.clear"),
+            action: #selector(clearWallpaper),
+            keyEquivalent: ""
+        )
         loginItem = NSMenuItem(
             title: String(localized: "menu.launch_at_login"),
             action: #selector(toggleLoginItem),
@@ -142,7 +146,8 @@ final class StatusMenuController {
 
         configureMenuItems()
         populateSubmenus()
-        rebuildMenu()
+        buildMenu()
+        refreshWallpaperItems()
         refreshSelectionStates()
         refreshLoginState()
         updateStatusIcon()
@@ -150,7 +155,7 @@ final class StatusMenuController {
     }
 
     private func configureMenuItems() {
-        [loginItem, quitItem].forEach { $0.target = self }
+        [loginItem, quitItem, selectVideoItem, clearWallpaperItem].forEach { $0.target = self }
 
         versionItem.isEnabled = false
         versionItem.title = String(
@@ -158,6 +163,9 @@ final class StatusMenuController {
             locale: .current,
             BuildInfo.version
         )
+
+        errorItem.isEnabled = false
+        currentVideoItem.isEnabled = false
 
         dimItem.submenu = dimMenu
         powerItem.submenu = powerMenu
@@ -210,7 +218,9 @@ final class StatusMenuController {
         }
     }
 
-    private func rebuildMenu() {
+    /// メニュー構成は固定（per-display セクションはない）。項目参照を保持し、
+    /// 状態変化では `refreshWallpaperItems()` で title / isHidden だけ差分更新する。
+    private func buildMenu() {
         menu.removeAllItems()
 
         menu.addItem(versionItem)
@@ -220,10 +230,11 @@ final class StatusMenuController {
         menu.addItem(gravityItem)
         menu.addItem(powerItem)
 
-        for state in displayStates {
-            menu.addItem(.separator())
-            addDisplaySection(for: state)
-        }
+        menu.addItem(.separator())
+        menu.addItem(errorItem)
+        menu.addItem(currentVideoItem)
+        menu.addItem(selectVideoItem)
+        menu.addItem(clearWallpaperItem)
 
         menu.addItem(.separator())
         menu.addItem(loginItem)
@@ -231,14 +242,33 @@ final class StatusMenuController {
         menu.addItem(quitItem)
     }
 
+    private func refreshWallpaperItems() {
+        if let errorMessage = wallpaperState.errorMessage {
+            errorItem.title = "⚠ " + errorMessage
+            errorItem.isHidden = false
+        } else {
+            errorItem.isHidden = true
+        }
+
+        if let videoName = wallpaperState.currentVideoName {
+            currentVideoItem.title = String(
+                format: String(localized: "menu.wallpaper.current"),
+                locale: .current,
+                videoName
+            )
+        } else {
+            currentVideoItem.title = String(localized: "menu.wallpaper.unset")
+        }
+    }
+
     private func updateStatusIcon() {
-        let hasErrors = displayStates.contains { $0.errorMessage != nil }
-        currentIconName = hasErrors ? "exclamationmark.triangle.fill" : "play.rectangle.fill"
+        let hasError = wallpaperState.errorMessage != nil
+        currentIconName = hasError ? "exclamationmark.triangle.fill" : "play.rectangle.fill"
         let accessibilityLabel = String(localized: "status.accessibility.label")
-        let accessibilityValue = String(localized: hasErrors
+        let accessibilityValue = String(localized: hasError
             ? "status.accessibility.value.error"
             : "status.accessibility.value.normal")
-        let toolTip = String(localized: hasErrors ? "status.tooltip.error" : "status.tooltip.normal")
+        let toolTip = String(localized: hasError ? "status.tooltip.error" : "status.tooltip.normal")
 
         guard let button = statusItem.button else { return }
         button.image = NSImage(
@@ -250,79 +280,7 @@ final class StatusMenuController {
         button.toolTip = toolTip
     }
 
-    private func addDisplaySection(for state: DisplayMenuState) {
-        let header = NSMenuItem(
-            title: "🖥 " + state.screenName,
-            action: nil,
-            keyEquivalent: ""
-        )
-        header.isEnabled = false
-        menu.addItem(header)
-
-        let toggle = NSMenuItem(
-            title: String(localized: "menu.display.show_wallpaper"),
-            action: #selector(toggleDisplay(_:)),
-            keyEquivalent: ""
-        )
-        toggle.target = self
-        toggle.representedObject = state.displayIdentifier
-        toggle.state = state.isEnabled ? .on : .off
-        toggle.indentationLevel = 1
-        menu.addItem(toggle)
-
-        guard state.isEnabled else { return }
-
-        if let errorMessage = state.errorMessage {
-            menu.addItem(makeDisplayInfoMenuItem(title: "⚠ " + errorMessage))
-        }
-
-        let videoTitle = if let videoName = state.currentVideoName {
-            String(format: String(localized: "menu.wallpaper.current"), locale: .current, videoName)
-        } else {
-            String(localized: "menu.wallpaper.unset")
-        }
-        menu.addItem(makeDisplayInfoMenuItem(title: videoTitle))
-
-        menu.addItem(makeDisplayActionMenuItem(
-            title: String(localized: "menu.video.select"),
-            action: #selector(selectVideo(_:)),
-            displayId: state.displayIdentifier
-        ))
-        menu.addItem(makeDisplayActionMenuItem(
-            title: String(localized: "menu.wallpaper.clear"),
-            action: #selector(clearWallpaper(_:)),
-            displayId: state.displayIdentifier
-        ))
-    }
-
-    private func makeDisplayActionMenuItem(
-        title: String,
-        action: Selector,
-        displayId: DisplayIdentifier
-    ) -> NSMenuItem {
-        let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
-        item.target = self
-        item.representedObject = displayId
-        item.indentationLevel = 1
-        return item
-    }
-
-    private func makeDisplayInfoMenuItem(title: String) -> NSMenuItem {
-        let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
-        item.isEnabled = false
-        item.indentationLevel = 1
-        return item
-    }
-
-    @objc private func toggleDisplay(_ sender: NSMenuItem) {
-        guard let displayId = sender.representedObject as? DisplayIdentifier else { return }
-        let newState = sender.state != .on
-        onDisplayToggled?(displayId, newState)
-    }
-
-    @objc private func selectVideo(_ sender: NSMenuItem) {
-        guard let displayId = sender.representedObject as? DisplayIdentifier else { return }
-
+    @objc private func selectVideo() {
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
@@ -339,12 +297,11 @@ final class StatusMenuController {
             return
         }
 
-        onVideoURLChanged?(url, displayId)
+        onVideoURLChanged?(url)
     }
 
-    @objc private func clearWallpaper(_ sender: NSMenuItem) {
-        guard let displayId = sender.representedObject as? DisplayIdentifier else { return }
-        onVideoCleared?(displayId)
+    @objc private func clearWallpaper() {
+        onVideoCleared?()
     }
 
     @objc private func selectDimLevel(_ sender: NSMenuItem) {
@@ -416,6 +373,10 @@ extension StatusMenuController {
             ObjectIdentifier(dimItem),
             ObjectIdentifier(powerItem),
             ObjectIdentifier(gravityItem),
+            ObjectIdentifier(errorItem),
+            ObjectIdentifier(currentVideoItem),
+            ObjectIdentifier(selectVideoItem),
+            ObjectIdentifier(clearWallpaperItem),
             ObjectIdentifier(loginItem),
             ObjectIdentifier(quitItem)
         ]
@@ -427,6 +388,18 @@ extension StatusMenuController {
 
     var menuItemIdentifiersForTesting: [ObjectIdentifier] {
         menu.items.map(ObjectIdentifier.init)
+    }
+
+    var errorItemIsHiddenForTesting: Bool {
+        errorItem.isHidden
+    }
+
+    var errorItemTitleForTesting: String {
+        errorItem.title
+    }
+
+    var currentVideoTitleForTesting: String {
+        currentVideoItem.title
     }
 
     var statusIconNameForTesting: String {

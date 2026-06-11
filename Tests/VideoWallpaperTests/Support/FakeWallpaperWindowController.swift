@@ -5,9 +5,9 @@ import Foundation
 @MainActor
 final class FakeWallpaperWindowController: WallpaperWindowControlling {
 
-    var onVideoDropped: ((URL, DisplayIdentifier) -> Void)?
+    var onVideoDropped: ((URL) -> Void)?
     var onPlaybackFinished: ((PlaybackCompletion) -> Void)?
-    var onPlaybackFailed: ((DisplayIdentifier) -> Void)?
+    var onPlaybackFailed: (() -> Void)?
 
     private(set) var loadCallCount = 0
     private(set) var loadedURLs: [URL] = []

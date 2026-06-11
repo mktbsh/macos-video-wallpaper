@@ -1,7 +1,7 @@
 import Foundation
 
 /// Security-scoped bookmark の生成・解決・パス正規化を担う codec。
-/// 解決時の stale 再保存は行わない——それは台帳（DisplayWallpaperStore）の不変条件。
+/// 解決時の stale 再保存は行わない——それは動画ストア（WallpaperVideoStore）の不変条件。
 enum SecurityScopedBookmark {
 
     struct Resolution {

@@ -4,9 +4,9 @@ import IOKit.ps
 
 @MainActor
 protocol WallpaperWindowControlling: AnyObject {
-    var onVideoDropped: ((URL, DisplayIdentifier) -> Void)? { get set }
+    var onVideoDropped: ((URL) -> Void)? { get set }
     var onPlaybackFinished: ((PlaybackCompletion) -> Void)? { get set }
-    var onPlaybackFailed: ((DisplayIdentifier) -> Void)? { get set }
+    var onPlaybackFailed: (() -> Void)? { get set }
 
     func load(
         videoURL url: URL,
@@ -33,7 +33,7 @@ private func defaultIsOnBattery() -> Bool {
 final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private struct ScreenController {
-        let id: DisplayIdentifier
+        let id: CGDirectDisplayID
         let controller: any WallpaperWindowControlling
     }
 
@@ -57,8 +57,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let screenProvider: () -> [NSScreen]
     private let controllerFactory: (NSScreen) -> any WallpaperWindowControlling
     private let isOnBatteryProvider: () -> Bool
-    private let displayWallpaperStore: any DisplayWallpaperStoring
-    private var displayErrors: [DisplayIdentifier: WallpaperError] = [:]
+    private let wallpaperVideoStore: any WallpaperVideoStoring
+    private var currentError: WallpaperError?
 
     init(
         screenProvider: @escaping () -> [NSScreen] = { NSScreen.screens },
@@ -67,14 +67,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         },
         playlistStore: PlaylistStore = PlaylistPersistence().load(),
         isOnBatteryProvider: @escaping () -> Bool = defaultIsOnBattery,
-        displayWallpaperStore: any DisplayWallpaperStoring = DisplayWallpaperStore()
+        wallpaperVideoStore: any WallpaperVideoStoring = WallpaperVideoStore()
     ) {
         self.screenControllers = []
         self.playlistStore = playlistStore
         self.screenProvider = screenProvider
         self.controllerFactory = controllerFactory
         self.isOnBatteryProvider = isOnBatteryProvider
-        self.displayWallpaperStore = displayWallpaperStore
+        self.wallpaperVideoStore = wallpaperVideoStore
     }
 
     private var isOnBattery: Bool {
@@ -107,14 +107,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
 
         let menu = StatusMenuController()
-        menu.onVideoURLChanged = { [weak self] url, displayId in
-            self?.handleVideoSelected(url, for: displayId)
+        menu.onVideoURLChanged = { [weak self] url in
+            self?.handleVideoSelected(url)
         }
-        menu.onVideoCleared = { [weak self] displayId in
-            self?.handleVideoCleared(for: displayId)
-        }
-        menu.onDisplayToggled = { [weak self] displayId, enabled in
-            self?.handleDisplayToggled(displayId, enabled: enabled)
+        menu.onVideoCleared = { [weak self] in
+            self?.handleVideoCleared()
         }
         menu.onDimLevelChanged = { [weak self] opacity in
             self?.screenControllers.forEach { $0.controller.applyDimLevel(opacity) }
@@ -133,11 +130,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Private
 
     private func setupWallpaperWindows() {
-        let targetScreens: [(id: DisplayIdentifier, screen: NSScreen)] = screenProvider()
+        // 全ディスプレイに壁紙を表示する（per-display の有効/無効はない）。
+        let targetScreens: [(id: CGDirectDisplayID, screen: NSScreen)] = screenProvider()
             .compactMap { screen in
-                guard let id = screen.displayIdentifier,
-                      displayWallpaperStore.isEnabled(id)
-                else { return nil }
+                guard let id = screen.displayID else { return nil }
                 return (id, screen)
             }
 
@@ -153,14 +149,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let existingIDs = Set(screenControllers.map(\.id))
         for (id, screen) in targetScreens where !existingIDs.contains(id) {
             let controller = controllerFactory(screen)
-            controller.onVideoDropped = { [weak self] url, displayID in
-                self?.handleVideoSelected(url, for: displayID)
+            controller.onVideoDropped = { [weak self] url in
+                self?.handleVideoSelected(url)
             }
-            // Per-display mode has no playlist rotation; videos loop via seek-to-start
+            // Single global video loops via seek-to-start; no playlist rotation
             controller.onPlaybackFinished = { _ in }
-            controller.onPlaybackFailed = { [weak self] displayID in
-                self?.setError(.playbackFailed(displayID), for: displayID)
-                self?.updateDisplayStates()
+            controller.onPlaybackFailed = { [weak self] in
+                self?.setError(.playbackFailed)
+                self?.updateMenuState()
             }
             controller.applyDimLevel(DimLevel.saved.opacity)
             controller.applyVideoGravity(VideoGravity.saved)
@@ -168,8 +164,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         screenControllers.append(contentsOf: newScreenControllers)
 
-        // Two displays can resolve to the same DisplayIdentifier (e.g. identical
-        // monitors with serial 0); keep the first occurrence to avoid trapping.
+        // CGDirectDisplayID is unique among active displays; keep the first
+        // occurrence to stay defensive against any duplicate input.
         let orderByID = Dictionary(
             targetScreens.enumerated().map { ($1.id, $0) },
             uniquingKeysWith: { first, _ in first }
@@ -177,11 +173,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         screenControllers.sort { lhs, rhs in
             (orderByID[lhs.id] ?? .max) < (orderByID[rhs.id] ?? .max)
         }
-        for slot in newScreenControllers {
-            loadVideoForDisplay(slot.id, on: slot.controller)
-        }
+        // 画面再構成では新規 controller のみ load（生存 controller は同一動画を保持済み）。
+        applyGlobalVideo(to: newScreenControllers.map(\.controller))
         applyBatteryPolicy(to: newScreenControllers.map(\.controller))
-        updateDisplayStates()
+        updateMenuState()
     }
 
     @objc private func screensDidChange() {
@@ -210,85 +205,65 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 }
 
-// 壁紙構成のオーケストレーション。台帳（DisplayWallpaperStore）seam を経由し、
+// 壁紙のオーケストレーション。グローバル動画ストア seam を経由し、
 // テストから @testable で直接検証できるよう internal に置く。
 @MainActor
 extension AppDelegate {
-    func loadVideoForDisplay(
-        _ displayId: DisplayIdentifier,
-        on controller: any WallpaperWindowControlling
-    ) {
-        switch displayWallpaperStore.resolveVideo(for: displayId) {
+    /// グローバル動画の解決結果を対象 controller 群に適用する。
+    /// `setupWallpaperWindows` は新規 controller のみ、動画変更時は全 controller を渡す。
+    func applyGlobalVideo(to controllers: [any WallpaperWindowControlling]) {
+        switch wallpaperVideoStore.resolveVideo() {
         case .resolved(let url):
-            clearError(for: displayId)
-            controller.load(videoURL: url, timeRange: nil, itemID: nil, token: nil)
+            clearError()
+            controllers.forEach { $0.load(videoURL: url, timeRange: nil, itemID: nil, token: nil) }
         case .resolveFailed:
-            Log.persistence.warning(
-                "Bookmark resolve failed for display \(displayId.description, privacy: .public)"
-            )
-            setError(.bookmarkResolveFailed(displayId), for: displayId)
-            controller.clearVideo()
+            Log.persistence.warning("Wallpaper bookmark resolve failed")
+            setError(.bookmarkResolveFailed)
+            controllers.forEach { $0.clearVideo() }
         case .noVideo:
-            controller.clearVideo()
+            controllers.forEach { $0.clearVideo() }
         }
     }
 
-    func buildDisplayStates() -> [DisplayMenuState] {
-        screenProvider().compactMap { screen -> DisplayMenuState? in
-            guard let displayId = screen.displayIdentifier else { return nil }
-            let isEnabled = displayWallpaperStore.isEnabled(displayId)
-            var currentVideoName: String?
-            if case .resolved(let url) = displayWallpaperStore.resolveVideo(for: displayId) {
-                currentVideoName = url.lastPathComponent
-            }
-            let errorMessage = displayErrors[displayId]?.localizedMessage
-            return DisplayMenuState(
-                displayIdentifier: displayId,
-                screenName: screen.localizedName,
-                isEnabled: isEnabled,
-                currentVideoName: currentVideoName,
-                errorMessage: errorMessage
-            )
+    func buildWallpaperMenuState() -> WallpaperMenuState {
+        var currentVideoName: String?
+        if case .resolved(let url) = wallpaperVideoStore.resolveVideo() {
+            currentVideoName = url.lastPathComponent
         }
+        return WallpaperMenuState(
+            currentVideoName: currentVideoName,
+            errorMessage: currentError?.localizedMessage
+        )
     }
 
-    func handleVideoSelected(_ url: URL, for displayId: DisplayIdentifier) {
-        if displayWallpaperStore.saveVideo(url, for: displayId) {
-            clearError(for: displayId)
+    func handleVideoSelected(_ url: URL) {
+        if wallpaperVideoStore.saveVideo(url) {
+            clearError()
         } else {
-            let file = url.lastPathComponent
-            Log.persistence.error(
-                "Bookmark save failed for \(file, privacy: .public) on \(displayId.description, privacy: .public)"
-            )
-            setError(.bookmarkSaveFailed(displayId), for: displayId)
+            Log.persistence.error("Wallpaper bookmark save failed for \(url.lastPathComponent, privacy: .public)")
+            setError(.bookmarkSaveFailed)
         }
-        reloadVideoForDisplay(displayId)
-        updateDisplayStates()
+        applyGlobalVideo(to: allControllers)
+        updateMenuState()
         applyBatteryPolicy()
     }
 
-    func handleVideoCleared(for displayId: DisplayIdentifier) {
-        displayWallpaperStore.clearVideo(for: displayId)
-        clearError(for: displayId)
-        reloadVideoForDisplay(displayId)
-        updateDisplayStates()
-    }
-
-    func handleDisplayToggled(_ displayId: DisplayIdentifier, enabled: Bool) {
-        displayWallpaperStore.setEnabled(enabled, for: displayId)
-        setupWallpaperWindows()
+    func handleVideoCleared() {
+        wallpaperVideoStore.clearVideo()
+        clearError()
+        applyGlobalVideo(to: allControllers)
+        updateMenuState()
     }
 }
 
 @MainActor
 private extension AppDelegate {
-    func reloadVideoForDisplay(_ displayId: DisplayIdentifier) {
-        guard let slot = screenControllers.first(where: { $0.id == displayId }) else { return }
-        loadVideoForDisplay(displayId, on: slot.controller)
+    var allControllers: [any WallpaperWindowControlling] {
+        screenControllers.map(\.controller)
     }
 
-    func updateDisplayStates() {
-        statusMenuController?.displayStates = buildDisplayStates()
+    func updateMenuState() {
+        statusMenuController?.wallpaperState = buildWallpaperMenuState()
     }
 
     func showPlaylistEditor() {
@@ -389,11 +364,11 @@ private extension AppDelegate {
 
     // MARK: - Error management
 
-    func setError(_ error: WallpaperError, for displayId: DisplayIdentifier) {
-        displayErrors[displayId] = error
+    func setError(_ error: WallpaperError) {
+        currentError = error
     }
 
-    func clearError(for displayId: DisplayIdentifier) {
-        displayErrors[displayId] = nil
+    func clearError() {
+        currentError = nil
     }
 }
