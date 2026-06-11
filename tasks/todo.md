@@ -21,7 +21,7 @@
 - [x] `seek` が `finished == false` で戻ったときも `isPlaybackStartPending` を解除し、次の `resumePlayback()` で復帰できるようにする
 - [ ] occlusion notification では `isWindowOrderedFront` だけでなく `window.occlusionState.contains(.visible)` を見て、非表示なら pause する
 - [ ] screen reconfiguration で surviving controller の window frame / content bounds / layer bounds を更新する API を追加する
-- [ ] runtime 用 display identity を `CGDirectDisplayID` または display UUID ベースにし、同型 display / serial 0 の重複を正しく区別する（trap は `uniquingKeysWith` で回避済み。残るは識別子の一意化）
+- [x] runtime 用 display identity を `CGDirectDisplayID` ベースにし、同型 display / serial 0 の重複を正しく区別する（全ディスプレイ同一動画への移行で controller roster を `CGDirectDisplayID` キーに変更。ADR 2026-06-12）
 
 ### P2: パフォーマンス・永続化
 

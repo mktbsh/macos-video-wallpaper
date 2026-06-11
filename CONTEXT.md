@@ -8,14 +8,20 @@ updated: 2026-06-10
 アーキテクチャレビュー・設計会話で使う、このプロジェクト固有の用語。
 コード・テスト・ドキュメントではこの語彙を使い、同義語への言い換えをしないこと。
 
-## DisplayWallpaperStore（画面壁紙台帳）
+## WallpaperVideoStore（壁紙動画ストア）
 
-画面（`DisplayIdentifier`）ごとの壁紙構成——「どの動画を表示するか」「その画面で壁紙が有効か」——を永続化する台帳。
-security-scoped bookmark の生成・解決・stale 再保存・`/private/` パス正規化は台帳の implementation 内の関心事であり、caller には見せない。
+全ディスプレイ共通の **1 本のグローバル壁紙動画** を永続化するストア。
+画面ごとの分離は行わない（per-display 構成は ADR 2026-06-12 で廃止）。
+security-scoped bookmark の生成・解決・stale 再保存・`/private/` パス正規化は implementation 内の関心事であり、caller には見せない。
 
-- protocol: `DisplayWallpaperStoring`（seam）
-- production adapter: `DisplayWallpaperStore`（UserDefaults + security-scoped bookmark）
-- test adapter: in-memory fake
+- protocol: `WallpaperVideoStoring`（seam。`resolveVideo()` / `saveVideo(_:)` / `clearVideo()`）
+- production adapter: `WallpaperVideoStore`（UserDefaults キー `wallpaperVideoBookmark` + security-scoped bookmark）
+- test adapter: `InMemoryWallpaperVideoStore`
+
+## 壁紙ウィンドウ roster と displayID
+
+接続中の各ディスプレイに 1 つ `WallpaperWindowController` を生成し、`CGDirectDisplayID`（実行時に一意）をキーに管理する。
+全 controller に同一のグローバル動画を適用する。`NSScreen.displayID` で取得する。
 
 ## ResolvedVideo（動画解決結果）
 

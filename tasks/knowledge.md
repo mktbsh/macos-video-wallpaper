@@ -315,6 +315,38 @@ enum Xxx: String, CaseIterable {
 
 ---
 
+## security-scoped bookmark は read-only entitlement では `.securityScopeAllowOnlyReadAccess` が必須
+
+**症状:** sandbox 化アプリで `url.bookmarkData(options: .withSecurityScope)` が `NSCocoaErrorDomain code=256`（NSFileReadUnknownError「Could not open() the item」）で失敗。ファイル自体は `FileHandle(forReadingFrom:)` で開け、`bookmarkData()`（option なし）も成功するのに、`.withSecurityScope` だけ落ちる。
+**原因:** entitlement が `com.apple.security.files.user-selected.read-only`（読み取り専用）のみの場合、`.withSecurityScope` 単体は **read-write** スコープを取得しようとして書き込み open が拒否され open() に失敗する。署名（ad-hoc / 開発証明書）や TCC は無関係（dev 署名でも再現、sandbox 拒否ログも出ない）。
+**対策:** `url.bookmarkData(options: [.withSecurityScope, .securityScopeAllowOnlyReadAccess])` を使う。read-only entitlement と read-only スコープを一致させる。切り分けは「read 単体 / option なし bookmark / `.withSecurityScope`」を個別に試すと早い。
+
+---
+
+## 壁紙ウィンドウは `NSWindow(... screen:)` を使わずグローバル座標で配置する
+
+**症状:** 内蔵ディスプレイは壁紙が出るが、外部ディスプレイに出ない。診断すると外部ウィンドウの `window.screen == nil`、`window.frame.origin.x` が外部スクリーン原点の **2 倍**（例: 原点 -1920 が -3840）になり、どの画面にも乗らず非表示。
+**原因:** `NSWindow(contentRect:styleMask:backing:defer:screen:)` に `screen:` を渡すと、contentRect が **そのスクリーン原点からの相対座標**として解釈される。`contentRect: screen.frame`（グローバル座標）を渡すと origin が二重適用される。内蔵は原点 0 なので無害、外部（原点 != 0）だけ画面外へ飛ぶ。
+**対策:** `screen:` 引数を省略して `contentRect: screen.frame`（グローバル座標）で生成し、必要なら `window.setFrame(screen.frame, display:)` を明示する。マルチディスプレイ依存で unit test しづらいため、実機（内蔵+外部）で `window.screen` が対象画面になることを確認する。
+
+---
+
+## 壁紙ウィンドウ roster は CGDirectDisplayID をキーにする（DisplayIdentifier 衝突回避）
+
+**症状:** 内蔵 + 外部ディスプレイ構成で、片方（外部）に壁紙が出ないことがある。
+**原因:** `DisplayIdentifier`（vendor/model/serial 由来）は同型ディスプレイや serial 0 で衝突し得る。controller roster や per-display 永続化キーをこれで引くと、衝突した 2 画面が同一バケットを共有して片方が対象から漏れる。
+**対策:** 実行時に各アクティブディスプレイで一意な `CGDirectDisplayID`（`NSScreen.displayID`）を roster キーにする。永続化用の安定 ID が必要な場面でも、vendor/model/serial の単純連結は衝突源になることを前提に設計する。全ディスプレイ同一動画仕様（ADR 2026-06-12）では per-display 永続化自体を廃止し、グローバル 1 本に統一した。
+
+---
+
+## os.log の info レベルは log show で拾えない / zsh の `log` エイリアスに注意
+
+**症状:** `Logger.info(...)` を仕込んでも `log show --predicate ...` で何も出ない。`log stream ...` も空。
+**原因:** info レベルは永続ストアに書かれず `log show` の既定では拾えない。さらに zsh では `log` がエイリアス/関数と衝突して `(eval):log:1: too many arguments` になることがある。
+**対策:** ライブ取得は `/usr/bin/log stream --info --predicate '...'`（フルパス）を使う。事後取得が要るなら診断ログを `.notice` 以上にする。`log stream | sed > file` はパイプバッファで未フラッシュになるため、プロセス終了まで file は空になり得る。
+
+---
+
 ## 永続化 adapter の resolve は結果 enum で error mode を interface に出す
 
 **症状:** `resolveBookmarkedURL() -> URL?` + `hasBookmark() -> Bool` の 2 呼び出しで「未登録」と「解決失敗」を caller が組み立てていた。

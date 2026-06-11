@@ -31,13 +31,16 @@ final class WallpaperWindowController {
     var onPlaybackFailed: (() -> Void)?
 
     convenience init(screen: NSScreen, videoURL url: URL?) {
+        // `screen:` を渡すと contentRect がそのスクリーン原点からの相対座標として
+        // 解釈され、グローバル座標 origin が二重適用されて外部ディスプレイで画面外に
+        // 飛ぶ。`screen:` は省略し、グローバル frame を明示設定する。
         let window = NSWindow(
             contentRect: screen.frame,
             styleMask: .borderless,
             backing: .buffered,
-            defer: false,
-            screen: screen
+            defer: false
         )
+        window.setFrame(screen.frame, display: false)
         self.init(
             window: window,
             videoURL: url,

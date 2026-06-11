@@ -10,7 +10,10 @@ enum SecurityScopedBookmark {
     }
 
     static func data(for url: URL) throws -> Data {
-        try url.bookmarkData(options: .withSecurityScope)
+        // アプリの sandbox 権限は user-selected.read-only のため、read-only スコープで
+        // bookmark を生成する。`.withSecurityScope` 単体は read-write スコープを取りに行き、
+        // 書き込み open が拒否されて NSFileReadUnknownError(256) になる。
+        try url.bookmarkData(options: [.withSecurityScope, .securityScopeAllowOnlyReadAccess])
     }
 
     /// Resolves bookmark data to a normalized URL.
