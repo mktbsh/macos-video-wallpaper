@@ -30,17 +30,18 @@ enum GIFDecoder {
     }
 
     /// 単一フレームの delay 秒を ImageIO から取得する。Unclamped を優先する。
+    /// クランプ（0 以下や極小値の補正）は makeKeyTimes が担う。
     static func frameDelay(source: CGImageSource, index: Int) -> Double {
         guard let properties = CGImageSourceCopyPropertiesAtIndex(source, index, nil)
-            as? [CFString: Any],
-            let gif = properties[kCGImagePropertyGIFDictionary] as? [CFString: Any]
+            as? [String: Any],
+            let gif = properties[kCGImagePropertyGIFDictionary as String] as? [String: Any]
         else {
             return minimumFrameDelay
         }
-        if let unclamped = gif[kCGImagePropertyGIFUnclampedDelayTime] as? Double, unclamped > 0 {
+        if let unclamped = gif[kCGImagePropertyGIFUnclampedDelayTime as String] as? Double {
             return unclamped
         }
-        if let clamped = gif[kCGImagePropertyGIFDelayTime] as? Double {
+        if let clamped = gif[kCGImagePropertyGIFDelayTime as String] as? Double {
             return clamped
         }
         return minimumFrameDelay
