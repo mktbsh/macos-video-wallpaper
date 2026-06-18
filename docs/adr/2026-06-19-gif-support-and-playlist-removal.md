@@ -45,7 +45,9 @@ GIF は AVFoundation のデコード対象外（`AVPlayer` で再生不可）で
   および対応するテスト群（`PlaylistEditorWindowControllerTests` /
   `PlaylistStoreTests` / `PlaylistStoreMutationTests` / `PlaylistPersistenceTests` /
   `PlaybackSessionTests` など）。
-- `PlaybackCompletion` から `itemID` / `token` を除去（または型ごと整理）。
+- `PlaybackCompletion` / `PlaybackCompletionObserver`（`NotificationPlaybackCompletionObserver`）/
+  `PlaybackObservationTarget`（`AVPlayerObservationTarget`）を **型ごと削除**する
+  （ループ・失敗観測を driver 責務へ移すため。決定 3 参照）。
 - ローカライズ `menu.playlist.*` 文字列を `Localizable.xcstrings` から削除。
 - `AppDelegate` から playlist 関連メンバ・メソッド
   （`playlistStore` / `playlistPersistence` / `playlistEditorWindowController` /
@@ -57,33 +59,52 @@ GIF は AVFoundation のデコード対象外（`AVPlayer` で再生不可）で
 
 - `WallpaperWindowController.load` のシグネチャを `load(videoURL:)` のみに縮約し、
   `timeRange` / `itemID` / `token` 引数を削除する。
-- `PlaybackContext` から `timeRange` / `itemID` / `token` を削除する。
+- `PlaybackContext`（itemID/timeRange/token を持つ構造体）を撤去し、controller は
+  現在の URL と security-scoped access handle のみを保持する。
 - `PlaylistItem.playbackTimeRange` / `startTime` / `endTime` および
   `forwardPlaybackEndTime` を全廃。
-- 動画のループは現行の「再生終了 → completion → 先頭へ戻して再生」を維持する。
-  ただし `seek(to:)` は **driver 内部のループ手段** に閉じ、controller から
-  任意 time への seek を要求する API は持たない（先頭復帰のみ）。
+- ループは **driver の責務** とし、controller から `seek` / 再生完了観測を撤去する
+  （決定 3 参照）。controller に残るのは load / play / pause / clear /
+  dim / gravity / 表示制御 / 失敗転送のみ。
 
-### 3. PlayerDriver protocol を CALayer ベースへ
+### 3. PlayerDriver protocol を CALayer ベース + ループ自己完結へ
 
 動画 driver と GIF driver はレイヤー実体が異なる（`AVPlayerLayer` vs `CALayer`）
-ため、protocol を上位の `CALayer` に緩める。
+ため protocol を上位の `CALayer` に緩め、ループと失敗観測を **driver の責務** に統一する。
+これにより `WallpaperWindowController` から再生完了観測・seek・pending-seek 状態が
+撤去され、controller は表示制御に専念する。
 
-- `var layer: AVPlayerLayer` → `var layer: CALayer`。
-- `videoGravity` の直接設定をやめ、`applyGravity(_ gravity: VideoGravity)` を
-  protocol メソッド化する。`AVPlayerDriver` は `AVPlayerLayer.videoGravity` に、
-  `GIFPlayerDriver` は `CALayer.contentsGravity` にマップする。
-- `seek(to:toleranceBefore:toleranceAfter:completion:)` /
-  `forwardPlaybackEndTime` を protocol から削除。再生終了の通知 / ループは
-  driver の責務に寄せる:
-  - 動画: 再生終了を観測して completion を発火（既存の手動ループを driver 側で完結、
-    もしくは現行どおり controller でループ）。
-  - GIF: `CAKeyframeAnimation` の `repeatCount = .infinity` で内部ループし、
-    completion を発火しない。
+新しい protocol（概形）:
 
-> 注: ループ責務を driver と controller のどちらに置くかは実装方針の確定事項として
-> 実装計画フェーズで詰める。protocol を CALayer ベースに緩める点と、controller が
-> 任意 seek を要求しない点は本 ADR で確定とする。
+```swift
+@MainActor
+protocol PlayerDriver: AnyObject {
+    var layer: CALayer { get }
+    var onPlaybackFailed: (() -> Void)? { get set }
+    func load(url: URL)
+    func play()
+    func pause()
+    func clear()
+    func applyGravity(_ gravity: VideoGravity)
+}
+
+@MainActor
+protocol PlayerDriverFactory {
+    func makeDriver(for url: URL) -> PlayerDriver
+}
+```
+
+- **動画（`AVPlayerDriver`）**: `AVQueuePlayer` + `AVPlayerLooper` でギャップレス
+  ループ（`CLAUDE.md` のアーキ図に回帰）。`AVPlayerItem.status == .failed` を KVO で
+  監視し `onPlaybackFailed` を発火。`layer` は `AVPlayerLayer`、`applyGravity` は
+  `videoGravity` にマップ。
+- **GIF（`GIFPlayerDriver`）**: `CALayer` に `CAKeyframeAnimation`
+  （`repeatCount = .infinity`）で内部ループ。フレーム抽出に失敗したら
+  `onPlaybackFailed` を発火。`applyGravity` は `contentsGravity` にマップ。
+- `seek` / `forwardPlaybackEndTime` / `replaceCurrentItem` / completion 観測 API は
+  protocol から消滅する。
+- `VideoGravity` に `caGravity: CALayerContentsGravity`（fill→`.resizeAspectFill`、
+  fit→`.resizeAspect`、stretch→`.resize`）を追加し、GIF driver が参照する。
 
 ### 4. メディア種別による driver 生成と layer 差し替え
 
@@ -126,10 +147,17 @@ GIF は全フレームを `CGImage` 展開するため、常駐壁紙では大�
   期待する driver 種別が選ばれることを検証。
 - `GIFPlayerDriver` の純粋ロジック: 既知の delay プロパティ配列から累積 keyTimes と
   total duration が正しく計算されること、delay 下限クランプが効くことを検証。
-- 既存 `WallpaperWindowControllerTests` /
-  `WallpaperWindowControllerVisibilityTests` を新シグネチャ（timeRange 撤去）に追従。
-- 削除に伴い playlist 系テスト群を削除する。
-- `LocalizationCatalogTests` から `menu.playlist.*` の期待を削除する。
+- driver の失敗通知: フレーム抽出失敗 / `AVPlayerItem` failed で `onPlaybackFailed`
+  が controller 経由で `AppDelegate` のエラー表示まで伝播することを検証。
+- 既存 `WallpaperWindowControllerTests` / `WallpaperWindowControllerVisibilityTests` /
+  `PlaybackDriverTests` / `PlaybackFailureTests` / `WallpaperWindowTestHelpers`
+  （`FakePlayerDriver` 等）を新 protocol（CALayer ベース・ループ自己完結・seek/observer
+  撤去）に合わせて書き換える。
+- 削除に伴い playlist 系テスト群（`PlaylistStoreTests` / `PlaylistStoreMutationTests` /
+  `PlaylistPersistenceTests` / `PlaybackSessionTests` / `RotationEngineTests` /
+  `PlaylistEditorWindowControllerTests`）を削除する。
+- `LocalizationCatalogTests` から `menu.playlist.*` / `playlist_editor.*` の期待を削除する。
+- `FakeWallpaperWindowController` の `load` を新シグネチャ（`load(videoURL:)`）に追従。
 - 受け入れ基準: `xcodebuild test -scheme VideoWallpaper -destination 'platform=macOS'`
   がグリーン。実機で GIF をドラッグ&ドロップ / 選択して壁紙としてループ再生され、
   明るさ調整・表示方法（Cover/Contain/Fill）・低電力 pause が GIF にも効くこと。
