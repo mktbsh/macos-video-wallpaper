@@ -20,6 +20,9 @@ final class GIFPlayerDriver: PlayerDriver {
         animation.duration = decoded.duration
         animation.repeatCount = .infinity
         animation.calculationMode = .discrete
+        // play() が呼ばれるまで停止状態で保持する（低電力モードで非表示のまま
+        // GIF が回り続けるのを防ぐ）。play() は局所時刻 0 から再生を開始する。
+        layer.speed = 0
         layer.add(animation, forKey: Self.animationKey)
     }
 

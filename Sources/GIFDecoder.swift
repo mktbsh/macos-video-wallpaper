@@ -26,6 +26,8 @@ enum GIFDecoder {
             keyTimes.append(NSNumber(value: cumulative / duration))
             cumulative += delay
         }
+        // discrete モードは values.count + 1 個の keyTimes（末尾 1.0）を要求する。
+        keyTimes.append(NSNumber(value: 1.0))
         return (keyTimes, duration)
     }
 
