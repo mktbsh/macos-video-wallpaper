@@ -1,4 +1,5 @@
 import AVFoundation
+import QuartzCore
 
 enum VideoGravity: String, CaseIterable {
     case fill
@@ -14,6 +15,14 @@ enum VideoGravity: String, CaseIterable {
     }
 
     var avGravity: AVLayerVideoGravity {
+        switch self {
+        case .fill:    return .resizeAspectFill
+        case .fit:     return .resizeAspect
+        case .stretch: return .resize
+        }
+    }
+
+    var caGravity: CALayerContentsGravity {
         switch self {
         case .fill:    return .resizeAspectFill
         case .fit:     return .resizeAspect
