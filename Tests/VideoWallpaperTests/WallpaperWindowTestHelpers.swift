@@ -1,6 +1,7 @@
 import AppKit
 import AVFoundation
 import Foundation
+import QuartzCore
 import Testing
 @testable import VideoWallpaper
 
@@ -8,25 +9,24 @@ import Testing
 struct WallpaperWindowControllerTestContext {
     let window: FakeWindow
     let driver: FakePlayerDriver
-    let observer: FakePlaybackCompletionObserver
+    let factory: FakePlayerDriverFactory
     let accessController: FakeSecurityScopedAccessController
     let controller: WallpaperWindowController
 
     init() throws {
         let window = FakeWindow(contentRect: try makeScreen().frame)
         let driver = FakePlayerDriver()
-        let observer = FakePlaybackCompletionObserver()
+        let factory = FakePlayerDriverFactory(driver: driver)
         let accessController = FakeSecurityScopedAccessController()
 
         self.window = window
         self.driver = driver
-        self.observer = observer
+        self.factory = factory
         self.accessController = accessController
         controller = WallpaperWindowController(
             window: window,
             videoURL: nil,
-            driverFactory: FakePlayerDriverFactory(driver: driver),
-            playbackCompletionObserver: observer,
+            driverFactory: factory,
             securityScopedAccessController: accessController
         )
     }
@@ -44,13 +44,15 @@ func wallpaperWindowTestURL(_ name: String) -> URL {
 @MainActor
 final class FakePlayerDriverFactory: PlayerDriverFactory {
     let driver: FakePlayerDriver
+    private(set) var requestedURLs: [URL] = []
 
     init(driver: FakePlayerDriver) {
         self.driver = driver
     }
 
-    func makeDriver() -> PlayerDriver {
-        driver
+    func makeDriver(for url: URL) -> PlayerDriver {
+        requestedURLs.append(url)
+        return driver
     }
 }
 
@@ -79,142 +81,22 @@ final class FakeWindow: NSWindow {
 
 @MainActor
 final class FakePlayerDriver: PlayerDriver {
-    struct ReplacementCall: Equatable {
-        let url: URL
-        let forwardPlaybackEndTime: CMTime?
-    }
+    let layer = CALayer()
+    var onPlaybackFailed: (() -> Void)?
 
-    struct SeekCall: Equatable {
-        let time: CMTime
-        let toleranceBefore: CMTime
-        let toleranceAfter: CMTime
-    }
-
-    let layer = AVPlayerLayer()
-
-    private(set) var replaceCurrentItemCallCount = 0
-    private(set) var replaceCurrentItemCalls: [ReplacementCall] = []
-    private(set) var seekCalls: [SeekCall] = []
+    private(set) var loadedURLs: [URL] = []
     private(set) var playCallCount = 0
     private(set) var pauseCallCount = 0
-    private(set) var clearCurrentItemCallCount = 0
-    private(set) var observationTargets: [FakePlaybackObservationTarget] = []
-    private var pendingSeekCompletions: [(Bool) -> Void] = []
+    private(set) var clearCallCount = 0
+    private(set) var appliedGravities: [VideoGravity] = []
 
-    func replaceCurrentItem(
-        with url: URL,
-        forwardPlaybackEndTime: CMTime?
-    ) -> PlaybackObservationTarget {
-        replaceCurrentItemCallCount += 1
-        replaceCurrentItemCalls.append(
-            ReplacementCall(url: url, forwardPlaybackEndTime: forwardPlaybackEndTime)
-        )
+    func load(url: URL) { loadedURLs.append(url) }
+    func play() { playCallCount += 1 }
+    func pause() { pauseCallCount += 1 }
+    func clear() { clearCallCount += 1 }
+    func applyGravity(_ gravity: VideoGravity) { appliedGravities.append(gravity) }
 
-        let target = FakePlaybackObservationTarget()
-        observationTargets.append(target)
-        return target
-    }
-
-    func seek(
-        to time: CMTime,
-        toleranceBefore: CMTime,
-        toleranceAfter: CMTime,
-        completion: @escaping @MainActor (Bool) -> Void
-    ) {
-        seekCalls.append(
-            SeekCall(
-                time: time,
-                toleranceBefore: toleranceBefore,
-                toleranceAfter: toleranceAfter
-            )
-        )
-        pendingSeekCompletions.append { finished in completion(finished) }
-    }
-
-    func play() {
-        playCallCount += 1
-    }
-
-    func pause() {
-        pauseCallCount += 1
-    }
-
-    func clearCurrentItem() {
-        clearCurrentItemCallCount += 1
-    }
-
-    func completeSeek(at index: Int, finished: Bool) {
-        let completion = pendingSeekCompletions.remove(at: index)
-        completion(finished)
-    }
-}
-
-@MainActor
-final class FakePlaybackObservationTarget: NSObject, PlaybackObservationTarget {
-    let id = UUID()
-}
-
-@MainActor
-final class FakePlaybackCompletionObserver: PlaybackCompletionObserver {
-    enum Event: Equatable {
-        case observe(UUID)
-        case observeFailure(UUID)
-        case cancel(UUID)
-    }
-
-    private final class ObservationToken: NSObject {
-        let targetID: UUID
-
-        init(targetID: UUID) {
-            self.targetID = targetID
-        }
-    }
-
-    private var handlers: [UUID: () -> Void] = [:]
-    private var failureHandlers: [UUID: () -> Void] = [:]
-    private(set) var events: [Event] = []
-
-    func observePlaybackCompletion(
-        for target: PlaybackObservationTarget,
-        handler: @escaping @MainActor () -> Void
-    ) -> AnyObject {
-        let targetID = targetID(for: target)
-        handlers[targetID] = { handler() }
-        events.append(.observe(targetID))
-        return ObservationToken(targetID: targetID)
-    }
-
-    func observePlaybackFailure(
-        for target: PlaybackObservationTarget,
-        handler: @escaping @MainActor () -> Void
-    ) -> AnyObject {
-        let targetID = targetID(for: target)
-        failureHandlers[targetID] = { handler() }
-        events.append(.observeFailure(targetID))
-        return ObservationToken(targetID: targetID)
-    }
-
-    func cancelObservation(_ token: AnyObject) {
-        guard let token = token as? ObservationToken else { return }
-        events.append(.cancel(token.targetID))
-        handlers[token.targetID] = nil
-        failureHandlers[token.targetID] = nil
-    }
-
-    func emitPlaybackFinished(for target: FakePlaybackObservationTarget) {
-        handlers[target.id]?()
-    }
-
-    func emitPlaybackFailed(for target: FakePlaybackObservationTarget) {
-        failureHandlers[target.id]?()
-    }
-
-    private func targetID(for target: PlaybackObservationTarget) -> UUID {
-        guard let target = target as? FakePlaybackObservationTarget else {
-            fatalError("Unexpected target type: \(type(of: target))")
-        }
-        return target.id
-    }
+    func emitPlaybackFailed() { onPlaybackFailed?() }
 }
 
 @MainActor

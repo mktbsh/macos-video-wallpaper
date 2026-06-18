@@ -15,38 +15,6 @@ struct LocalizationCatalogTests {
         #expect(try localizedString("menu.wallpaper.unset", locale: "ja") == "壁紙: 未設定")
     }
 
-    @Test func playlist_menu_actions_are_translated_for_both_locales() throws {
-        #expect(try localizedString("menu.playlist.add_videos", locale: "en") == "Add Videos...")
-        #expect(try localizedString("menu.playlist.add_videos", locale: "ja") == "動画を追加…")
-        #expect(try localizedString("menu.playlist.edit", locale: "en") == "Edit Playlist...")
-        #expect(try localizedString("menu.playlist.edit", locale: "ja") == "プレイリストを編集…")
-    }
-
-    @Test func playlist_editor_labels_are_translated_for_both_locales() throws {
-        #expect(try localizedString("playlist_editor.display_name", locale: "en") == "Display Name")
-        #expect(try localizedString("playlist_editor.display_name", locale: "ja") == "表示名")
-        #expect(try localizedString("playlist_editor.use_full_video", locale: "en") == "Use Full Video")
-        #expect(try localizedString("playlist_editor.use_full_video", locale: "ja") == "動画全体を使う")
-    }
-
-    @Test func playlist_summary_keys_are_translated_for_both_locales() throws {
-        #expect(try localizedString("menu.playlist.summary.single", locale: "en") == "Wallpaper: 1 Video")
-        #expect(try localizedString("menu.playlist.summary.single", locale: "ja") == "壁紙: 1 本の動画")
-        #expect(try localizedString("menu.playlist.summary.multiple", locale: "en") == "Wallpaper: %lld Videos")
-        #expect(try localizedString("menu.playlist.summary.multiple", locale: "ja") == "壁紙: %lld 本の動画")
-    }
-
-    @Test func playlist_editor_validation_message_is_translated_for_both_locales() throws {
-        #expect(
-            try localizedString("playlist_editor.validation.invalid_range", locale: "en")
-                == "End time must be greater than start time."
-        )
-        #expect(
-            try localizedString("playlist_editor.validation.invalid_range", locale: "ja")
-                == "終了時間は開始時間より後である必要があります。"
-        )
-    }
-
     @Test func alert_login_item_failed_title_is_translated_for_both_locales() throws {
         #expect(
             try localizedString("alert.login_item_failed.title", locale: "en")
@@ -165,32 +133,6 @@ struct LocalizationCatalogTests {
         #expect(try localizedString("menu.wallpaper.current", locale: "ja") == "壁紙: %@")
         #expect(try localizedString("menu.wallpaper.clear", locale: "en") == "Clear Wallpaper")
         #expect(try localizedString("menu.wallpaper.clear", locale: "ja") == "壁紙を解除")
-    }
-
-    @Test func menu_playlist_navigation_keys_are_translated_for_both_locales() throws {
-        #expect(try localizedString("menu.playlist.next", locale: "en") == "Next Video")
-        #expect(try localizedString("menu.playlist.next", locale: "ja") == "次の動画")
-        #expect(try localizedString("menu.playlist.previous", locale: "en") == "Previous Video")
-        #expect(try localizedString("menu.playlist.previous", locale: "ja") == "前の動画")
-        #expect(try localizedString("menu.playlist.current", locale: "en") == "Current: %@")
-        #expect(try localizedString("menu.playlist.current", locale: "ja") == "再生中: %@")
-        #expect(try localizedString("menu.playlist.clear", locale: "en") == "Clear Playlist")
-        #expect(try localizedString("menu.playlist.clear", locale: "ja") == "プレイリストを消去")
-    }
-
-    @Test func playlist_editor_ui_labels_are_translated_for_both_locales() throws {
-        #expect(try localizedString("playlist_editor.title", locale: "en") == "Playlist Editor")
-        #expect(try localizedString("playlist_editor.title", locale: "ja") == "プレイリスト編集")
-        #expect(try localizedString("playlist_editor.add_videos", locale: "en") == "Add Videos")
-        #expect(try localizedString("playlist_editor.add_videos", locale: "ja") == "動画を追加")
-        #expect(try localizedString("playlist_editor.delete", locale: "en") == "Delete")
-        #expect(try localizedString("playlist_editor.delete", locale: "ja") == "削除")
-        #expect(try localizedString("playlist_editor.empty_state", locale: "en") == "No Videos")
-        #expect(try localizedString("playlist_editor.empty_state", locale: "ja") == "動画がありません")
-        #expect(try localizedString("playlist_editor.start_time", locale: "en") == "Start Time (seconds)")
-        #expect(try localizedString("playlist_editor.start_time", locale: "ja") == "開始時間（秒）")
-        #expect(try localizedString("playlist_editor.end_time", locale: "en") == "End Time (seconds)")
-        #expect(try localizedString("playlist_editor.end_time", locale: "ja") == "終了時間（秒）")
     }
 
     private func localizedString(_ key: String, locale: String) throws -> String {

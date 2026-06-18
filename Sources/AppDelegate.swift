@@ -5,15 +5,9 @@ import IOKit.ps
 @MainActor
 protocol WallpaperWindowControlling: AnyObject {
     var onVideoDropped: ((URL) -> Void)? { get set }
-    var onPlaybackFinished: ((PlaybackCompletion) -> Void)? { get set }
     var onPlaybackFailed: (() -> Void)? { get set }
 
-    func load(
-        videoURL url: URL,
-        timeRange: CMTimeRange?,
-        itemID: PlaylistItem.ID?,
-        token: RotationEngine<PlaylistItem>.PlaybackToken?
-    )
+    func load(videoURL url: URL)
     func clearVideo()
     func invalidate()
     func applyDimLevel(_ opacity: CGFloat)
@@ -51,9 +45,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var screenControllers: [ScreenController]
     private var statusMenuController: StatusMenuController?
-    private var playlistEditorWindowController: PlaylistEditorWindowController?
-    private let playlistPersistence = PlaylistPersistence()
-    private var playlistStore: PlaylistStore
     private let screenProvider: () -> [NSScreen]
     private let controllerFactory: (NSScreen) -> any WallpaperWindowControlling
     private let isOnBatteryProvider: () -> Bool
@@ -65,12 +56,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controllerFactory: @escaping (NSScreen) -> any WallpaperWindowControlling = { screen in
             WallpaperWindowController(screen: screen, videoURL: nil)
         },
-        playlistStore: PlaylistStore = PlaylistPersistence().load(),
         isOnBatteryProvider: @escaping () -> Bool = defaultIsOnBattery,
         wallpaperVideoStore: any WallpaperVideoStoring = WallpaperVideoStore()
     ) {
         self.screenControllers = []
-        self.playlistStore = playlistStore
         self.screenProvider = screenProvider
         self.controllerFactory = controllerFactory
         self.isOnBatteryProvider = isOnBatteryProvider
@@ -152,8 +141,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             controller.onVideoDropped = { [weak self] url in
                 self?.handleVideoSelected(url)
             }
-            // Single global video loops via seek-to-start; no playlist rotation
-            controller.onPlaybackFinished = { _ in }
             controller.onPlaybackFailed = { [weak self] in
                 self?.setError(.playbackFailed)
                 self?.updateMenuState()
@@ -215,7 +202,7 @@ extension AppDelegate {
         switch wallpaperVideoStore.resolveVideo() {
         case .resolved(let url):
             clearError()
-            controllers.forEach { $0.load(videoURL: url, timeRange: nil, itemID: nil, token: nil) }
+            controllers.forEach { $0.load(videoURL: url) }
         case .resolveFailed:
             Log.persistence.warning("Wallpaper bookmark resolve failed")
             setError(.bookmarkResolveFailed)
@@ -264,102 +251,6 @@ private extension AppDelegate {
 
     func updateMenuState() {
         statusMenuController?.wallpaperState = buildWallpaperMenuState()
-    }
-
-    func showPlaylistEditor() {
-        let editor = playlistEditorWindowController ?? makePlaylistEditorWindowController()
-        editor.reload(items: playlistStore.items, currentItemID: playlistStore.currentItem?.id)
-        editor.showEditor()
-    }
-
-    func makePlaylistEditorWindowController() -> PlaylistEditorWindowController {
-        let editor = PlaylistEditorWindowController()
-        configure(editor: editor)
-        editor.validateTimeRange = { _, start, end, useFullVideo in
-            guard !useFullVideo else { return nil }
-            guard let start, let end, end > start else {
-                return String(localized: "playlist_editor.validation.invalid_range")
-            }
-            return nil
-        }
-        playlistEditorWindowController = editor
-        return editor
-    }
-
-    func configure(editor: PlaylistEditorWindowController) {
-        editor.onAddVideos = { [weak self] in
-            self?.presentVideoOpenPanel()
-        }
-        editor.onDeleteItem = { [weak self] id in
-            self?.deletePlaylistItem(id: id)
-        }
-        editor.onMoveItem = { [weak self] id, offset in
-            self?.movePlaylistItem(id: id, by: offset)
-        }
-        editor.onSetCurrentItem = { [weak self] id in
-            self?.setCurrentPlaylistItem(id: id)
-        }
-        editor.onDisplayNameChanged = { [weak self] id, displayName in
-            self?.updatePlaylistItem {
-                $0.updateDisplayName(id: id, displayName: displayName)
-            }
-        }
-        editor.onUseFullVideoChanged = { [weak self] id, useFullVideo in
-            self?.updatePlaylistItem {
-                $0.updateUseFullVideo(id: id, useFullVideo: useFullVideo)
-            }
-        }
-        editor.onTimeRangeChanged = { [weak self] id, startTime, endTime in
-            self?.updatePlaylistItem {
-                $0.updateTimeRange(id: id, startTime: startTime, endTime: endTime)
-            }
-        }
-    }
-
-    func presentVideoOpenPanel() {
-        let panel = NSOpenPanel()
-        panel.allowsMultipleSelection = true
-        panel.canChooseDirectories = false
-        panel.canChooseFiles = true
-        panel.allowedContentTypes = VideoFileType.allowedUTTypes
-        guard panel.runModal() == .OK else { return }
-        let urls = panel.urls.filter { VideoFileType.isSupported(extension: $0.pathExtension) }
-        guard !urls.isEmpty else { return }
-
-        playlistStore.add(urls: urls)
-        persistPlaylistState()
-        reloadPlaylistUI()
-    }
-
-    func reloadPlaylistUI() {
-        playlistEditorWindowController?.reload(
-            items: playlistStore.items,
-            currentItemID: playlistStore.currentItem?.id
-        )
-    }
-
-    func deletePlaylistItem(id: PlaylistItem.ID) {
-        updatePlaylistItem { $0.delete(id: id) }
-    }
-
-    func movePlaylistItem(id: PlaylistItem.ID, by offset: Int) {
-        updatePlaylistItem { $0.move(id: id, by: offset) }
-    }
-
-    func setCurrentPlaylistItem(id: PlaylistItem.ID) {
-        updatePlaylistItem { $0.setCurrent(id: id) }
-    }
-
-    func updatePlaylistItem(
-        mutation: (inout PlaylistStore) -> Bool
-    ) {
-        guard mutation(&playlistStore) else { return }
-        persistPlaylistState()
-        reloadPlaylistUI()
-    }
-
-    func persistPlaylistState() {
-        playlistPersistence.save(store: playlistStore)
     }
 
     // MARK: - Error management
