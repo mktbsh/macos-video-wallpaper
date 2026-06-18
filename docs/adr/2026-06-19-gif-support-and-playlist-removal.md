@@ -1,7 +1,7 @@
 ---
 title: GIF 壁紙対応と dormant playlist サブシステムの全削除
 date: 2026-06-19
-status: proposed
+status: accepted
 author: Claude Opus 4.8 (claude-opus-4-8)
 ---
 
