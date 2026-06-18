@@ -64,11 +64,11 @@ struct LocalizationCatalogTests {
         )
         #expect(
             try localizedString("alert.unsupported_file.message", locale: "en")
-                == "Please choose an MP4, MOV, or M4V video file."
+                == "Please choose an MP4, MOV, M4V, or GIF file."
         )
         #expect(
             try localizedString("alert.unsupported_file.message", locale: "ja")
-                == "MP4、MOV、M4V 形式の動画ファイルを選択してください。"
+                == "MP4、MOV、M4V、GIF 形式のファイルを選択してください。"
         )
     }
 
