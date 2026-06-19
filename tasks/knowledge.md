@@ -395,3 +395,34 @@ enum Xxx: String, CaseIterable {
 **対策:** 関心ごとが異なるテストは `@Suite` struct を分割する。`PlaylistItemTests` / `PlaylistStoreTests` のように、依存関係のない単位に切り出す。共有 helper は struct 外のファイルレベル `private func` に移動する。
 
 ---
+
+## GIF はアニメーション画像なので AVFoundation では再生できない
+
+**症状:** GIF / Animated WebP / APNG を `AVPlayerItem` に渡しても再生されない。
+**原因:** これらはアニメーション画像であり、`AVPlayer` のデコード対象外。
+**対策:** `ImageIO`（`CGImageSource`）でフレームと delay を抽出し、`CAKeyframeAnimation`（keyPath `contents`、`repeatCount = .infinity`、`calculationMode = .discrete`）で `CALayer` に描画する。frame delay は `kCGImagePropertyGIFUnclampedDelayTime` を優先し、極小値は最小表示時間にクランプ。discrete モードの keyTimes は values.count + 1 個（末尾 1.0）が正式仕様。ImageIO のプロパティ辞書は `as? [String: Any]` で受け、定数キーは `as String` する（`[CFString: Any]` は不安定）。
+
+---
+
+## ループ再生は driver の責務に統一する
+
+**背景:** 旧実装は controller が `didPlayToEndTime` を観測して手動 seek でループしていたが、GIF は `CAKeyframeAnimation` で内部ループするためこの機構に乗らない。
+**対策:** ループと失敗通知を `PlayerDriver` の責務に寄せる。動画は `AVPlayerLooper`、GIF は `CAKeyframeAnimation` の無限リピート。controller から seek / 再生完了観測 / `PlaybackObservationTarget` を撤去し、controller は表示制御と失敗転送のみに専念する（ADR 2026-06-19）。
+
+---
+
+## CALayer ベースのアニメーションは load() 時点で停止状態にする
+
+**症状:** `CAKeyframeAnimation` を `layer` に add すると即座に再生が始まり、低電力モードで壁紙を非表示にしても GIF が GPU/CPU を消費し続ける。
+**原因:** `AVPlayer` は `play()` まで再生しないが、`CALayer` は `speed = 1`（既定）で add したアニメーションを即時再生する。controller は load 直後 `isPlaybackPaused = true` と見なすため、低電力 pause の冪等ガードをすり抜けて `driver.pause()` が呼ばれない。
+**対策:** `GIFPlayerDriver.load()` で animation を add する前に `layer.speed = 0` にし、`play()`（局所時刻 0 から再生）まで停止状態を保つ。
+
+---
+
+## protocol の get-only プロパティはサブクラス型では満たせない
+
+**症状:** `protocol PlayerDriver { var layer: CALayer { get } }` に対し `let layer: AVPlayerLayer` を持つと「does not conform」でコンパイルエラー。
+**原因:** Swift はプロパティ witness の共変リファインメントを許さない（メソッド戻り値同様）。
+**対策:** `var layer: CALayer { playerLayer }` の computed property にし、`AVPlayerLayer` は別の stored property（`playerLayer`）で保持する。
+
+---

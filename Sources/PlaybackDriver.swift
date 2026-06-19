@@ -1,30 +1,22 @@
 import AVFoundation
 import Dispatch
 import Foundation
-
-@MainActor
-protocol PlaybackObservationTarget: AnyObject {}
+import QuartzCore
 
 @MainActor
 protocol PlayerDriver: AnyObject {
-    var layer: AVPlayerLayer { get }
-
-    @discardableResult
-    func replaceCurrentItem(with url: URL, forwardPlaybackEndTime: CMTime?) -> PlaybackObservationTarget
-    func seek(
-        to time: CMTime,
-        toleranceBefore: CMTime,
-        toleranceAfter: CMTime,
-        completion: @escaping @MainActor (Bool) -> Void
-    )
+    var layer: CALayer { get }
+    var onPlaybackFailed: (() -> Void)? { get set }
+    func load(url: URL)
     func play()
     func pause()
-    func clearCurrentItem()
+    func clear()
+    func applyGravity(_ gravity: VideoGravity)
 }
 
 @MainActor
 protocol PlayerDriverFactory {
-    func makeDriver() -> PlayerDriver
+    func makeDriver(for url: URL) -> PlayerDriver
 }
 
 enum MainActorCompletionRelay {
@@ -44,51 +36,31 @@ enum MainActorCompletionRelay {
 }
 
 @MainActor
-final class AVPlayerObservationTarget: NSObject, PlaybackObservationTarget {
-    let item: AVPlayerItem
-
-    init(item: AVPlayerItem) {
-        self.item = item
-    }
-}
-
-@MainActor
 final class AVPlayerDriver: PlayerDriver {
-    let layer: AVPlayerLayer
+    var layer: CALayer { playerLayer }
+    var onPlaybackFailed: (() -> Void)?
 
-    private let player: AVPlayer
+    private let playerLayer: AVPlayerLayer
+    private let player: AVQueuePlayer
+    private var looper: AVPlayerLooper?
+    private var statusObservation: NSKeyValueObservation?
 
-    init(player: AVPlayer = AVPlayer()) {
-        self.player = player
+    init() {
+        player = AVQueuePlayer()
         player.isMuted = true
-        layer = AVPlayerLayer(player: player)
+        playerLayer = AVPlayerLayer(player: player)
     }
 
-    @discardableResult
-    func replaceCurrentItem(with url: URL, forwardPlaybackEndTime: CMTime?) -> PlaybackObservationTarget {
+    func load(url: URL) {
+        clear()
         let item = AVPlayerItem(url: url)
-        if let forwardPlaybackEndTime {
-            item.forwardPlaybackEndTime = forwardPlaybackEndTime
-        }
-        player.replaceCurrentItem(with: item)
-        return AVPlayerObservationTarget(item: item)
-    }
-
-    func seek(
-        to time: CMTime,
-        toleranceBefore: CMTime,
-        toleranceAfter: CMTime,
-        completion: @escaping @MainActor (Bool) -> Void
-    ) {
-        player.seek(
-            to: time,
-            toleranceBefore: toleranceBefore,
-            toleranceAfter: toleranceAfter
-        ) { finished in
+        statusObservation = item.observe(\.status, options: [.new]) { [weak self] item, _ in
+            guard item.status == .failed else { return }
             MainActorCompletionRelay.run {
-                completion(finished)
+                self?.onPlaybackFailed?()
             }
         }
+        looper = AVPlayerLooper(player: player, templateItem: item)
     }
 
     func play() {
@@ -99,14 +71,16 @@ final class AVPlayerDriver: PlayerDriver {
         player.pause()
     }
 
-    func clearCurrentItem() {
-        player.replaceCurrentItem(with: nil)
+    func clear() {
+        looper?.disableLooping()
+        looper = nil
+        player.pause()
+        player.removeAllItems()
+        statusObservation?.invalidate()
+        statusObservation = nil
     }
-}
 
-@MainActor
-struct AVPlayerDriverFactory: PlayerDriverFactory {
-    func makeDriver() -> PlayerDriver {
-        AVPlayerDriver()
+    func applyGravity(_ gravity: VideoGravity) {
+        playerLayer.videoGravity = gravity.avGravity
     }
 }

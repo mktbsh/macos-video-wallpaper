@@ -1,4 +1,5 @@
 import AVFoundation
+import QuartzCore
 import Testing
 @testable import VideoWallpaper
 
@@ -73,6 +74,14 @@ import Testing
         defer { UserDefaults.standard.removeObject(forKey: VideoGravity.storageKey) }
         UserDefaults.standard.set("unknown_gravity", forKey: VideoGravity.storageKey)
         #expect(VideoGravity.saved == .fill)
+    }
+
+    // MARK: - caGravity
+
+    @Test func caGravityMapsEachCase() {
+        #expect(VideoGravity.fill.caGravity == .resizeAspectFill)
+        #expect(VideoGravity.fit.caGravity == .resizeAspect)
+        #expect(VideoGravity.stretch.caGravity == .resize)
     }
 
     private func localizedString(_ key: String) -> String {

@@ -1,4 +1,3 @@
-import AVFoundation
 import CoreGraphics
 import Testing
 @testable import VideoWallpaper
@@ -55,25 +54,11 @@ struct WallpaperWindowControllerVisibilityTests {
         let context = try WallpaperWindowControllerTestContext()
         context.controller.load(videoURL: wallpaperWindowTestURL("resume-idempotent.mov"))
 
-        context.controller.pausePlayback()
         context.controller.resumePlayback()
         context.controller.resumePlayback()
 
         #expect(context.window.orderFrontCallCount == 1)
-        #expect(context.driver.playCallCount == 2)
-    }
-
-    @Test func apply_video_gravity_updates_player_layer() throws {
-        let context = try WallpaperWindowControllerTestContext()
-
-        context.controller.applyVideoGravity(.fit)
-        #expect(context.driver.layer.videoGravity == .resizeAspect)
-
-        context.controller.applyVideoGravity(.stretch)
-        #expect(context.driver.layer.videoGravity == .resize)
-
-        context.controller.applyVideoGravity(.fill)
-        #expect(context.driver.layer.videoGravity == .resizeAspectFill)
+        #expect(context.driver.playCallCount == 1)
     }
 
     @Test func apply_dim_level_does_not_crash() throws {
@@ -85,45 +70,6 @@ struct WallpaperWindowControllerVisibilityTests {
         // No assertion needed — verifies the method does not crash for all DimLevel opacities
     }
 
-    @Test func resume_playback_while_seek_pending_does_not_double_play() throws {
-        let context = try WallpaperWindowControllerTestContext()
-        let timeRange = CMTimeRange(
-            start: CMTime(seconds: 3, preferredTimescale: 600),
-            end: CMTime(seconds: 8, preferredTimescale: 600)
-        )
-        context.controller.load(
-            videoURL: wallpaperWindowTestURL("seek-pending-resume.mov"),
-            timeRange: timeRange
-        )
-        // A seek is now pending; play has not been called yet
-        #expect(context.driver.playCallCount == 0)
-
-        // Calling resumePlayback while the seek is in flight should be a no-op
-        context.controller.resumePlayback()
-        #expect(context.driver.playCallCount == 0)
-
-        // Once the seek completes, play is called exactly once
-        context.driver.completeSeek(at: 0, finished: true)
-        #expect(context.driver.playCallCount == 1)
-    }
-
-    @Test func resume_playback_after_cancelled_seek_recovers_from_pending_state() throws {
-        let context = try WallpaperWindowControllerTestContext()
-        let timeRange = CMTimeRange(
-            start: CMTime(seconds: 3, preferredTimescale: 600),
-            end: CMTime(seconds: 8, preferredTimescale: 600)
-        )
-        context.controller.load(
-            videoURL: wallpaperWindowTestURL("cancelled-seek-resume.mov"),
-            timeRange: timeRange
-        )
-
-        context.driver.completeSeek(at: 0, finished: false)
-        context.controller.resumePlayback()
-
-        #expect(context.driver.playCallCount == 1)
-    }
-
     @Test func clear_video_is_idempotent_after_first_clear() throws {
         let context = try WallpaperWindowControllerTestContext()
         context.controller.load(videoURL: wallpaperWindowTestURL("clear-idempotent.mov"))
@@ -133,7 +79,7 @@ struct WallpaperWindowControllerVisibilityTests {
         context.controller.clearVideo()
 
         #expect(context.driver.pauseCallCount == 1)
-        #expect(context.driver.clearCurrentItemCallCount == 1)
+        #expect(context.driver.clearCallCount == 1)
         #expect(context.window.orderFrontCallCount == 1)
         #expect(context.window.orderOutCallCount == 1)
     }
